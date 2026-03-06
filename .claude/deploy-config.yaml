@@ -24,7 +24,7 @@ ci_cd:
   provider: "github-actions"
   deploy_workflow: ".github/workflows/deploy.yml"
   rollback_workflow: ".github/workflows/rollback.yml"
-  auth_method: "not-configured"
+  auth_method: "workload-identity-federation"
 
 reviewer:
   tech_stack: "Next.js 16, TypeScript, Prisma, Firebase Auth, Cloud Run, GCP Cloud Storage, Vertex AI, Recharts, Tailwind CSS, shadcn/ui"
