@@ -57,7 +57,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo-icon.svg" alt="" width={32} height={32} className="rounded-lg" />
-            <Image src="/logo.svg" alt="CaptableBR" width={120} height={24} className="h-6 w-auto" priority />
+            <span className="text-lg font-bold tracking-tight">Captable<span className="text-primary">BR</span></span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/login">

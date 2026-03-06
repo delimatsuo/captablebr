@@ -37,7 +37,7 @@ export function DashboardNav() {
           <Link href="/benchmarks" className="flex items-center gap-2.5 py-3">
             <Image src="/logo-icon.svg" alt="" width={28} height={28} className="rounded-lg" />
             <span className="text-base font-bold tracking-tight hidden sm:inline">
-              CaptableBR
+              Captable<span className="text-primary">BR</span>
             </span>
           </Link>
           <nav className="flex items-center gap-1">
