@@ -47,7 +47,7 @@ export function SegmentSelector({
         <Select value={stage} onValueChange={onStageChange}>
           <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os estagios</SelectItem>
+            <SelectItem value="all">Todos os estágios</SelectItem>
             {STAGES.map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}

@@ -28,9 +28,9 @@ export default async function AdminPage() {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Administracao</h1>
+          <h1 className="text-2xl font-bold">Administração</h1>
           <p className="text-muted-foreground text-sm">
-            Gerencie convites e solicitacoes de acesso
+            Gerencie convites e solicitações de acesso
           </p>
         </div>
       </div>
@@ -39,7 +39,7 @@ export default async function AdminPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Convidar executivo</CardTitle>
-          <CardDescription>Adicione o email do executivo para liberar acesso a plataforma</CardDescription>
+          <CardDescription>Adicione o email do executivo para liberar acesso à plataforma</CardDescription>
         </CardHeader>
         <CardContent>
           <InviteForm />
@@ -51,10 +51,10 @@ export default async function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              Solicitacoes pendentes
+              Solicitações pendentes
               <Badge className="text-xs">{pendingRequests.length}</Badge>
             </CardTitle>
-            <CardDescription>Executivos que solicitaram acesso a plataforma</CardDescription>
+            <CardDescription>Executivos que solicitaram acesso à plataforma</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {pendingRequests.map((req) => (
@@ -107,7 +107,7 @@ export default async function AdminPage() {
       {processedRequests.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Historico de solicitacoes</CardTitle>
+            <CardTitle className="text-lg">Histórico de solicitações</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {processedRequests.map((req) => (

@@ -38,19 +38,19 @@ export type GrantType = (typeof GRANT_TYPES)[number];
 export const EXPERIENCE_RANGES = ["5-10", "10-15", "15-20", "20+"] as const;
 
 export const CASH_COMP_RANGES = [
-  "Ate R$ 15k", "R$ 15k - R$ 25k", "R$ 25k - R$ 40k",
+  "Até R$ 15k", "R$ 15k - R$ 25k", "R$ 25k - R$ 40k",
   "R$ 40k - R$ 60k", "R$ 60k - R$ 100k", "R$ 100k+",
 ] as const;
 
 export const SHORT_TERM_INCENTIVE_TYPES = [
-  "Bonus anual",
-  "Comissoes",
-  "Plano de retencao",
+  "Bônus anual",
+  "Comissões",
+  "Plano de retenção",
   "Sign-on bonus",
 ] as const;
 export type ShortTermIncentiveType = (typeof SHORT_TERM_INCENTIVE_TYPES)[number];
 
 export const INCENTIVE_RANGES = [
-  "Ate R$ 10k", "R$ 10k - R$ 30k", "R$ 30k - R$ 60k",
+  "Até R$ 10k", "R$ 10k - R$ 30k", "R$ 30k - R$ 60k",
   "R$ 60k - R$ 100k", "R$ 100k - R$ 200k", "R$ 200k+",
 ] as const;

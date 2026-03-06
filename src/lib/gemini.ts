@@ -5,20 +5,20 @@ import { ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES, STAGES, SECTOR
 const PROJECT_ID = process.env.GCP_PROJECT_ID || "paynequity";
 const LOCATION = process.env.GCP_LOCATION || "us-central1";
 
-const EXTRACTION_PROMPT = `Voce e um especialista em contratos de equity de startups brasileiras.
+const EXTRACTION_PROMPT = `Você é um especialista em contratos de equity de startups brasileiras.
 
 Extraia os seguintes campos deste documento:
-- Cargo/titulo do beneficiario (${ROLES.join(", ")})
+- Cargo/título do beneficiário (${ROLES.join(", ")})
 - Tipo de instrumento de equity (${INSTRUMENT_TYPES.join(", ")})
-- Percentual de equity (% do cap table fully diluted) — OBRIGATORIO, deve ser um numero > 0
-- Periodo total de vesting (em meses)
-- Periodo de cliff (em meses)
+- Percentual de equity (% do cap table fully diluted) — OBRIGATÓRIO, deve ser um número > 0
+- Período total de vesting (em meses)
+- Período de cliff (em meses)
 - Cronograma de vesting (${VESTING_SCHEDULES.join(", ")})
 - Tipo de grant (${GRANT_TYPES.join(", ")})
-- Estagio da empresa se mencionado (${STAGES.join(", ")})
+- Estágio da empresa se mencionado (${STAGES.join(", ")})
 - Setor da empresa se mencionado (${SECTORS.join(", ")})
 
-IMPORTANTE: NAO inclua nomes de pessoas, CPFs, enderecos ou qualquer dado pessoal na resposta.
+IMPORTANTE: NÃO inclua nomes de pessoas, CPFs, endereços ou qualquer dado pessoal na resposta.
 
 Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
 {
@@ -34,9 +34,9 @@ Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
   "confidence": 0.0
 }
 
-Se um campo nao puder ser determinado, defina como null.
-O campo equity_percentage DEVE ser um numero positivo se encontrado no documento.
-Inclua um score de confianca (0-1) para a extracao geral.`;
+Se um campo não puder ser determinado, defina como null.
+O campo equity_percentage DEVE ser um número positivo se encontrado no documento.
+Inclua um score de confiança (0-1) para a extração geral.`;
 
 const extractionResultSchema = z.object({
   role: z.string().nullable(),

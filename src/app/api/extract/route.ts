@@ -6,18 +6,18 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   const session = await verifySession();
   if (!session) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
   const { objectName, contentType } = await request.json();
 
   if (!objectName || typeof objectName !== "string") {
-    return NextResponse.json({ error: "objectName obrigatorio" }, { status: 400 });
+    return NextResponse.json({ error: "objectName obrigatório" }, { status: 400 });
   }
 
   const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
   if (contentType && !ALLOWED_TYPES.includes(contentType)) {
-    return NextResponse.json({ error: "Tipo de arquivo nao permitido" }, { status: 400 });
+    return NextResponse.json({ error: "Tipo de arquivo não permitido" }, { status: 400 });
   }
 
   // Verify the file belongs to this user
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   const bucketName = process.env.GCS_BUCKET_NAME;
   if (!bucketName) {
-    return NextResponse.json({ error: "Storage nao configurado" }, { status: 500 });
+    return NextResponse.json({ error: "Storage não configurado" }, { status: 500 });
   }
 
   try {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Extraction error:", error);
     return NextResponse.json(
-      { error: "Falha na extracao do documento" },
+      { error: "Falha na extração do documento" },
       { status: 500 }
     );
   }

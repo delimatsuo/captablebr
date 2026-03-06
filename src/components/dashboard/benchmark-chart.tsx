@@ -28,9 +28,9 @@ export function EquityPercentileChart({ data }: Props) {
         { name: "P25", value: p25, fill: INDIGO_LIGHT },
         { name: "Mediana", value: p50, fill: INDIGO_MID },
         { name: "P75", value: p75, fill: INDIGO_DARK },
-        { name: "Media", value: avg, fill: TEAL_ACCENT },
+        { name: "Média", value: avg, fill: TEAL_ACCENT },
       ]
-    : [{ name: "Media", value: avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: avg, fill: INDIGO_MID }];
 
   return (
     <Card>
@@ -38,8 +38,8 @@ export function EquityPercentileChart({ data }: Props) {
         <CardTitle className="text-base">Equity (%)</CardTitle>
         <CardDescription>
           {hasPercentiles
-            ? "Distribuicao em percentis do cap table"
-            : "Media do mercado (amostra insuficiente para percentis)"}
+            ? "Distribuição em percentis do cap table"
+            : "Média do mercado (amostra insuficiente para percentis)"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -88,9 +88,9 @@ export function VestingPercentileChart({ data }: Props) {
         { name: "P25", value: p25, fill: INDIGO_LIGHT },
         { name: "Mediana", value: p50, fill: INDIGO_MID },
         { name: "P75", value: p75, fill: INDIGO_DARK },
-        { name: "Media", value: avg, fill: TEAL_ACCENT },
+        { name: "Média", value: avg, fill: TEAL_ACCENT },
       ]
-    : [{ name: "Media", value: avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: avg, fill: INDIGO_MID }];
 
   return (
     <Card>
@@ -98,8 +98,8 @@ export function VestingPercentileChart({ data }: Props) {
         <CardTitle className="text-base">Vesting (meses)</CardTitle>
         <CardDescription>
           {hasPercentiles
-            ? "Periodo de vesting por percentil"
-            : "Media do mercado"}
+            ? "Período de vesting por percentil"
+            : "Média do mercado"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -155,7 +155,7 @@ export function InstrumentDistributionChart({ data }: Props) {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Instrumentos de equity</CardTitle>
-        <CardDescription>Distribuicao dos tipos de instrumento utilizados</CardDescription>
+        <CardDescription>Distribuição dos tipos de instrumento utilizados</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>
@@ -234,12 +234,12 @@ export function SummaryCards({ data }: Props) {
       {
         label: "1o no cargo",
         value: `${data.firstInRolePremium.firstInRole}%`,
-        sub: "equity medio",
+        sub: "equity médio",
       },
       {
-        label: "Nao e 1o",
+        label: "Não é 1o",
         value: `${data.firstInRolePremium.notFirstInRole}%`,
-        sub: "equity medio",
+        sub: "equity médio",
       }
     );
   }

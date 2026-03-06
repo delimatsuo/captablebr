@@ -8,21 +8,21 @@ const SIGNED_URL_TTL = 15 * 60 * 1000; // 15 minutes
 export async function POST(request: NextRequest) {
   const session = await verifySession();
   if (!session) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
   const { fileName, contentType } = await request.json();
 
   if (!ALLOWED_TYPES.includes(contentType)) {
     return NextResponse.json(
-      { error: "Tipo de arquivo nao permitido. Use PDF, PNG, JPEG ou WebP." },
+      { error: "Tipo de arquivo não permitido. Use PDF, PNG, JPEG ou WebP." },
       { status: 400 }
     );
   }
 
   const bucketName = process.env.GCS_BUCKET_NAME;
   if (!bucketName) {
-    return NextResponse.json({ error: "Storage nao configurado" }, { status: 500 });
+    return NextResponse.json({ error: "Storage não configurado" }, { status: 500 });
   }
 
   const storage = new Storage();

@@ -32,11 +32,11 @@ export default function LoginPage() {
     });
     if (res.status === 403) {
       const data = await res.json();
-      setError(data.error || "Acesso nao autorizado. Solicite um convite.");
+      setError(data.error || "Acesso não autorizado. Solicite um convite.");
       return false;
     }
     if (!res.ok) {
-      setError("Falha na autenticacao.");
+      setError("Falha na autenticação.");
       return false;
     }
     return true;
@@ -88,8 +88,8 @@ export default function LoginPage() {
             Benchmarks de equity para startups brasileiras
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed">
-            Descubra o percentual de equity padrao para cada cargo executivo no
-            seu estagio. Dados anonimizados de executivos como voce.
+            Descubra o percentual de equity padrão para cada cargo executivo no
+            seu estágio. Dados anonimizados de executivos como você.
           </p>
           <div className="mt-12 grid grid-cols-3 gap-6">
             {[
@@ -138,7 +138,7 @@ export default function LoginPage() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-card px-2 text-muted-foreground">
-                      Firebase nao configurado
+                      Firebase não configurado
                     </span>
                   </div>
                 </div>
@@ -209,7 +209,7 @@ export default function LoginPage() {
             )}
 
             <p className="text-center text-sm text-muted-foreground pt-2">
-              Nao tem acesso?{" "}
+              Não tem acesso?{" "}
               <Link href="/request-access" className="text-primary font-medium hover:underline">
                 Solicitar convite
               </Link>

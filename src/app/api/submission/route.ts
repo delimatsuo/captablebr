@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const session = await verifySession();
   if (!session) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
   const submission = await prisma.submission.findFirst({

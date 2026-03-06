@@ -35,7 +35,7 @@ export async function createInvitation(email: string) {
   const existing = await prisma.invitation.findUnique({
     where: { email: normalized },
   });
-  if (existing) throw new Error("Email ja convidado.");
+  if (existing) throw new Error("Email já convidado.");
 
   return prisma.invitation.create({
     data: { email: normalized },
@@ -60,7 +60,7 @@ export async function approveAccessRequest(requestId: string) {
   const request = await prisma.accessRequest.findUnique({
     where: { id: requestId },
   });
-  if (!request) throw new Error("Solicitacao nao encontrada.");
+  if (!request) throw new Error("Solicitação não encontrada.");
 
   // Create invitation for this email
   const normalized = request.email.toLowerCase().trim();

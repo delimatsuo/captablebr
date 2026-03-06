@@ -82,7 +82,7 @@ export async function deleteSubmission(submissionId: string) {
   const { count } = await prisma.submission.deleteMany({
     where: { id: submissionId, userId: session.uid },
   });
-  if (count === 0) throw new Error("Registro nao encontrado.");
+  if (count === 0) throw new Error("Registro não encontrado.");
 }
 
 export async function hasSubmission(): Promise<boolean> {
@@ -104,7 +104,7 @@ export async function submitAccessRequest(formData: unknown) {
     where: { email: data.email },
   });
   if (existing) {
-    throw new Error("Este email ja possui um convite. Faca login.");
+    throw new Error("Este email já possui um convite. Faça login.");
   }
 
   // Check if already requested
@@ -112,7 +112,7 @@ export async function submitAccessRequest(formData: unknown) {
     where: { email: data.email, status: "pending" },
   });
   if (existingRequest) {
-    throw new Error("Voce ja enviou uma solicitacao. Aguarde a aprovacao.");
+    throw new Error("Você já enviou uma solicitação. Aguarde a aprovação.");
   }
 
   return prisma.accessRequest.create({ data });

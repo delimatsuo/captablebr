@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const session = await verifySession();
   if (!session) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
   // Check give-to-get gate
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   if (!submission) {
     return NextResponse.json(
-      { error: "Submeta sua compensacao para acessar os benchmarks" },
+      { error: "Submeta sua compensação para acessar os benchmarks" },
       { status: 403 }
     );
   }
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const role = searchParams.get("role");
   if (!role) {
-    return NextResponse.json({ error: "Parametro 'role' obrigatorio" }, { status: 400 });
+    return NextResponse.json({ error: "Parâmetro 'role' obrigatório" }, { status: 400 });
   }
 
   const stage = searchParams.get("stage") || undefined;

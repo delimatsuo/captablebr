@@ -44,12 +44,12 @@ export default function SubmitPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">
-            {existingData ? "Editar minha compensacao" : "Minha compensacao"}
+            {existingData ? "Editar minha compensação" : "Minha compensação"}
           </h1>
           <p className="text-muted-foreground text-sm">
             {existingData
-              ? "Atualize seus dados de compensacao. Os dados anteriores serao arquivados."
-              : "Compartilhe seus dados de compensacao para acessar benchmarks do mercado."}
+              ? "Atualize seus dados de compensação. Os dados anteriores serão arquivados."
+              : "Compartilhe seus dados de compensação para acessar benchmarks do mercado."}
           </p>
         </div>
       </div>

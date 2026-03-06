@@ -7,24 +7,24 @@ import {
 
 export const submissionSchema = z.object({
   // Company context
-  stage: z.enum(STAGES, { message: "Selecione o estagio" }),
-  businessModel: z.enum(BUSINESS_MODELS, { message: "Selecione o modelo de negocio" }),
+  stage: z.enum(STAGES, { message: "Selecione o estágio" }),
+  businessModel: z.enum(BUSINESS_MODELS, { message: "Selecione o modelo de negócio" }),
   sector: z.enum(SECTORS, { message: "Selecione o setor" }),
   subSector: z.string().optional(),
-  headcountRange: z.enum(HEADCOUNT_RANGES, { message: "Selecione o numero de funcionarios" }),
+  headcountRange: z.enum(HEADCOUNT_RANGES, { message: "Selecione o número de funcionários" }),
 
   // Role & equity
   role: z.enum(ROLES, { message: "Selecione o cargo" }),
   instrumentType: z.enum(INSTRUMENT_TYPES, { message: "Selecione o instrumento" }),
   equityPercentage: z.coerce.number()
-    .min(0.001, "Minimo de 0.001%")
-    .max(30, "Maximo de 30%"),
+    .min(0.001, "Mínimo de 0.001%")
+    .max(30, "Máximo de 30%"),
   vestingTotalMonths: z.coerce.number().int()
-    .min(1, "Minimo de 1 mes")
-    .max(120, "Maximo de 120 meses"),
+    .min(1, "Mínimo de 1 mês")
+    .max(120, "Máximo de 120 meses"),
   cliffMonths: z.coerce.number().int()
-    .min(0, "Minimo de 0 meses")
-    .max(48, "Maximo de 48 meses"),
+    .min(0, "Mínimo de 0 meses")
+    .max(48, "Máximo de 48 meses"),
   vestingSchedule: z.enum(VESTING_SCHEDULES, { message: "Selecione o cronograma de vesting" }),
   grantType: z.enum(GRANT_TYPES, { message: "Selecione o tipo de grant" }),
   isFirstInRole: z.boolean(),
@@ -43,17 +43,17 @@ export const submissionSchema = z.object({
   signOnRange: z.enum(INCENTIVE_RANGES).optional(),
 
   // Notification
-  notifyEmail: z.string().email("Email invalido").optional().or(z.literal("")),
+  notifyEmail: z.string().email("Email inválido").optional().or(z.literal("")),
 }).refine(
   (data) => data.cliffMonths <= data.vestingTotalMonths,
-  { message: "Cliff nao pode ser maior que o periodo total de vesting", path: ["cliffMonths"] }
+  { message: "Cliff não pode ser maior que o período total de vesting", path: ["cliffMonths"] }
 );
 
 export type SubmissionFormData = z.infer<typeof submissionSchema>;
 
 export const accessRequestSchema = z.object({
-  email: z.string().email("Email invalido"),
-  name: z.string().min(2, "Nome e obrigatorio"),
+  email: z.string().email("Email inválido"),
+  name: z.string().min(2, "Nome é obrigatório"),
   message: z.string().min(10, "Descreva brevemente por que deseja acesso"),
 });
 

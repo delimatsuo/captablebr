@@ -33,7 +33,7 @@ export default function RequestAccessPage() {
       }
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar solicitacao");
+      setError(err instanceof Error ? err.message : "Erro ao enviar solicitação");
     } finally {
       setLoading(false);
     }
@@ -51,17 +51,17 @@ export default function RequestAccessPage() {
             <span className="text-2xl font-bold">CaptableBR</span>
           </div>
           <h2 className="text-3xl font-bold mb-4 leading-tight">
-            Acesso exclusivo para founders
+            Acesso exclusivo para executivos
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed mb-8">
-            CaptableBR e uma plataforma exclusiva para founders de startups brasileiras.
+            CaptableBR é uma plataforma exclusiva para executivos de startups brasileiras.
             Solicite acesso e entraremos em contato.
           </p>
           <div className="space-y-4">
             {[
               "Acesso por convite direto",
               "Dados 100% anonimizados",
-              "Apenas founders verificados",
+              "Apenas executivos verificados",
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <div className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -89,16 +89,16 @@ export default function RequestAccessPage() {
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <CardTitle className="text-2xl">Solicitacao enviada!</CardTitle>
+                <CardTitle className="text-2xl">Solicitação enviada!</CardTitle>
                 <CardDescription>
-                  Sua solicitacao sera avaliada e voce recebera um convite por email caso aprovada.
+                  Sua solicitação será avaliada e você receberá um convite por email caso aprovada.
                 </CardDescription>
               </>
             ) : (
               <>
                 <CardTitle className="text-2xl">Solicitar acesso</CardTitle>
                 <CardDescription>
-                  Preencha o formulario abaixo. Avaliaremos sua solicitacao e enviaremos um convite.
+                  Preencha o formulário abaixo. Avaliaremos sua solicitação e enviaremos um convite.
                 </CardDescription>
               </>
             )}
@@ -135,7 +135,7 @@ export default function RequestAccessPage() {
                     id="message"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Conte um pouco sobre sua startup e por que gostaria de usar a plataforma..."
+                    placeholder="Conte um pouco sobre sua posição e por que gostaria de usar a plataforma..."
                     className="min-h-[100px] resize-none"
                     required
                   />
@@ -149,12 +149,12 @@ export default function RequestAccessPage() {
                 )}
 
                 <Button type="submit" className="w-full h-11" disabled={loading}>
-                  {loading ? "Enviando..." : "Enviar solicitacao"}
+                  {loading ? "Enviando..." : "Enviar solicitação"}
                 </Button>
               </form>
 
               <p className="text-center text-sm text-muted-foreground pt-4">
-                Ja tem acesso?{" "}
+                Já tem acesso?{" "}
                 <Link href="/login" className="text-primary font-medium hover:underline">
                   Entrar
                 </Link>

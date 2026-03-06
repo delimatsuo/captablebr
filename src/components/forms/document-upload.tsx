@@ -26,11 +26,11 @@ export function DocumentUpload({ onExtracted }: Props) {
 
     const allowed = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
     if (!allowed.includes(f.type)) {
-      toast.error("Tipo de arquivo nao permitido. Use PDF, PNG, JPEG ou WebP.");
+      toast.error("Tipo de arquivo não permitido. Use PDF, PNG, JPEG ou WebP.");
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Maximo de 10MB.");
+      toast.error("Arquivo muito grande. Máximo de 10MB.");
       return;
     }
     setFile(f);
@@ -69,7 +69,7 @@ export function DocumentUpload({ onExtracted }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ objectName, contentType: file.type }),
       });
-      if (!extractRes.ok) throw new Error("Falha na extracao");
+      if (!extractRes.ok) throw new Error("Falha na extração");
       const extracted = await extractRes.json();
       setProgress(100);
 
@@ -86,7 +86,7 @@ export function DocumentUpload({ onExtracted }: Props) {
       if (extracted.sector) mapped.sector = extracted.sector as SubmissionFormData["sector"];
 
       onExtracted(mapped, objectName);
-      toast.success(`Dados extraidos com confianca de ${Math.round((extracted.confidence || 0) * 100)}%`);
+      toast.success(`Dados extraídos com confiança de ${Math.round((extracted.confidence || 0) * 100)}%`);
     } catch {
       toast.error("Erro no processamento do documento");
     } finally {
@@ -100,7 +100,7 @@ export function DocumentUpload({ onExtracted }: Props) {
       <CardHeader>
         <CardTitle className="text-lg">Upload de Contrato</CardTitle>
         <CardDescription>
-          Envie o contrato ou politica de equity para extracao automatica via IA
+          Envie o contrato ou política de equity para extração automática via IA
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -130,7 +130,7 @@ export function DocumentUpload({ onExtracted }: Props) {
               <div className="text-center">
                 <p className="text-sm font-medium">Clique para selecionar um arquivo</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PDF, PNG, JPEG ou WebP — Maximo 10MB
+                  PDF, PNG, JPEG ou WebP — Máximo 10MB
                 </p>
               </div>
             )}
@@ -151,8 +151,8 @@ export function DocumentUpload({ onExtracted }: Props) {
                   Consentimento para processamento
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Seu documento sera processado por IA para extrair dados de equity.
-                  O arquivo sera deletado apos a extracao.
+                  Seu documento será processado por IA para extrair dados de equity.
+                  O arquivo será deletado após a extração.
                 </p>
               </div>
             </div>

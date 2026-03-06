@@ -27,7 +27,7 @@ interface Props {
 
 const STEPS = [
   { label: "Sobre a empresa", number: 1 },
-  { label: "Sua compensacao", number: 2 },
+  { label: "Sua compensação", number: 2 },
   { label: "Confirmar", number: 3 },
 ];
 
@@ -77,7 +77,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "errors" in err) {
         const zodErr = err as { errors: { message: string }[] };
-        toast.error(zodErr.errors[0]?.message || "Dados invalidos");
+        toast.error(zodErr.errors[0]?.message || "Dados inválidos");
       } else {
         toast.error("Erro ao salvar");
       }
@@ -128,7 +128,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
           </div>
           <div>
-            <p className="text-sm font-medium">Dados extraidos por IA</p>
+            <p className="text-sm font-medium">Dados extraídos por IA</p>
             <p className="text-xs text-muted-foreground">Revise e corrija os campos abaixo antes de confirmar</p>
           </div>
         </div>
@@ -138,13 +138,13 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Sobre a empresa onde voce trabalha</CardTitle>
-            <CardDescription>Nao identificamos sua empresa nos benchmarks.</CardDescription>
+            <CardTitle className="text-lg">Sobre a empresa onde você trabalha</CardTitle>
+            <CardDescription>Não identificamos sua empresa nos benchmarks.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <Label>Estagio *</Label>
+                <Label>Estágio *</Label>
                 <Select value={formData.stage} onValueChange={(v) => update("stage", v)}>
                   <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
@@ -154,7 +154,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               </div>
 
               <div className="space-y-2">
-                <Label>Modelo de negocio *</Label>
+                <Label>Modelo de negócio *</Label>
                 <Select value={formData.businessModel} onValueChange={(v) => update("businessModel", v)}>
                   <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
@@ -174,7 +174,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               </div>
 
               <div className="space-y-2">
-                <Label>Funcionarios *</Label>
+                <Label>Funcionários *</Label>
                 <Select value={formData.headcountRange} onValueChange={(v) => update("headcountRange", v)}>
                   <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
@@ -201,8 +201,8 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Sua compensacao</CardTitle>
-            <CardDescription>Dados sobre seu pacote de equity e remuneracao</CardDescription>
+            <CardTitle className="text-lg">Sua compensação</CardTitle>
+            <CardDescription>Dados sobre seu pacote de equity e remuneração</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Role & equity */}
@@ -245,7 +245,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   {(formData.equityPercentage ?? 0) > 10 && (
                     <p className="text-xs text-amber-600 flex items-center gap-1.5">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                      Valor acima de 10% — verifique se esta correto
+                      Valor acima de 10% — verifique se está correto
                     </p>
                   )}
                 </div>
@@ -269,7 +269,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Vesting</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-2">
-                  <Label>Periodo Total (meses) *</Label>
+                  <Label>Período Total (meses) *</Label>
                   <Input
                     type="number"
                     min="1"
@@ -312,7 +312,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
 
             {/* Profile & comp */}
             <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Remuneracao e perfil</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Remuneração e perfil</p>
               <div className="space-y-5">
                 <div className="flex items-center gap-3 rounded-lg border p-4">
                   <Checkbox
@@ -322,17 +322,17 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   />
                   <div>
                     <Label htmlFor="isFirstInRole" className="font-medium cursor-pointer">
-                      Primeira contratacao externa para este cargo
+                      Primeira contratação externa para este cargo
                     </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Selecione se voce foi o primeiro executivo contratado do mercado para esta posicao
+                      Selecione se você foi o primeiro executivo contratado do mercado para esta posição
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
-                    <Label>Ano da Contratacao</Label>
+                    <Label>Ano da Contratação</Label>
                     <Input
                       type="number"
                       min="2000"
@@ -345,7 +345,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Sua experiencia</Label>
+                    <Label>Sua experiência</Label>
                     <Select
                       value={formData.yearsExperience || ""}
                       onValueChange={(v) => update("yearsExperience", v || undefined)}
@@ -358,7 +358,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Salario Mensal (bruto)</Label>
+                    <Label>Salário Mensal (bruto)</Label>
                     <Select
                       value={formData.cashCompRange || ""}
                       onValueChange={(v) => update("cashCompRange", v || undefined)}
@@ -389,7 +389,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                         if (!v) update("annualBonusRange", undefined);
                       }}
                     />
-                    <Label htmlFor="hasAnnualBonus" className="font-medium cursor-pointer text-sm">Bonus anual</Label>
+                    <Label htmlFor="hasAnnualBonus" className="font-medium cursor-pointer text-sm">Bônus anual</Label>
                   </div>
                   {formData.hasAnnualBonus && (
                     <Select value={formData.annualBonusRange || ""} onValueChange={(v) => update("annualBonusRange", v || undefined)}>
@@ -411,7 +411,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                         if (!v) update("commissionRange", undefined);
                       }}
                     />
-                    <Label htmlFor="hasCommission" className="font-medium cursor-pointer text-sm">Comissoes</Label>
+                    <Label htmlFor="hasCommission" className="font-medium cursor-pointer text-sm">Comissões</Label>
                   </div>
                   {formData.hasCommission && (
                     <Select value={formData.commissionRange || ""} onValueChange={(v) => update("commissionRange", v || undefined)}>
@@ -433,7 +433,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                         if (!v) update("retentionRange", undefined);
                       }}
                     />
-                    <Label htmlFor="hasRetentionPlan" className="font-medium cursor-pointer text-sm">Plano de retencao</Label>
+                    <Label htmlFor="hasRetentionPlan" className="font-medium cursor-pointer text-sm">Plano de retenção</Label>
                   </div>
                   {formData.hasRetentionPlan && (
                     <Select value={formData.retentionRange || ""} onValueChange={(v) => update("retentionRange", v || undefined)}>
@@ -478,7 +478,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
           <CardHeader>
             <CardTitle className="text-lg">Confirmar dados</CardTitle>
             <CardDescription>
-              Seus dados sao anonimizados e agregados. Benchmarks aparecem quando 10+ executivos contribuem no seu segmento.
+              Seus dados são anonimizados e agregados. Benchmarks aparecem quando 10+ executivos contribuem no seu segmento.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -487,10 +487,10 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Empresa</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <SummaryItem label="Estagio" value={formData.stage} />
+                  <SummaryItem label="Estágio" value={formData.stage} />
                   <SummaryItem label="Modelo" value={formData.businessModel} />
                   <SummaryItem label="Setor" value={formData.sector} />
-                  <SummaryItem label="Funcionarios" value={formData.headcountRange} />
+                  <SummaryItem label="Funcionários" value={formData.headcountRange} />
                 </div>
               </div>
 
@@ -506,7 +506,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <SummaryItem label="Vesting" value={formData.vestingTotalMonths != null ? `${formData.vestingTotalMonths} meses` : undefined} />
                   <SummaryItem label="Cliff" value={formData.cliffMonths != null ? `${formData.cliffMonths} meses` : undefined} />
                   <SummaryItem label="Cronograma" value={formData.vestingSchedule} />
-                  <SummaryItem label="Primeiro no cargo" value={formData.isFirstInRole ? "Sim" : "Nao"} />
+                  <SummaryItem label="Primeiro no cargo" value={formData.isFirstInRole ? "Sim" : "Não"} />
                 </div>
               </div>
 
@@ -516,10 +516,10 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <div>
                     <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneracao</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <SummaryItem label="Salario" value={formData.cashCompRange} />
-                      {formData.hasAnnualBonus && <SummaryItem label="Bonus" value={formData.annualBonusRange} />}
-                      {formData.hasCommission && <SummaryItem label="Comissao" value={formData.commissionRange} />}
-                      {formData.hasRetentionPlan && <SummaryItem label="Retencao" value={formData.retentionRange} />}
+                      <SummaryItem label="Salário" value={formData.cashCompRange} />
+                      {formData.hasAnnualBonus && <SummaryItem label="Bônus" value={formData.annualBonusRange} />}
+                      {formData.hasCommission && <SummaryItem label="Comissão" value={formData.commissionRange} />}
+                      {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formData.retentionRange} />}
                       {formData.hasSignOn && <SummaryItem label="Sign-on" value={formData.signOnRange} />}
                     </div>
                   </div>
@@ -530,7 +530,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
             <Separator />
 
             <div className="space-y-2">
-              <Label>Email para notificacoes (opcional)</Label>
+              <Label>Email para notificações (opcional)</Label>
               <Input
                 type="email"
                 value={formData.notifyEmail || ""}
@@ -539,7 +539,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 className="h-11"
               />
               <p className="text-xs text-muted-foreground">
-                Receba um aviso quando os benchmarks do seu segmento estiverem disponiveis
+                Receba um aviso quando os benchmarks do seu segmento estiverem disponíveis
               </p>
             </div>
           </CardContent>

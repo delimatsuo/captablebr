@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/submit", label: "Minha Compensacao" },
+  { href: "/submit", label: "Minha Compensação" },
   { href: "/benchmarks", label: "Benchmarks" },
 ];
 

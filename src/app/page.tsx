@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const stats = [
   { value: "100%", label: "Anonimizado" },
   { value: "p25/p50/p75", label: "Percentis" },
-  { value: "IA", label: "Extracao automatica" },
+  { value: "IA", label: "Extração automática" },
 ];
 
 const steps = [
@@ -13,16 +13,16 @@ const steps = [
     number: "01",
     title: "Descreva sua empresa",
     description:
-      "Informe estagio, setor e modelo de negocio. Usamos apenas para segmentar — nenhuma empresa e identificada.",
+      "Informe estágio, setor e modelo de negócio. Usamos apenas para segmentar — nenhuma empresa é identificada.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
     ),
   },
   {
     number: "02",
-    title: "Compartilhe sua compensacao",
+    title: "Compartilhe sua compensação",
     description:
-      "Informe seu pacote de equity ou faca upload do contrato. Nossa IA extrai os dados automaticamente.",
+      "Informe seu pacote de equity ou faça upload do contrato. Nossa IA extrai os dados automaticamente.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
     ),
@@ -31,7 +31,7 @@ const steps = [
     number: "03",
     title: "Acesse benchmarks do mercado",
     description:
-      "Visualize percentis p25/p50/p75 de equity por cargo, segmentado por estagio, setor e modelo.",
+      "Visualize percentis p25/p50/p75 de equity por cargo, segmentado por estágio, setor e modelo.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
     ),
@@ -43,10 +43,10 @@ const roles = [
 ];
 
 const trustItems = [
-  { title: "Voce so compartilha seus proprios dados", desc: "Nenhum dado de terceiros e solicitado." },
-  { title: "Nenhum executivo ou empresa e identificado", desc: "Anonimizacao total nos benchmarks." },
-  { title: "Minimo de 10 executivos por segmento", desc: "Benchmarks so com dados suficientes." },
-  { title: "Documentos efemeros", desc: "Deletados apos extracao por IA." },
+  { title: "Você só compartilha seus próprios dados", desc: "Nenhum dado de terceiros é solicitado." },
+  { title: "Nenhum executivo ou empresa é identificado", desc: "Anonimização total nos benchmarks." },
+  { title: "Mínimo de 10 executivos por segmento", desc: "Benchmarks só com dados suficientes." },
+  { title: "Documentos efêmeros", desc: "Deletados após extração por IA." },
 ];
 
 export default function HomePage() {
@@ -80,12 +80,12 @@ export default function HomePage() {
               Plataforma para executivos de startups brasileiras
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-6">
-              Sua compensacao em equity esta{" "}
+              Sua compensação em equity esta{" "}
               <span className="text-primary">competitiva?</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
               Benchmarks anonimizados reportados por executivos.
-              Compartilhe sua compensacao, veja a do mercado.
+              Compartilhe sua compensação, veja a do mercado.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/request-access">
@@ -130,7 +130,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold tracking-tight">
-              Tres passos para benchmarks de equity
+              Três passos para benchmarks de equity
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -177,10 +177,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center rounded-3xl bg-zinc-900 p-12 sm:p-16 shadow-2xl">
             <h2 className="text-3xl font-semibold tracking-tight text-white mb-4">
-              Pronto para comparar sua compensacao?
+              Pronto para comparar sua compensação?
             </h2>
             <p className="text-zinc-400 text-lg mb-8">
-              Junte-se a executivos que ja comparam sua compensacao no CaptableBR.
+              Junte-se a executivos que já comparam sua compensação no CaptableBR.
             </p>
             <Link href="/request-access">
               <Button

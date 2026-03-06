@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     await submitAccessRequest(body);
     return NextResponse.json({ status: "ok" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro ao enviar solicitacao";
+    const message = error instanceof Error ? error.message : "Erro ao enviar solicitação";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
