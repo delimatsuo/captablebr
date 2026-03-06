@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 const stats = [
@@ -54,12 +55,10 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">C</span>
-            </div>
-            <span className="text-lg font-bold tracking-tight">CaptableBR</span>
-          </div>
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo-icon.svg" alt="" width={32} height={32} className="rounded-lg" />
+            <Image src="/logo.svg" alt="CaptableBR" width={120} height={24} className="h-6 w-auto" priority />
+          </Link>
           <div className="flex items-center gap-3">
             <Link href="/login">
               <Button variant="ghost" size="sm">Entrar</Button>
@@ -201,9 +200,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xs">C</span>
-              </div>
+              <Image src="/logo-icon.svg" alt="" width={24} height={24} className="rounded-md" />
               <span className="text-sm font-semibold">CaptableBR</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">

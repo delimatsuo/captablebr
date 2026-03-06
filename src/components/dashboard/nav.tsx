@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -33,10 +34,8 @@ export function DashboardNav() {
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/benchmarks" className="flex items-center gap-2 py-3">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">C</span>
-            </div>
+          <Link href="/benchmarks" className="flex items-center gap-2.5 py-3">
+            <Image src="/logo-icon.svg" alt="" width={28} height={28} className="rounded-lg" />
             <span className="text-base font-bold tracking-tight hidden sm:inline">
               CaptableBR
             </span>

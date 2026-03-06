@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "CaptableBR - Benchmarks de Equity para Startups Brasileiras",
   description:
     "Dados de benchmarking de equity para compensacao executiva em startups brasileiras. Descubra o percentual de equity padrao para cada cargo no seu estagio.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
