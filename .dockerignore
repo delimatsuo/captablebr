@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+.env*
+*.md
+tests
+.claude
+.playwright-mcp
+.DS_Store
+*.png

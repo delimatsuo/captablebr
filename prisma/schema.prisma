@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  status    String   @default("pending") // pending, accepted
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("invitations")
+}
+
+model AccessRequest {
+  id        String   @id @default(uuid())
+  email     String
+  name      String
+  message   String
+  status    String   @default("pending") // pending, approved, rejected
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("access_requests")
+}
+
+model Company {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique @map("user_id")
+  companyHash            String   @unique @map("company_hash")
+  stage                  String
+  businessModel          String   @map("business_model")
+  sector                 String
+  subSector              String?  @map("sub_sector")
+  headcountRange         String   @map("headcount_range")
+  lastValuationRange     String?  @map("last_valuation_range")
+  totalFundingRange      String?  @map("total_funding_range")
+  totalSharesOutstanding Int?     @map("total_shares_outstanding")
+  city                   String?
+  yearFounded            Int?     @map("year_founded")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  grants Grant[]
+
+  @@map("companies")
+}
+
+model Grant {
+  id                 String   @id @default(uuid())
+  companyId          String   @map("company_id")
+  executiveLabel     String?  @map("executive_label")
+  role               String
+  instrumentType     String   @map("instrument_type")
+  equityUnit         String   @default("percentage") @map("equity_unit")
+  equityPercentage   Decimal? @map("equity_percentage") @db.Decimal(10, 6)
+  sharesGranted      Int?     @map("shares_granted")
+  vestingTotalMonths Int      @map("vesting_total_months")
+  cliffMonths        Int      @map("cliff_months")
+  vestingSchedule    String   @map("vesting_schedule")
+  grantType          String   @map("grant_type")
+  isFirstInRole      Boolean  @map("is_first_in_role")
+  hireYear           Int?     @map("hire_year")
+  yearsExperience    String?  @map("years_experience")
+  cashCompRange      String?  @map("cash_comp_range")
+  hasAnnualBonus     Boolean? @map("has_annual_bonus")
+  annualBonusRange   String?  @map("annual_bonus_range")
+  hasCommission      Boolean? @map("has_commission")
+  commissionRange    String?  @map("commission_range")
+  hasRetentionPlan   Boolean? @map("has_retention_plan")
+  retentionRange     String?  @map("retention_range")
+  hasSignOn          Boolean? @map("has_sign_on")
+  signOnRange        String?  @map("sign_on_range")
+  sourceDocumentUrl  String?  @map("source_document_url")
+  extractedByAi      Boolean  @default(false) @map("extracted_by_ai")
+  confirmedByUser    Boolean  @default(false) @map("confirmed_by_user")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("grants")
+}
