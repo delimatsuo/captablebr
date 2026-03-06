@@ -3,7 +3,6 @@ import { Storage } from "@google-cloud/storage";
 import { NextRequest, NextResponse } from "next/server";
 
 const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const SIGNED_URL_TTL = 15 * 60 * 1000; // 15 minutes
 
 export async function POST(request: NextRequest) {

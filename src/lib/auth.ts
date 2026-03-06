@@ -4,10 +4,10 @@ import { prisma } from "./db";
 const DEV_MODE = process.env.NODE_ENV === "development" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 const DEV_USER_UID = "dev-user-001";
 
-function getFirebaseAdmin() {
-  // Lazy import to avoid crashes when Firebase isn't configured
-  const { initializeApp, getApps, cert } = require("firebase-admin/app") as typeof import("firebase-admin/app");
-  const { getAuth } = require("firebase-admin/auth") as typeof import("firebase-admin/auth");
+async function getFirebaseAdmin() {
+  // Dynamic import to avoid crashes when Firebase isn't configured
+  const { initializeApp, getApps, cert } = await import("firebase-admin/app");
+  const { getAuth } = await import("firebase-admin/auth");
 
   let app;
   if (getApps().length > 0) {
@@ -33,7 +33,7 @@ export async function verifySession(): Promise<{ uid: string } | null> {
   }
 
   try {
-    const adminAuth = getFirebaseAdmin();
+    const adminAuth = await getFirebaseAdmin();
     const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
     return { uid: decoded.uid };
   } catch {
@@ -50,7 +50,7 @@ export async function verifyAndAuthorize(idToken: string): Promise<{ uid: string
     return { uid: idToken, email: "dev@captablebr.com" };
   }
 
-  const adminAuth = getFirebaseAdmin();
+  const adminAuth = await getFirebaseAdmin();
   const decoded = await adminAuth.verifyIdToken(idToken);
   const email = decoded.email;
 
@@ -86,7 +86,7 @@ export async function createSessionCookie(idToken: string): Promise<string> {
     return idToken;
   }
 
-  const adminAuth = getFirebaseAdmin();
+  const adminAuth = await getFirebaseAdmin();
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
   return adminAuth.createSessionCookie(idToken, { expiresIn });
 }
