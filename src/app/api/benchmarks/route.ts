@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Parametro 'role' obrigatorio" }, { status: 400 });
   }
 
-  const stage = searchParams.get("stage") || submission.stage;
-  const businessModel = searchParams.get("businessModel") || submission.businessModel;
-  const sector = searchParams.get("sector") || submission.sector;
+  const stage = searchParams.get("stage") || undefined;
+  const businessModel = searchParams.get("businessModel") || undefined;
+  const sector = searchParams.get("sector") || undefined;
 
   const result = await getBenchmarks(role, stage, businessModel, sector);
 

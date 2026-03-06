@@ -192,7 +192,7 @@ export function InstrumentDistributionChart({ data }: Props) {
               dominantBaseline="central"
               className="fill-muted-foreground text-xs"
             >
-              grants
+              registros
             </text>
             <Tooltip
               formatter={(value) => [`${value}%`, ""]}
@@ -225,7 +225,7 @@ export function SummaryCards({ data }: Props) {
     {
       label: "Amostra",
       value: data.sampleSize > 0 ? String(data.sampleSize) : "N >= 5",
-      sub: data.sampleSize > 0 ? "empresas" : "dados suficientes",
+      sub: data.sampleSize > 0 ? "executivos" : "dados suficientes",
     },
   ];
 

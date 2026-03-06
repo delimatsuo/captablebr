@@ -33,19 +33,20 @@ export async function upsertSubmission(formData: unknown) {
   const session = await requireAuth();
   const data = submissionSchema.parse(formData);
 
-  // Archive existing active submission
-  await prisma.submission.updateMany({
-    where: { userId: session.uid, status: "active" },
-    data: { status: "archived" },
-  });
+  return prisma.$transaction(async (tx) => {
+    await tx.submission.updateMany({
+      where: { userId: session.uid, status: "active" },
+      data: { status: "archived" },
+    });
 
-  return prisma.submission.create({
-    data: {
-      ...data,
-      notifyEmail: data.notifyEmail || null,
-      userId: session.uid,
-      confirmedByUser: true,
-    },
+    return tx.submission.create({
+      data: {
+        ...data,
+        notifyEmail: data.notifyEmail || null,
+        userId: session.uid,
+        confirmedByUser: true,
+      },
+    });
   });
 }
 
@@ -56,33 +57,32 @@ export async function upsertSubmissionFromAi(
   const session = await requireAuth();
   const data = submissionSchema.parse(extractedData);
 
-  // Archive existing active submission
-  await prisma.submission.updateMany({
-    where: { userId: session.uid, status: "active" },
-    data: { status: "archived" },
-  });
+  return prisma.$transaction(async (tx) => {
+    await tx.submission.updateMany({
+      where: { userId: session.uid, status: "active" },
+      data: { status: "archived" },
+    });
 
-  return prisma.submission.create({
-    data: {
-      ...data,
-      notifyEmail: data.notifyEmail || null,
-      userId: session.uid,
-      sourceDocumentUrl,
-      extractedByAi: true,
-      confirmedByUser: false,
-    },
+    return tx.submission.create({
+      data: {
+        ...data,
+        notifyEmail: data.notifyEmail || null,
+        userId: session.uid,
+        sourceDocumentUrl,
+        extractedByAi: true,
+        confirmedByUser: false,
+      },
+    });
   });
 }
 
 export async function deleteSubmission(submissionId: string) {
   const session = await requireAuth();
 
-  const submission = await prisma.submission.findFirst({
+  const { count } = await prisma.submission.deleteMany({
     where: { id: submissionId, userId: session.uid },
   });
-  if (!submission) throw new Error("Registro nao encontrado.");
-
-  return prisma.submission.delete({ where: { id: submissionId } });
+  if (count === 0) throw new Error("Registro nao encontrado.");
 }
 
 export async function hasSubmission(): Promise<boolean> {
