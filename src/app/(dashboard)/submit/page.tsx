@@ -2,37 +2,54 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GrantForm } from "@/components/forms/grant-form";
+import { SubmissionForm } from "@/components/forms/submission-form";
 import { DocumentUpload } from "@/components/forms/document-upload";
-import type { GrantFormData } from "@/lib/validations";
+import type { SubmissionFormData } from "@/lib/validations";
 
-export default function NewGrantPage() {
-  const [extractedData, setExtractedData] = useState<Partial<GrantFormData> | null>(null);
+export default function SubmitPage() {
+  const [extractedData, setExtractedData] = useState<Partial<SubmissionFormData> | null>(null);
   const [sourceDocumentUrl, setSourceDocumentUrl] = useState<string | undefined>();
-  const [hasTotalShares, setHasTotalShares] = useState(false);
+  const [existingData, setExistingData] = useState<Partial<SubmissionFormData> | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/company-info")
-      .then((r) => r.json())
-      .then((data) => setHasTotalShares(!!data.totalSharesOutstanding))
-      .catch(() => {});
+    fetch("/api/submission")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setExistingData(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
 
-  function handleExtracted(data: Partial<GrantFormData>, objectName: string) {
+  function handleExtracted(data: Partial<SubmissionFormData>, objectName: string) {
     setExtractedData(data);
     setSourceDocumentUrl(objectName);
+  }
+
+  if (!loaded) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <div className="h-10 w-48 bg-muted rounded animate-pulse mb-8" />
+        <div className="h-96 bg-muted/50 rounded-xl animate-pulse" />
+      </div>
+    );
   }
 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Adicionar Executivo</h1>
+          <h1 className="text-2xl font-bold">
+            {existingData ? "Editar minha compensacao" : "Minha compensacao"}
+          </h1>
           <p className="text-muted-foreground text-sm">
-            Informe o equity total deste executivo (soma de todos os grants)
+            {existingData
+              ? "Atualize seus dados de compensacao. Os dados anteriores serao arquivados."
+              : "Compartilhe seus dados de compensacao para acessar benchmarks do mercado."}
           </p>
         </div>
       </div>
@@ -52,17 +69,16 @@ export default function NewGrantPage() {
         <TabsContent value="upload" className="space-y-6">
           <DocumentUpload onExtracted={handleExtracted} />
           {extractedData && (
-            <GrantForm
-              initialData={extractedData}
+            <SubmissionForm
+              initialData={{ ...existingData, ...extractedData }}
               sourceDocumentUrl={sourceDocumentUrl}
               isAiExtracted
-              hasTotalShares={hasTotalShares}
             />
           )}
         </TabsContent>
 
         <TabsContent value="manual">
-          <GrantForm hasTotalShares={hasTotalShares} />
+          <SubmissionForm initialData={existingData} />
         </TabsContent>
       </Tabs>
     </div>

@@ -13,16 +13,6 @@ export type Sector = (typeof SECTORS)[number];
 export const HEADCOUNT_RANGES = ["1-10", "11-50", "51-150", "151-500", "500+"] as const;
 export type HeadcountRange = (typeof HEADCOUNT_RANGES)[number];
 
-export const VALUATION_RANGES = [
-  "Ate R$ 5M", "R$ 5M - R$ 20M", "R$ 20M - R$ 50M",
-  "R$ 50M - R$ 200M", "R$ 200M - R$ 500M", "R$ 500M+",
-] as const;
-
-export const FUNDING_RANGES = [
-  "Ate R$ 1M", "R$ 1M - R$ 5M", "R$ 5M - R$ 20M",
-  "R$ 20M - R$ 50M", "R$ 50M - R$ 100M", "R$ 100M+",
-] as const;
-
 export const ROLES = [
   "CEO", "COO", "CFO", "CTO", "CMO", "CRO/VP Sales",
   "CPO/VP Product", "CHRO/VP People", "VP Engineering",
@@ -51,9 +41,6 @@ export const CASH_COMP_RANGES = [
   "Ate R$ 15k", "R$ 15k - R$ 25k", "R$ 25k - R$ 40k",
   "R$ 40k - R$ 60k", "R$ 60k - R$ 100k", "R$ 100k+",
 ] as const;
-
-export const EQUITY_UNITS = ["percentage", "shares"] as const;
-export type EquityUnit = (typeof EQUITY_UNITS)[number];
 
 export const SHORT_TERM_INCENTIVE_TYPES = [
   "Bonus anual",

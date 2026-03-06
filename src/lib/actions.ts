@@ -1,9 +1,8 @@
 "use server";
 
-import crypto from "crypto";
 import { prisma } from "./db";
 import { verifySession } from "./auth";
-import { companySchema, grantSchema, accessRequestSchema } from "./validations";
+import { submissionSchema, accessRequestSchema } from "./validations";
 import { redirect } from "next/navigation";
 
 async function requireAuth() {
@@ -12,220 +11,87 @@ async function requireAuth() {
   return session;
 }
 
-function generateCompanyHash(): string {
-  return crypto.randomBytes(16).toString("hex");
-}
+// --- Submissions ---
 
-// --- Company ---
-
-export async function getCompany() {
+export async function getSubmission() {
   const session = await requireAuth();
-  return prisma.company.findUnique({ where: { userId: session.uid } });
-}
-
-export async function upsertCompany(formData: unknown) {
-  const session = await requireAuth();
-  const data = companySchema.parse(formData);
-
-  const existing = await prisma.company.findUnique({
-    where: { userId: session.uid },
-  });
-
-  if (existing) {
-    return prisma.company.update({
-      where: { userId: session.uid },
-      data,
-    });
-  }
-
-  return prisma.company.create({
-    data: {
-      ...data,
-      userId: session.uid,
-      companyHash: generateCompanyHash(),
-    },
-  });
-}
-
-// --- Grants ---
-
-export async function getGrants() {
-  const session = await requireAuth();
-  const company = await prisma.company.findUnique({
-    where: { userId: session.uid },
-  });
-  if (!company) return [];
-  return prisma.grant.findMany({
-    where: { companyId: company.id },
+  return prisma.submission.findFirst({
+    where: { userId: session.uid, status: "active" },
     orderBy: { createdAt: "desc" },
   });
 }
 
-export async function createGrant(formData: unknown) {
+export async function getSubmissions() {
   const session = await requireAuth();
-  const company = await prisma.company.findUnique({
+  return prisma.submission.findMany({
     where: { userId: session.uid },
+    orderBy: { createdAt: "desc" },
   });
-  if (!company) throw new Error("Empresa nao encontrada. Crie o perfil primeiro.");
+}
 
-  const data = grantSchema.parse(formData);
+export async function upsertSubmission(formData: unknown) {
+  const session = await requireAuth();
+  const data = submissionSchema.parse(formData);
 
-  // Compute equity percentage from shares if needed
-  let equityPercentage = data.equityPercentage ?? null;
-  if (data.equityUnit === "shares" && data.sharesGranted && company.totalSharesOutstanding) {
-    equityPercentage = (data.sharesGranted / company.totalSharesOutstanding) * 100;
-  }
+  // Archive existing active submission
+  await prisma.submission.updateMany({
+    where: { userId: session.uid, status: "active" },
+    data: { status: "archived" },
+  });
 
-  return prisma.grant.create({
+  return prisma.submission.create({
     data: {
-      executiveLabel: data.executiveLabel,
-      role: data.role,
-      instrumentType: data.instrumentType,
-      equityUnit: data.equityUnit,
-      equityPercentage,
-      sharesGranted: data.sharesGranted,
-      vestingTotalMonths: data.vestingTotalMonths,
-      cliffMonths: data.cliffMonths,
-      vestingSchedule: data.vestingSchedule,
-      grantType: data.grantType,
-      isFirstInRole: data.isFirstInRole,
-      hireYear: data.hireYear,
-      yearsExperience: data.yearsExperience,
-      cashCompRange: data.cashCompRange,
-      hasAnnualBonus: data.hasAnnualBonus,
-      annualBonusRange: data.annualBonusRange,
-      hasCommission: data.hasCommission,
-      commissionRange: data.commissionRange,
-      hasRetentionPlan: data.hasRetentionPlan,
-      retentionRange: data.retentionRange,
-      hasSignOn: data.hasSignOn,
-      signOnRange: data.signOnRange,
-      companyId: company.id,
+      ...data,
+      notifyEmail: data.notifyEmail || null,
+      userId: session.uid,
       confirmedByUser: true,
     },
   });
 }
 
-export async function createGrantFromAi(
+export async function upsertSubmissionFromAi(
   extractedData: unknown,
   sourceDocumentUrl?: string
 ) {
   const session = await requireAuth();
-  const company = await prisma.company.findUnique({
-    where: { userId: session.uid },
+  const data = submissionSchema.parse(extractedData);
+
+  // Archive existing active submission
+  await prisma.submission.updateMany({
+    where: { userId: session.uid, status: "active" },
+    data: { status: "archived" },
   });
-  if (!company) throw new Error("Empresa nao encontrada.");
 
-  const data = grantSchema.parse(extractedData);
-
-  let equityPercentage = data.equityPercentage ?? null;
-  if (data.equityUnit === "shares" && data.sharesGranted && company.totalSharesOutstanding) {
-    equityPercentage = (data.sharesGranted / company.totalSharesOutstanding) * 100;
-  }
-
-  return prisma.grant.create({
+  return prisma.submission.create({
     data: {
-      executiveLabel: data.executiveLabel,
-      role: data.role,
-      instrumentType: data.instrumentType,
-      equityUnit: data.equityUnit,
-      equityPercentage,
-      sharesGranted: data.sharesGranted,
-      vestingTotalMonths: data.vestingTotalMonths,
-      cliffMonths: data.cliffMonths,
-      vestingSchedule: data.vestingSchedule,
-      grantType: data.grantType,
-      isFirstInRole: data.isFirstInRole,
-      hireYear: data.hireYear,
-      yearsExperience: data.yearsExperience,
-      cashCompRange: data.cashCompRange,
-      hasAnnualBonus: data.hasAnnualBonus,
-      annualBonusRange: data.annualBonusRange,
-      hasCommission: data.hasCommission,
-      commissionRange: data.commissionRange,
-      hasRetentionPlan: data.hasRetentionPlan,
-      retentionRange: data.retentionRange,
-      hasSignOn: data.hasSignOn,
-      signOnRange: data.signOnRange,
-      companyId: company.id,
+      ...data,
+      notifyEmail: data.notifyEmail || null,
+      userId: session.uid,
       sourceDocumentUrl,
       extractedByAi: true,
-      confirmedByUser: true,
+      confirmedByUser: false,
     },
   });
 }
 
-export async function updateGrant(grantId: string, formData: unknown) {
+export async function deleteSubmission(submissionId: string) {
   const session = await requireAuth();
-  const company = await prisma.company.findUnique({
-    where: { userId: session.uid },
+
+  const submission = await prisma.submission.findFirst({
+    where: { id: submissionId, userId: session.uid },
   });
-  if (!company) throw new Error("Empresa nao encontrada.");
+  if (!submission) throw new Error("Registro nao encontrado.");
 
-  const grant = await prisma.grant.findFirst({
-    where: { id: grantId, companyId: company.id },
-  });
-  if (!grant) throw new Error("Grant nao encontrado.");
-
-  const data = grantSchema.parse(formData);
-
-  let equityPercentage = data.equityPercentage ?? null;
-  if (data.equityUnit === "shares" && data.sharesGranted && company.totalSharesOutstanding) {
-    equityPercentage = (data.sharesGranted / company.totalSharesOutstanding) * 100;
-  }
-
-  return prisma.grant.update({
-    where: { id: grantId },
-    data: {
-      executiveLabel: data.executiveLabel,
-      role: data.role,
-      instrumentType: data.instrumentType,
-      equityUnit: data.equityUnit,
-      equityPercentage,
-      sharesGranted: data.sharesGranted,
-      vestingTotalMonths: data.vestingTotalMonths,
-      cliffMonths: data.cliffMonths,
-      vestingSchedule: data.vestingSchedule,
-      grantType: data.grantType,
-      isFirstInRole: data.isFirstInRole,
-      hireYear: data.hireYear,
-      yearsExperience: data.yearsExperience,
-      cashCompRange: data.cashCompRange,
-      hasAnnualBonus: data.hasAnnualBonus,
-      annualBonusRange: data.annualBonusRange,
-      hasCommission: data.hasCommission,
-      commissionRange: data.commissionRange,
-      hasRetentionPlan: data.hasRetentionPlan,
-      retentionRange: data.retentionRange,
-      hasSignOn: data.hasSignOn,
-      signOnRange: data.signOnRange,
-    },
-  });
+  return prisma.submission.delete({ where: { id: submissionId } });
 }
 
-export async function deleteGrant(grantId: string) {
-  const session = await requireAuth();
-  const company = await prisma.company.findUnique({
-    where: { userId: session.uid },
-  });
-  if (!company) throw new Error("Empresa nao encontrada.");
-
-  const grant = await prisma.grant.findFirst({
-    where: { id: grantId, companyId: company.id },
-  });
-  if (!grant) throw new Error("Grant nao encontrado.");
-
-  return prisma.grant.delete({ where: { id: grantId } });
-}
-
-export async function hasGrants(): Promise<boolean> {
+export async function hasSubmission(): Promise<boolean> {
   const session = await verifySession();
   if (!session) return false;
-  const company = await prisma.company.findUnique({
-    where: { userId: session.uid },
-    include: { _count: { select: { grants: true } } },
+  const count = await prisma.submission.count({
+    where: { userId: session.uid, status: "active", confirmedByUser: true },
   });
-  return (company?._count.grants ?? 0) > 0;
+  return count > 0;
 }
 
 // --- Access Requests ---

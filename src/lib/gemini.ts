@@ -1,4 +1,6 @@
 import { VertexAI } from "@google-cloud/vertexai";
+import { z } from "zod";
+import { ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES, STAGES, SECTORS } from "./types";
 
 const PROJECT_ID = process.env.GCP_PROJECT_ID || "paynequity";
 const LOCATION = process.env.GCP_LOCATION || "us-central1";
@@ -6,13 +8,15 @@ const LOCATION = process.env.GCP_LOCATION || "us-central1";
 const EXTRACTION_PROMPT = `Voce e um especialista em contratos de equity de startups brasileiras.
 
 Extraia os seguintes campos deste documento:
-- Cargo/titulo do beneficiario
-- Tipo de instrumento de equity (Stock Options, Phantom Stock, RSU, Partnership Quotas (Cotas), SAR, Vesting Shares, Other)
-- Percentual de equity (% do cap table fully diluted)
+- Cargo/titulo do beneficiario (${ROLES.join(", ")})
+- Tipo de instrumento de equity (${INSTRUMENT_TYPES.join(", ")})
+- Percentual de equity (% do cap table fully diluted) — OBRIGATORIO, deve ser um numero > 0
 - Periodo total de vesting (em meses)
 - Periodo de cliff (em meses)
-- Cronograma de vesting (Monthly after cliff, Quarterly after cliff, Annual, Cliff only (all at once), Other)
-- Tipo de grant (New-hire, Ongoing/Refresh, Promotion)
+- Cronograma de vesting (${VESTING_SCHEDULES.join(", ")})
+- Tipo de grant (${GRANT_TYPES.join(", ")})
+- Estagio da empresa se mencionado (${STAGES.join(", ")})
+- Setor da empresa se mencionado (${SECTORS.join(", ")})
 
 IMPORTANTE: NAO inclua nomes de pessoas, CPFs, enderecos ou qualquer dado pessoal na resposta.
 
@@ -25,22 +29,29 @@ Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
   "cliff_months": 0,
   "vesting_schedule": "...",
   "grant_type": "...",
+  "stage": "...",
+  "sector": "...",
   "confidence": 0.0
 }
 
 Se um campo nao puder ser determinado, defina como null.
+O campo equity_percentage DEVE ser um numero positivo se encontrado no documento.
 Inclua um score de confianca (0-1) para a extracao geral.`;
 
-export interface ExtractionResult {
-  role: string | null;
-  instrument_type: string | null;
-  equity_percentage: number | null;
-  vesting_total_months: number | null;
-  cliff_months: number | null;
-  vesting_schedule: string | null;
-  grant_type: string | null;
-  confidence: number;
-}
+const extractionResultSchema = z.object({
+  role: z.string().nullable(),
+  instrument_type: z.string().nullable(),
+  equity_percentage: z.number().positive().nullable(),
+  vesting_total_months: z.number().int().positive().nullable(),
+  cliff_months: z.number().int().min(0).nullable(),
+  vesting_schedule: z.string().nullable(),
+  grant_type: z.string().nullable(),
+  stage: z.string().nullable().optional(),
+  sector: z.string().nullable().optional(),
+  confidence: z.number().min(0).max(1),
+});
+
+export type ExtractionResult = z.infer<typeof extractionResultSchema>;
 
 export async function extractFromDocument(
   fileContent: Buffer,
@@ -71,5 +82,6 @@ export async function extractFromDocument(
   }
 
   const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-  return JSON.parse(cleaned) as ExtractionResult;
+  const parsed = JSON.parse(cleaned);
+  return extractionResultSchema.parse(parsed);
 }

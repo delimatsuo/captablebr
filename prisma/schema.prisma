@@ -27,37 +27,22 @@ model AccessRequest {
   @@map("access_requests")
 }
 
-model Company {
-  id                     String   @id @default(uuid())
-  userId                 String   @unique @map("user_id")
-  companyHash            String   @unique @map("company_hash")
-  stage                  String
-  businessModel          String   @map("business_model")
-  sector                 String
-  subSector              String?  @map("sub_sector")
-  headcountRange         String   @map("headcount_range")
-  lastValuationRange     String?  @map("last_valuation_range")
-  totalFundingRange      String?  @map("total_funding_range")
-  totalSharesOutstanding Int?     @map("total_shares_outstanding")
-  city                   String?
-  yearFounded            Int?     @map("year_founded")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
-
-  grants Grant[]
-
-  @@map("companies")
-}
-
-model Grant {
+model Submission {
   id                 String   @id @default(uuid())
-  companyId          String   @map("company_id")
-  executiveLabel     String?  @map("executive_label")
+  userId             String   @map("user_id")
+  status             String   @default("active") // active, archived
+
+  // Company context (for segmentation, NOT identifying)
+  stage              String
+  businessModel      String   @map("business_model")
+  sector             String
+  subSector          String?  @map("sub_sector")
+  headcountRange     String   @map("headcount_range")
+
+  // Role & equity
   role               String
   instrumentType     String   @map("instrument_type")
-  equityUnit         String   @default("percentage") @map("equity_unit")
-  equityPercentage   Decimal? @map("equity_percentage") @db.Decimal(10, 6)
-  sharesGranted      Int?     @map("shares_granted")
+  equityPercentage   Decimal  @map("equity_percentage") @db.Decimal(10, 6)
   vestingTotalMonths Int      @map("vesting_total_months")
   cliffMonths        Int      @map("cliff_months")
   vestingSchedule    String   @map("vesting_schedule")
@@ -65,6 +50,8 @@ model Grant {
   isFirstInRole      Boolean  @map("is_first_in_role")
   hireYear           Int?     @map("hire_year")
   yearsExperience    String?  @map("years_experience")
+
+  // Cash comp & incentives
   cashCompRange      String?  @map("cash_comp_range")
   hasAnnualBonus     Boolean? @map("has_annual_bonus")
   annualBonusRange   String?  @map("annual_bonus_range")
@@ -74,13 +61,19 @@ model Grant {
   retentionRange     String?  @map("retention_range")
   hasSignOn          Boolean? @map("has_sign_on")
   signOnRange        String?  @map("sign_on_range")
+
+  // AI extraction
   sourceDocumentUrl  String?  @map("source_document_url")
   extractedByAi      Boolean  @default(false) @map("extracted_by_ai")
   confirmedByUser    Boolean  @default(false) @map("confirmed_by_user")
+
+  // Notification
+  notifyEmail        String?  @map("notify_email")
+
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@map("grants")
+  @@index([userId, status])
+  @@index([role, stage, status])
+  @@map("submissions")
 }

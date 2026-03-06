@@ -10,14 +10,13 @@ export async function GET(request: NextRequest) {
   }
 
   // Check give-to-get gate
-  const company = await prisma.company.findUnique({
-    where: { userId: session.uid },
-    include: { _count: { select: { grants: true } } },
+  const submission = await prisma.submission.findFirst({
+    where: { userId: session.uid, status: "active", confirmedByUser: true },
   });
 
-  if (!company || company._count.grants === 0) {
+  if (!submission) {
     return NextResponse.json(
-      { error: "Submeta pelo menos 1 grant para acessar os benchmarks" },
+      { error: "Submeta sua compensacao para acessar os benchmarks" },
       { status: 403 }
     );
   }
@@ -28,9 +27,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Parametro 'role' obrigatorio" }, { status: 400 });
   }
 
-  const stage = searchParams.get("stage") || company.stage;
-  const businessModel = searchParams.get("businessModel") || company.businessModel;
-  const sector = searchParams.get("sector") || company.sector;
+  const stage = searchParams.get("stage") || submission.stage;
+  const businessModel = searchParams.get("businessModel") || submission.businessModel;
+  const sector = searchParams.get("sector") || submission.sector;
 
   const result = await getBenchmarks(role, stage, businessModel, sector);
 

@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import type { GrantFormData } from "@/lib/validations";
+import type { SubmissionFormData } from "@/lib/validations";
 
 interface Props {
-  onExtracted: (data: Partial<GrantFormData>, objectName: string) => void;
+  onExtracted: (data: Partial<SubmissionFormData>, objectName: string) => void;
 }
 
 export function DocumentUpload({ onExtracted }: Props) {
@@ -74,14 +74,16 @@ export function DocumentUpload({ onExtracted }: Props) {
       setProgress(100);
 
       // Map API response to form data
-      const mapped: Partial<GrantFormData> = {};
-      if (extracted.role) mapped.role = extracted.role as GrantFormData["role"];
-      if (extracted.instrument_type) mapped.instrumentType = extracted.instrument_type as GrantFormData["instrumentType"];
+      const mapped: Partial<SubmissionFormData> = {};
+      if (extracted.role) mapped.role = extracted.role as SubmissionFormData["role"];
+      if (extracted.instrument_type) mapped.instrumentType = extracted.instrument_type as SubmissionFormData["instrumentType"];
       if (extracted.equity_percentage) mapped.equityPercentage = extracted.equity_percentage;
       if (extracted.vesting_total_months) mapped.vestingTotalMonths = extracted.vesting_total_months;
       if (extracted.cliff_months != null) mapped.cliffMonths = extracted.cliff_months;
-      if (extracted.vesting_schedule) mapped.vestingSchedule = extracted.vesting_schedule as GrantFormData["vestingSchedule"];
-      if (extracted.grant_type) mapped.grantType = extracted.grant_type as GrantFormData["grantType"];
+      if (extracted.vesting_schedule) mapped.vestingSchedule = extracted.vesting_schedule as SubmissionFormData["vestingSchedule"];
+      if (extracted.grant_type) mapped.grantType = extracted.grant_type as SubmissionFormData["grantType"];
+      if (extracted.stage) mapped.stage = extracted.stage as SubmissionFormData["stage"];
+      if (extracted.sector) mapped.sector = extracted.sector as SubmissionFormData["sector"];
 
       onExtracted(mapped, objectName);
       toast.success(`Dados extraidos com confianca de ${Math.round((extracted.confidence || 0) * 100)}%`);

@@ -38,8 +38,8 @@ export default async function AdminPage() {
       {/* Invite new user */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Convidar founder</CardTitle>
-          <CardDescription>Adicione o email do founder para liberar acesso a plataforma</CardDescription>
+          <CardTitle className="text-lg">Convidar executivo</CardTitle>
+          <CardDescription>Adicione o email do executivo para liberar acesso a plataforma</CardDescription>
         </CardHeader>
         <CardContent>
           <InviteForm />
@@ -54,7 +54,7 @@ export default async function AdminPage() {
               Solicitacoes pendentes
               <Badge className="text-xs">{pendingRequests.length}</Badge>
             </CardTitle>
-            <CardDescription>Founders que solicitaram acesso a plataforma</CardDescription>
+            <CardDescription>Executivos que solicitaram acesso a plataforma</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {pendingRequests.map((req) => (
