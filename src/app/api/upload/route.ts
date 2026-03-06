@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
 
   const storage = new Storage();
   const bucket = storage.bucket(bucketName);
-  const objectName = `uploads/${session.uid}/${Date.now()}-${fileName}`;
+  const safeName = (fileName || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+  const objectName = `uploads/${session.uid}/${Date.now()}-${safeName}`;
   const file = bucket.file(objectName);
 
   const [signedUrl] = await file.getSignedUrl({

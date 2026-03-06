@@ -1,4 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
+import { ROLES, STAGES, BUSINESS_MODELS, SECTORS } from "./types";
+
 export interface BenchmarkResult {
   segmentLabel: string;
   sampleSize: number;
@@ -17,16 +20,20 @@ interface SegmentFilter {
   sector?: string;
 }
 
-const MIN_COMPANIES_PERCENTILES = 10;
-const MIN_COMPANIES_AVERAGES = 7;
-const MIN_COMPANIES_DISPLAY = 5;
+const MIN_SUBMISSIONS_PERCENTILES = 10;
+const MIN_SUBMISSIONS_AVERAGES = 7;
+const MIN_SUBMISSIONS_DISPLAY = 5;
 
-function buildWhereClause(filter: SegmentFilter): string {
-  const conditions = [`g.role = '${filter.role}'`, "g.confirmed_by_user = true"];
-  if (filter.stage) conditions.push(`c.stage = '${filter.stage}'`);
-  if (filter.businessModel) conditions.push(`c.business_model = '${filter.businessModel}'`);
-  if (filter.sector) conditions.push(`c.sector = '${filter.sector}'`);
-  return conditions.join(" AND ");
+const VALID_ROLES = ROLES as readonly string[];
+const VALID_STAGES = STAGES as readonly string[];
+const VALID_BUSINESS_MODELS = BUSINESS_MODELS as readonly string[];
+const VALID_SECTORS = SECTORS as readonly string[];
+
+function validateFilter(filter: SegmentFilter): void {
+  if (!VALID_ROLES.includes(filter.role)) throw new Error("Invalid role");
+  if (filter.stage && !VALID_STAGES.includes(filter.stage)) throw new Error("Invalid stage");
+  if (filter.businessModel && !VALID_BUSINESS_MODELS.includes(filter.businessModel)) throw new Error("Invalid businessModel");
+  if (filter.sector && !VALID_SECTORS.includes(filter.sector)) throw new Error("Invalid sector");
 }
 
 function buildSegmentLabel(filter: SegmentFilter): string {
@@ -37,13 +44,26 @@ function buildSegmentLabel(filter: SegmentFilter): string {
   return parts.join(" / ");
 }
 
-async function getDistinctCompanyCount(filter: SegmentFilter): Promise<number> {
-  const where = buildWhereClause(filter);
-  const result = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
-    `SELECT COUNT(DISTINCT g.company_id) as count
-     FROM grants g JOIN companies c ON g.company_id = c.id
-     WHERE ${where}`
-  );
+async function getSubmissionCount(filter: SegmentFilter): Promise<number> {
+  validateFilter(filter);
+
+  let query = Prisma.sql`
+    SELECT COUNT(*) as count FROM submissions s
+    WHERE s.role = ${filter.role}
+      AND s.status = 'active'
+      AND s.confirmed_by_user = true`;
+
+  if (filter.stage) {
+    query = Prisma.sql`${query} AND s.stage = ${filter.stage}`;
+  }
+  if (filter.businessModel) {
+    query = Prisma.sql`${query} AND s.business_model = ${filter.businessModel}`;
+  }
+  if (filter.sector) {
+    query = Prisma.sql`${query} AND s.sector = ${filter.sector}`;
+  }
+
+  const result = await prisma.$queryRaw<[{ count: bigint }]>(query);
   return Number(result[0].count);
 }
 
@@ -67,6 +87,20 @@ function findBestSegment(
   return levels;
 }
 
+function buildBaseWhere(filter: SegmentFilter): Prisma.Sql {
+  let where = Prisma.sql`s.role = ${filter.role} AND s.status = 'active' AND s.confirmed_by_user = true`;
+  if (filter.stage) {
+    where = Prisma.sql`${where} AND s.stage = ${filter.stage}`;
+  }
+  if (filter.businessModel) {
+    where = Prisma.sql`${where} AND s.business_model = ${filter.businessModel}`;
+  }
+  if (filter.sector) {
+    where = Prisma.sql`${where} AND s.sector = ${filter.sector}`;
+  }
+  return where;
+}
+
 export async function getBenchmarks(
   role: string,
   stage?: string,
@@ -76,36 +110,36 @@ export async function getBenchmarks(
   const segments = findBestSegment(role, stage, businessModel, sector);
 
   let bestFilter: SegmentFilter | null = null;
-  let companyCount = 0;
+  let submissionCount = 0;
 
   for (const filter of segments) {
-    const count = await getDistinctCompanyCount(filter);
-    if (count >= MIN_COMPANIES_DISPLAY) {
+    const count = await getSubmissionCount(filter);
+    if (count >= MIN_SUBMISSIONS_DISPLAY) {
       bestFilter = filter;
-      companyCount = count;
+      submissionCount = count;
       break;
     }
   }
 
   if (!bestFilter) return null;
 
-  const where = buildWhereClause(bestFilter);
+  const where = buildBaseWhere(bestFilter);
 
   let equityPercentiles = null;
   let vestingPercentiles = null;
 
-  if (companyCount >= MIN_COMPANIES_PERCENTILES) {
-    const equityResult = await prisma.$queryRawUnsafe<
+  if (submissionCount >= MIN_SUBMISSIONS_PERCENTILES) {
+    const equityResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
-    >(
-      `SELECT
-        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY g.equity_percentage)::numeric, 3) as p25,
-        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY g.equity_percentage)::numeric, 3) as p50,
-        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY g.equity_percentage)::numeric, 3) as p75,
-        ROUND(AVG(g.equity_percentage)::numeric, 3) as avg
-       FROM grants g JOIN companies c ON g.company_id = c.id
-       WHERE ${where}`
-    );
+    >(Prisma.sql`
+      SELECT
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.equity_percentage)::numeric, 3) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.equity_percentage)::numeric, 3) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.equity_percentage)::numeric, 3) as p75,
+        ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
+      FROM submissions s
+      WHERE ${where}
+    `);
     equityPercentiles = {
       p25: Number(equityResult[0].p25),
       p50: Number(equityResult[0].p50),
@@ -113,39 +147,39 @@ export async function getBenchmarks(
       avg: Number(equityResult[0].avg),
     };
 
-    const vestingResult = await prisma.$queryRawUnsafe<
+    const vestingResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
-    >(
-      `SELECT
-        percentile_cont(0.25) WITHIN GROUP (ORDER BY g.vesting_total_months) as p25,
-        percentile_cont(0.50) WITHIN GROUP (ORDER BY g.vesting_total_months) as p50,
-        percentile_cont(0.75) WITHIN GROUP (ORDER BY g.vesting_total_months) as p75,
-        ROUND(AVG(g.vesting_total_months)::numeric, 1) as avg
-       FROM grants g JOIN companies c ON g.company_id = c.id
-       WHERE ${where}`
-    );
+    >(Prisma.sql`
+      SELECT
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY s.vesting_total_months) as p25,
+        percentile_cont(0.50) WITHIN GROUP (ORDER BY s.vesting_total_months) as p50,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY s.vesting_total_months) as p75,
+        ROUND(AVG(s.vesting_total_months)::numeric, 1) as avg
+      FROM submissions s
+      WHERE ${where}
+    `);
     vestingPercentiles = {
       p25: Number(vestingResult[0].p25),
       p50: Number(vestingResult[0].p50),
       p75: Number(vestingResult[0].p75),
       avg: Number(vestingResult[0].avg),
     };
-  } else if (companyCount >= MIN_COMPANIES_AVERAGES) {
-    const equityResult = await prisma.$queryRawUnsafe<[{ avg: number }]>(
-      `SELECT ROUND(AVG(g.equity_percentage)::numeric, 3) as avg
-       FROM grants g JOIN companies c ON g.company_id = c.id
-       WHERE ${where}`
-    );
+  } else if (submissionCount >= MIN_SUBMISSIONS_AVERAGES) {
+    const equityResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
+      SELECT ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
+      FROM submissions s
+      WHERE ${where}
+    `);
     equityPercentiles = {
       p25: 0, p50: 0, p75: 0,
       avg: Number(equityResult[0].avg),
     };
 
-    const vestingResult = await prisma.$queryRawUnsafe<[{ avg: number }]>(
-      `SELECT ROUND(AVG(g.vesting_total_months)::numeric, 1) as avg
-       FROM grants g JOIN companies c ON g.company_id = c.id
-       WHERE ${where}`
-    );
+    const vestingResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
+      SELECT ROUND(AVG(s.vesting_total_months)::numeric, 1) as avg
+      FROM submissions s
+      WHERE ${where}
+    `);
     vestingPercentiles = {
       p25: 0, p50: 0, p75: 0,
       avg: Number(vestingResult[0].avg),
@@ -153,14 +187,14 @@ export async function getBenchmarks(
   }
 
   // Instrument distribution
-  const instrumentRows = await prisma.$queryRawUnsafe<
+  const instrumentRows = await prisma.$queryRaw<
     { instrument_type: string; count: bigint }[]
-  >(
-    `SELECT g.instrument_type, COUNT(*) as count
-     FROM grants g JOIN companies c ON g.company_id = c.id
-     WHERE ${where}
-     GROUP BY g.instrument_type`
-  );
+  >(Prisma.sql`
+    SELECT s.instrument_type, COUNT(*) as count
+    FROM submissions s
+    WHERE ${where}
+    GROUP BY s.instrument_type
+  `);
   const totalInstruments = instrumentRows.reduce((sum, r) => sum + Number(r.count), 0);
   const instrumentDistribution: Record<string, number> = {};
   for (const row of instrumentRows) {
@@ -168,14 +202,14 @@ export async function getBenchmarks(
   }
 
   // Grant type distribution
-  const grantTypeRows = await prisma.$queryRawUnsafe<
+  const grantTypeRows = await prisma.$queryRaw<
     { grant_type: string; count: bigint }[]
-  >(
-    `SELECT g.grant_type, COUNT(*) as count
-     FROM grants g JOIN companies c ON g.company_id = c.id
-     WHERE ${where}
-     GROUP BY g.grant_type`
-  );
+  >(Prisma.sql`
+    SELECT s.grant_type, COUNT(*) as count
+    FROM submissions s
+    WHERE ${where}
+    GROUP BY s.grant_type
+  `);
   const totalGrants = grantTypeRows.reduce((sum, r) => sum + Number(r.count), 0);
   const grantTypeDistribution: Record<string, number> = {};
   for (const row of grantTypeRows) {
@@ -183,27 +217,27 @@ export async function getBenchmarks(
   }
 
   // Most common cliff
-  const cliffResult = await prisma.$queryRawUnsafe<[{ cliff_months: number }]>(
-    `SELECT g.cliff_months
-     FROM grants g JOIN companies c ON g.company_id = c.id
-     WHERE ${where}
-     GROUP BY g.cliff_months
-     ORDER BY COUNT(*) DESC
-     LIMIT 1`
-  );
+  const cliffResult = await prisma.$queryRaw<[{ cliff_months: number }]>(Prisma.sql`
+    SELECT s.cliff_months
+    FROM submissions s
+    WHERE ${where}
+    GROUP BY s.cliff_months
+    ORDER BY COUNT(*) DESC
+    LIMIT 1
+  `);
   const commonCliff = cliffResult.length > 0 ? Number(cliffResult[0].cliff_months) : null;
 
   // First-in-role premium
   let firstInRolePremium = null;
-  const premiumResult = await prisma.$queryRawUnsafe<
+  const premiumResult = await prisma.$queryRaw<
     { is_first: boolean; avg: number }[]
-  >(
-    `SELECT g.is_first_in_role as is_first, ROUND(AVG(g.equity_percentage)::numeric, 3) as avg
-     FROM grants g JOIN companies c ON g.company_id = c.id
-     WHERE ${where}
-     GROUP BY g.is_first_in_role
-     HAVING COUNT(DISTINCT g.company_id) >= ${MIN_COMPANIES_DISPLAY}`
-  );
+  >(Prisma.sql`
+    SELECT s.is_first_in_role as is_first, ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
+    FROM submissions s
+    WHERE ${where}
+    GROUP BY s.is_first_in_role
+    HAVING COUNT(*) >= ${MIN_SUBMISSIONS_DISPLAY}
+  `);
   if (premiumResult.length === 2) {
     const first = premiumResult.find((r) => r.is_first);
     const notFirst = premiumResult.find((r) => !r.is_first);
@@ -217,7 +251,7 @@ export async function getBenchmarks(
 
   return {
     segmentLabel: buildSegmentLabel(bestFilter),
-    sampleSize: companyCount < 15 ? 0 : companyCount, // hide exact n when < 15
+    sampleSize: submissionCount < 15 ? 0 : submissionCount,
     equityPercentiles,
     vestingPercentiles,
     commonCliff,

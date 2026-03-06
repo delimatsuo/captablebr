@@ -15,6 +15,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "objectName obrigatorio" }, { status: 400 });
   }
 
+  const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+  if (contentType && !ALLOWED_TYPES.includes(contentType)) {
+    return NextResponse.json({ error: "Tipo de arquivo nao permitido" }, { status: 400 });
+  }
+
   // Verify the file belongs to this user
   if (!objectName.startsWith(`uploads/${session.uid}/`)) {
     return NextResponse.json({ error: "Acesso negado" }, { status: 403 });

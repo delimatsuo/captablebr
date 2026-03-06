@@ -21,7 +21,7 @@ export default function LoginPage() {
   async function handleDevLogin() {
     setLoading(true);
     await fetch("/api/auth/dev-login", { method: "POST" });
-    router.push("/onboarding");
+    router.push("/submit");
   }
 
   async function createSession(idToken: string): Promise<boolean> {
@@ -50,7 +50,7 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       const idToken = await result.user.getIdToken();
       const ok = await createSession(idToken);
-      if (ok) router.push("/onboarding");
+      if (ok) router.push("/submit");
     } catch {
       setError("Email ou senha incorretos.");
     } finally {
@@ -65,7 +65,7 @@ export default function LoginPage() {
       const result = await signInWithPopup(getFirebaseAuth(), getGoogleProvider());
       const idToken = await result.user.getIdToken();
       const ok = await createSession(idToken);
-      if (ok) router.push("/onboarding");
+      if (ok) router.push("/submit");
     } catch {
       setError("Falha no login com Google.");
     } finally {
@@ -89,7 +89,7 @@ export default function LoginPage() {
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed">
             Descubra o percentual de equity padrao para cada cargo executivo no
-            seu estagio. Dados anonimizados de founders como voce.
+            seu estagio. Dados anonimizados de executivos como voce.
           </p>
           <div className="mt-12 grid grid-cols-3 gap-6">
             {[

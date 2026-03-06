@@ -35,7 +35,7 @@ export default function BenchmarksPage() {
     try {
       const res = await fetch(`/api/benchmarks?${params}`);
       if (res.status === 403) {
-        router.push("/grants");
+        router.push("/submit");
         return;
       }
       if (res.status === 404) {
@@ -116,7 +116,7 @@ export default function BenchmarksPage() {
             </Badge>
             {data.sampleSize > 0 && (
               <Badge variant="secondary" className="text-xs py-1 px-3">
-                Baseado em {data.sampleSize} empresas
+                Baseado em {data.sampleSize} executivos
               </Badge>
             )}
           </div>
