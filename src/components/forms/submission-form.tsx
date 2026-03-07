@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
   ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
-  EXPERIENCE_RANGES, CASH_COMP_RANGES, INCENTIVE_RANGES,
+  EXPERIENCE_RANGES, CONTRACT_TYPES,
   type InputMode,
 } from "@/lib/types";
 import { submissionSchema, type SubmissionFormData } from "@/lib/validations";
-import { upsertSubmission, upsertSubmissionFromAi } from "@/lib/actions";
+import { upsertSubmission, upsertSubmissionFromAi, deleteMyData } from "@/lib/actions";
 import { EquityInput } from "./equity-input";
+
+const DRAFT_KEY = "captablebr-draft";
+const DRAFT_VERSION = 2; // Increment when schema changes to discard incompatible drafts
+const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface Props {
   initialData?: Partial<SubmissionFormData> | null;
@@ -57,15 +66,67 @@ const VESTING_SCHEDULE_DESCRIPTIONS: Record<string, string> = {
   "Other": "Outro cronograma de vesting",
 };
 
+function formatBRL(value: number | undefined): string {
+  if (value == null) return "—";
+  return `R$ ${value.toLocaleString("pt-BR")}`;
+}
+
 export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [step, setStep] = useState(1);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [formData, setFormData] = useState<Partial<SubmissionFormData>>({
     isFirstInRole: false,
     inputMode: "percentage",
     ...initialData,
   });
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    if (initialData) return; // Don't restore draft if we have server data
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.version !== DRAFT_VERSION || Date.now() - draft.timestamp > DRAFT_MAX_AGE) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      setFormData(draft.formData);
+      setStep(draft.step || 1);
+      setDraftRestored(true);
+    } catch {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  }, [initialData]);
+
+  // Show toast when draft is restored
+  useEffect(() => {
+    if (draftRestored) {
+      toast.info("Rascunho restaurado");
+      setDraftRestored(false);
+    }
+  }, [draftRestored]);
+
+  // Auto-save to localStorage on formData/step change
+  const saveDraft = useCallback(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        version: DRAFT_VERSION,
+        step,
+        formData,
+        timestamp: Date.now(),
+      }));
+    } catch {
+      // localStorage full or unavailable
+    }
+  }, [step, formData]);
+
+  useEffect(() => {
+    saveDraft();
+  }, [saveDraft]);
 
   function update(field: keyof SubmissionFormData, value: unknown) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -77,7 +138,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
 
   function canAdvanceStep2() {
     const hasEquity = formData.inputMode === "shares"
-      ? (formData.numberOfShares != null && formData.totalSharesOutstanding != null)
+      ? formData.numberOfShares != null
       : formData.equityPercentage != null;
     const needsStrike = formData.instrumentType === "Stock Options" || formData.instrumentType === "SAR";
     const hasStrike = !needsStrike || formData.strikePrice != null;
@@ -93,14 +154,23 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     );
   }
 
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  }
+
   async function handleSubmit() {
     setLoading(true);
 
     try {
-      // Compute equityPercentage from shares for client-side validation
       const dataToSubmit = { ...formData };
-      if (dataToSubmit.inputMode === "shares" && dataToSubmit.numberOfShares && dataToSubmit.totalSharesOutstanding) {
-        dataToSubmit.equityPercentage = (dataToSubmit.numberOfShares / dataToSubmit.totalSharesOutstanding) * 100;
+      // Compute equityPercentage for client-side validation
+      if (dataToSubmit.inputMode === "shares" && dataToSubmit.numberOfShares) {
+        if (dataToSubmit.totalSharesOutstanding) {
+          dataToSubmit.equityPercentage = (dataToSubmit.numberOfShares / dataToSubmit.totalSharesOutstanding) * 100;
+        } else if (dataToSubmit.lastValuation && dataToSubmit.currentSharePrice && dataToSubmit.currentSharePrice > 0) {
+          const derivedTotal = dataToSubmit.lastValuation / dataToSubmit.currentSharePrice;
+          dataToSubmit.equityPercentage = (dataToSubmit.numberOfShares / derivedTotal) * 100;
+        }
       }
       const validated = submissionSchema.parse(dataToSubmit);
 
@@ -110,6 +180,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
         await upsertSubmission(validated);
       }
 
+      clearDraft();
       toast.success("Dados salvos com sucesso!");
       router.push("/benchmarks");
     } catch (err: unknown) {
@@ -122,6 +193,40 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleDeleteData() {
+    setDeleting(true);
+    try {
+      await deleteMyData();
+      clearDraft();
+      toast.success("Dados excluídos");
+      router.push("/submit");
+      router.refresh();
+    } catch {
+      toast.error("Erro ao excluir dados");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  // Compute equity summary text for step 3
+  function equitySummary(): string {
+    if (formData.inputMode === "shares" && formData.numberOfShares) {
+      const sharesStr = formData.numberOfShares.toLocaleString("pt-BR");
+      let pct: number | null = null;
+      if (formData.totalSharesOutstanding && formData.totalSharesOutstanding > 0) {
+        pct = (formData.numberOfShares / formData.totalSharesOutstanding) * 100;
+      } else if (formData.lastValuation && formData.currentSharePrice && formData.currentSharePrice > 0) {
+        const derivedTotal = formData.lastValuation / formData.currentSharePrice;
+        pct = (formData.numberOfShares / derivedTotal) * 100;
+      }
+      if (pct != null && pct >= 0.001 && pct <= 30) {
+        return `${sharesStr} ações (${pct.toFixed(4)}%)`;
+      }
+      return `${sharesStr} ações (% não calculado)`;
+    }
+    return formData.equityPercentage != null ? `${formData.equityPercentage}%` : "—";
   }
 
   return (
@@ -280,10 +385,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                     equityPercentage={formData.equityPercentage}
                     numberOfShares={formData.numberOfShares}
                     totalSharesOutstanding={formData.totalSharesOutstanding}
+                    currentSharePrice={formData.currentSharePrice}
+                    lastValuation={formData.lastValuation}
                     onInputModeChange={(mode) => update("inputMode", mode)}
                     onEquityPercentageChange={(v) => update("equityPercentage", v)}
                     onNumberOfSharesChange={(v) => update("numberOfShares", v)}
                     onTotalSharesOutstandingChange={(v) => update("totalSharesOutstanding", v)}
+                    onCurrentSharePriceChange={(v) => update("currentSharePrice", v)}
+                    onLastValuationChange={(v) => update("lastValuation", v)}
                   />
                 </div>
 
@@ -437,6 +546,32 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
+                    <Label>Tipo de contrato</Label>
+                    <Select
+                      value={formData.contractType || ""}
+                      onValueChange={(v) => update("contractType", v || undefined)}
+                    >
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Salário mensal bruto (R$)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="500000"
+                      value={formData.monthlySalary ?? ""}
+                      onChange={(e) => update("monthlySalary", e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Ex: 45000"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Ano da Contratação</Label>
                     <Input
                       type="number"
@@ -461,19 +596,6 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Salário Mensal (bruto)</Label>
-                    <Select
-                      value={formData.cashCompRange || ""}
-                      onValueChange={(v) => update("cashCompRange", v || undefined)}
-                    >
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {CASH_COMP_RANGES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
               </div>
             </div>
@@ -491,18 +613,21 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       checked={formData.hasAnnualBonus || false}
                       onCheckedChange={(v) => {
                         update("hasAnnualBonus", v === true);
-                        if (!v) update("annualBonusRange", undefined);
+                        if (!v) update("annualBonus", undefined);
                       }}
                     />
                     <Label htmlFor="hasAnnualBonus" className="font-medium cursor-pointer text-sm">Bônus anual</Label>
                   </div>
                   {formData.hasAnnualBonus && (
-                    <Select value={formData.annualBonusRange || ""} onValueChange={(v) => update("annualBonusRange", v || undefined)}>
-                      <SelectTrigger className="h-10"><SelectValue placeholder="Selecione a faixa" /></SelectTrigger>
-                      <SelectContent>
-                        {INCENTIVE_RANGES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="5000000"
+                      value={formData.annualBonus ?? ""}
+                      onChange={(e) => update("annualBonus", e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Valor em R$"
+                      className="h-10"
+                    />
                   )}
                 </div>
 
@@ -513,18 +638,21 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       checked={formData.hasCommission || false}
                       onCheckedChange={(v) => {
                         update("hasCommission", v === true);
-                        if (!v) update("commissionRange", undefined);
+                        if (!v) update("commission", undefined);
                       }}
                     />
                     <Label htmlFor="hasCommission" className="font-medium cursor-pointer text-sm">Comissões</Label>
                   </div>
                   {formData.hasCommission && (
-                    <Select value={formData.commissionRange || ""} onValueChange={(v) => update("commissionRange", v || undefined)}>
-                      <SelectTrigger className="h-10"><SelectValue placeholder="Selecione a faixa" /></SelectTrigger>
-                      <SelectContent>
-                        {INCENTIVE_RANGES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="5000000"
+                      value={formData.commission ?? ""}
+                      onChange={(e) => update("commission", e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Valor em R$"
+                      className="h-10"
+                    />
                   )}
                 </div>
 
@@ -535,18 +663,21 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       checked={formData.hasRetentionPlan || false}
                       onCheckedChange={(v) => {
                         update("hasRetentionPlan", v === true);
-                        if (!v) update("retentionRange", undefined);
+                        if (!v) update("retentionAmount", undefined);
                       }}
                     />
                     <Label htmlFor="hasRetentionPlan" className="font-medium cursor-pointer text-sm">Plano de retenção</Label>
                   </div>
                   {formData.hasRetentionPlan && (
-                    <Select value={formData.retentionRange || ""} onValueChange={(v) => update("retentionRange", v || undefined)}>
-                      <SelectTrigger className="h-10"><SelectValue placeholder="Selecione a faixa" /></SelectTrigger>
-                      <SelectContent>
-                        {INCENTIVE_RANGES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="5000000"
+                      value={formData.retentionAmount ?? ""}
+                      onChange={(e) => update("retentionAmount", e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Valor em R$"
+                      className="h-10"
+                    />
                   )}
                 </div>
 
@@ -557,18 +688,21 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       checked={formData.hasSignOn || false}
                       onCheckedChange={(v) => {
                         update("hasSignOn", v === true);
-                        if (!v) update("signOnRange", undefined);
+                        if (!v) update("signOnAmount", undefined);
                       }}
                     />
                     <Label htmlFor="hasSignOn" className="font-medium cursor-pointer text-sm">Sign-on bonus</Label>
                   </div>
                   {formData.hasSignOn && (
-                    <Select value={formData.signOnRange || ""} onValueChange={(v) => update("signOnRange", v || undefined)}>
-                      <SelectTrigger className="h-10"><SelectValue placeholder="Selecione a faixa" /></SelectTrigger>
-                      <SelectContent>
-                        {INCENTIVE_RANGES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="5000000"
+                      value={formData.signOnAmount ?? ""}
+                      onChange={(e) => update("signOnAmount", e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Valor em R$"
+                      className="h-10"
+                    />
                   )}
                 </div>
               </div>
@@ -606,14 +740,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryItem label="Cargo" value={formData.role} />
                   <SummaryItem label="Instrumento" value={formData.instrumentType} />
-                  <SummaryItem
-                    label="Equity"
-                    value={
-                      formData.inputMode === "shares" && formData.numberOfShares && formData.totalSharesOutstanding
-                        ? `${formData.numberOfShares.toLocaleString()} ações de ${formData.totalSharesOutstanding.toLocaleString()} = ${((formData.numberOfShares / formData.totalSharesOutstanding) * 100).toFixed(4)}%`
-                        : formData.equityPercentage != null ? `${formData.equityPercentage}%` : undefined
-                    }
-                  />
+                  <SummaryItem label="Equity" value={equitySummary()} />
                   <SummaryItem label="Tipo" value={formData.grantType} />
                   <SummaryItem label="Vesting" value={formData.vestingTotalMonths != null ? `${formData.vestingTotalMonths} meses` : undefined} />
                   <SummaryItem label="Cliff" value={formData.cliffMonths != null ? `${formData.cliffMonths} meses` : undefined} />
@@ -628,21 +755,19 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 </div>
               </div>
 
-              {formData.cashCompRange && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneração</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <SummaryItem label="Salário" value={formData.cashCompRange} />
-                      {formData.hasAnnualBonus && <SummaryItem label="Bônus" value={formData.annualBonusRange} />}
-                      {formData.hasCommission && <SummaryItem label="Comissão" value={formData.commissionRange} />}
-                      {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formData.retentionRange} />}
-                      {formData.hasSignOn && <SummaryItem label="Sign-on" value={formData.signOnRange} />}
-                    </div>
-                  </div>
-                </>
-              )}
+              <Separator />
+
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneração</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {formData.contractType && <SummaryItem label="Contrato" value={formData.contractType} />}
+                  <SummaryItem label="Salário mensal" value={formatBRL(formData.monthlySalary)} />
+                  {formData.hasAnnualBonus && <SummaryItem label="Bônus anual" value={formatBRL(formData.annualBonus)} />}
+                  {formData.hasCommission && <SummaryItem label="Comissão" value={formatBRL(formData.commission)} />}
+                  {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formatBRL(formData.retentionAmount)} />}
+                  {formData.hasSignOn && <SummaryItem label="Sign-on" value={formatBRL(formData.signOnAmount)} />}
+                </div>
+              </div>
             </div>
 
             <Separator />
@@ -666,14 +791,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
 
       {/* Navigation buttons */}
       <div className="flex items-center justify-between pt-2">
-        <div>
+        <div className="flex items-center gap-2">
           {step > 1 && (
             <Button type="button" variant="outline" onClick={() => setStep(step - 1)} className="h-11 px-6">
               Voltar
             </Button>
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-2">
           {step < 3 ? (
             <Button
               type="button"
@@ -694,6 +819,52 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Draft discard + LGPD delete */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+        <button
+          type="button"
+          className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          onClick={() => {
+            clearDraft();
+            setFormData({ isFirstInRole: false, inputMode: "percentage", ...initialData });
+            setStep(1);
+            toast.info("Rascunho descartado");
+          }}
+        >
+          Descartar rascunho
+        </button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              type="button"
+              className="text-destructive/70 hover:text-destructive transition-colors underline-offset-4 hover:underline"
+            >
+              Excluir meus dados
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir todos os seus dados?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza? Seus dados serão apagados permanentemente e você perderá acesso aos benchmarks.
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteData}
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? "Excluindo..." : "Sim, excluir tudo"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

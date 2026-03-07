@@ -15,15 +15,16 @@ function splitFormData(data: ReturnType<typeof submissionSchema.parse>) {
   const {
     instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, isFirstInRole, inputMode, numberOfShares,
-    totalSharesOutstanding, strikePrice, grantDate, grantLabel,
-    vestingStartDate, ...submissionFields
+    totalSharesOutstanding, strikePrice, currentSharePrice, lastValuation,
+    grantDate, grantLabel, vestingStartDate, ...submissionFields
   } = data;
 
   const grantFields = {
     instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, inputMode: inputMode ?? "percentage",
-    numberOfShares, totalSharesOutstanding, strikePrice, grantDate,
-    grantLabel, vestingStartDate,
+    numberOfShares, totalSharesOutstanding, strikePrice,
+    currentSharePrice, lastValuation,
+    grantDate, grantLabel, vestingStartDate,
   };
 
   // Denormalized fields kept on Submission for benchmark queries
@@ -35,11 +36,37 @@ function splitFormData(data: ReturnType<typeof submissionSchema.parse>) {
   return { submissionFields, grantFields, grantDenormFields, isFirstInRole };
 }
 
-function recalcSharesPercentage(data: { inputMode?: string; numberOfShares?: number; totalSharesOutstanding?: number; equityPercentage: number }) {
-  if (data.inputMode === "shares" && data.numberOfShares && data.totalSharesOutstanding) {
-    return (data.numberOfShares / data.totalSharesOutstanding) * 100;
+/**
+ * Compute equity percentage from available data:
+ * 1. shares + total outstanding → direct computation
+ * 2. shares + lastValuation + currentSharePrice → derive total, then compute
+ * 3. explicit equityPercentage (from percentage mode or manual entry)
+ */
+function computeEquityPercentage(data: {
+  inputMode?: string;
+  numberOfShares?: number;
+  totalSharesOutstanding?: number;
+  currentSharePrice?: number;
+  lastValuation?: number;
+  equityPercentage?: number;
+}): number | undefined {
+  if (data.inputMode === "shares" && data.numberOfShares) {
+    // Path 1: shares + total outstanding
+    if (data.totalSharesOutstanding && data.totalSharesOutstanding > 0) {
+      const pct = (data.numberOfShares / data.totalSharesOutstanding) * 100;
+      return pct >= 0.001 && pct <= 30 ? pct : undefined;
+    }
+    // Path 2: shares + valuation + share price → derive total outstanding
+    if (data.lastValuation && data.currentSharePrice && data.currentSharePrice > 0) {
+      const derivedTotal = data.lastValuation / data.currentSharePrice;
+      const pct = (data.numberOfShares / derivedTotal) * 100;
+      return pct >= 0.001 && pct <= 30 ? pct : undefined;
+    }
   }
-  return data.equityPercentage;
+  // Path 3: explicit percentage
+  const pct = data.equityPercentage;
+  if (pct != null && (pct < 0.001 || pct > 30)) return undefined;
+  return pct;
 }
 
 // --- Submissions ---
@@ -67,14 +94,27 @@ export async function upsertSubmission(formData: unknown) {
 
   // Pre-compute equityPercentage from shares before validation
   const raw = formData as Record<string, unknown>;
-  if (raw?.inputMode === "shares" && raw?.numberOfShares && raw?.totalSharesOutstanding) {
-    raw.equityPercentage = (Number(raw.numberOfShares) / Number(raw.totalSharesOutstanding)) * 100;
+  if (raw?.inputMode === "shares" && raw?.numberOfShares) {
+    const computed = computeEquityPercentage({
+      inputMode: "shares",
+      numberOfShares: Number(raw.numberOfShares),
+      totalSharesOutstanding: raw.totalSharesOutstanding ? Number(raw.totalSharesOutstanding) : undefined,
+      currentSharePrice: raw.currentSharePrice ? Number(raw.currentSharePrice) : undefined,
+      lastValuation: raw.lastValuation ? Number(raw.lastValuation) : undefined,
+      equityPercentage: raw.equityPercentage ? Number(raw.equityPercentage) : undefined,
+    });
+    if (computed != null) {
+      raw.equityPercentage = computed;
+    }
   }
 
   const data = submissionSchema.parse(raw);
 
-  // Server-side shares-to-% recalculation (never trust client math)
-  data.equityPercentage = recalcSharesPercentage(data);
+  // Server-side recomputation (never trust client math)
+  const computed = computeEquityPercentage(data);
+  if (computed != null) {
+    data.equityPercentage = computed;
+  }
 
   const { submissionFields, grantFields, grantDenormFields, isFirstInRole } = splitFormData(data);
 
@@ -84,7 +124,6 @@ export async function upsertSubmission(formData: unknown) {
     });
 
     if (existing) {
-      // In-place UPDATE (RA-3) — keeps the same ID, grant stays linked
       await tx.submission.update({
         where: { id: existing.id },
         data: {
@@ -95,7 +134,6 @@ export async function upsertSubmission(formData: unknown) {
           confirmedByUser: true,
         },
       });
-      // Upsert the grant (create if missing, update if exists)
       await tx.grant.upsert({
         where: { submissionId: existing.id },
         create: { submissionId: existing.id, ...grantFields },
@@ -103,7 +141,6 @@ export async function upsertSubmission(formData: unknown) {
       });
       return tx.submission.findUnique({ where: { id: existing.id }, include: { grant: true } });
     } else {
-      // First submission — create with nested grant
       return tx.submission.create({
         data: {
           ...submissionFields,
@@ -126,16 +163,27 @@ export async function upsertSubmissionFromAi(
 ) {
   const session = await requireAuth();
 
-  // Pre-compute equityPercentage from shares before validation
   const raw = extractedData as Record<string, unknown>;
-  if (raw?.inputMode === "shares" && raw?.numberOfShares && raw?.totalSharesOutstanding) {
-    raw.equityPercentage = (Number(raw.numberOfShares) / Number(raw.totalSharesOutstanding)) * 100;
+  if (raw?.inputMode === "shares" && raw?.numberOfShares) {
+    const computed = computeEquityPercentage({
+      inputMode: "shares",
+      numberOfShares: Number(raw.numberOfShares),
+      totalSharesOutstanding: raw.totalSharesOutstanding ? Number(raw.totalSharesOutstanding) : undefined,
+      currentSharePrice: raw.currentSharePrice ? Number(raw.currentSharePrice) : undefined,
+      lastValuation: raw.lastValuation ? Number(raw.lastValuation) : undefined,
+      equityPercentage: raw.equityPercentage ? Number(raw.equityPercentage) : undefined,
+    });
+    if (computed != null) {
+      raw.equityPercentage = computed;
+    }
   }
 
   const data = submissionSchema.parse(raw);
 
-  // Server-side shares-to-% recalculation
-  data.equityPercentage = recalcSharesPercentage(data);
+  const computed = computeEquityPercentage(data);
+  if (computed != null) {
+    data.equityPercentage = computed;
+  }
 
   const { submissionFields, grantFields, grantDenormFields, isFirstInRole } = splitFormData(data);
 
@@ -200,12 +248,19 @@ export async function hasSubmission(): Promise<boolean> {
   return count > 0;
 }
 
+// --- LGPD Data Deletion ---
+
+export async function deleteMyData() {
+  const session = await requireAuth();
+  // Grants cascade via onDelete: Cascade on the Grant model
+  await prisma.submission.deleteMany({ where: { userId: session.uid } });
+}
+
 // --- Access Requests ---
 
 export async function submitAccessRequest(formData: unknown) {
   const data = accessRequestSchema.parse(formData);
 
-  // Check if already invited
   const existing = await prisma.invitation.findUnique({
     where: { email: data.email },
   });
@@ -213,7 +268,6 @@ export async function submitAccessRequest(formData: unknown) {
     throw new Error("Este email já possui um convite. Faça login.");
   }
 
-  // Check if already requested
   const existingRequest = await prisma.accessRequest.findFirst({
     where: { email: data.email, status: "pending" },
   });
