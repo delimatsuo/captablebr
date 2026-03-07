@@ -31,6 +31,30 @@ const STEPS = [
   { label: "Confirmar", number: 3 },
 ];
 
+const INSTRUMENT_DESCRIPTIONS: Record<string, string> = {
+  "Stock Options": "Direito de comprar ações a um preço pré-definido (strike price)",
+  "Phantom Stock": "Bônus em dinheiro atrelado ao valor das ações, sem participação societária real",
+  "RSU": "Ações restritas concedidas que vestem ao longo do tempo",
+  "Partnership Quotas (Cotas)": "Participação societária direta em cotas da empresa (modelo Ltda.)",
+  "SAR": "Stock Appreciation Rights — direito de receber a valorização das ações em dinheiro",
+  "Vesting Shares": "Ações adquiridas progressivamente conforme cronograma de vesting",
+  "Other": "Outro instrumento de equity",
+};
+
+const GRANT_TYPE_DESCRIPTIONS: Record<string, string> = {
+  "New-hire": "Primeiro grant recebido ao entrar na empresa",
+  "Ongoing/Refresh": "Grant adicional para retenção ou renovação",
+  "Promotion": "Grant recebido por promoção de cargo",
+};
+
+const VESTING_SCHEDULE_DESCRIPTIONS: Record<string, string> = {
+  "Monthly after cliff": "Vesting mensal após o período de cliff",
+  "Quarterly after cliff": "Vesting trimestral após o período de cliff",
+  "Annual": "Vesting anual em parcelas iguais",
+  "Cliff only (all at once)": "100% do equity liberado de uma vez ao final do cliff",
+  "Other": "Outro cronograma de vesting",
+};
+
 export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -224,7 +248,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <Select value={formData.instrumentType} onValueChange={(v) => update("instrumentType", v)}>
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {INSTRUMENT_TYPES.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                      {INSTRUMENT_TYPES.map((i) => (
+                        <SelectItem key={i} value={i} className="py-2.5">
+                          <div>
+                            <span className="font-medium">{i}</span>
+                            <p className="text-xs text-muted-foreground mt-0.5 font-normal">{INSTRUMENT_DESCRIPTIONS[i]}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -255,7 +286,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <Select value={formData.grantType} onValueChange={(v) => update("grantType", v)}>
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {GRANT_TYPES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      {GRANT_TYPES.map((g) => (
+                        <SelectItem key={g} value={g} className="py-2.5">
+                          <div>
+                            <span className="font-medium">{g}</span>
+                            <p className="text-xs text-muted-foreground mt-0.5 font-normal">{GRANT_TYPE_DESCRIPTIONS[g]}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -301,7 +339,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <Select value={formData.vestingSchedule} onValueChange={(v) => update("vestingSchedule", v)}>
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {VESTING_SCHEDULES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {VESTING_SCHEDULES.map((s) => (
+                        <SelectItem key={s} value={s} className="py-2.5">
+                          <div>
+                            <span className="font-medium">{s}</span>
+                            <p className="text-xs text-muted-foreground mt-0.5 font-normal">{VESTING_SCHEDULE_DESCRIPTIONS[s]}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -497,7 +542,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               <Separator />
 
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Compensacao</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Compensação</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryItem label="Cargo" value={formData.role} />
                   <SummaryItem label="Instrumento" value={formData.instrumentType} />
@@ -514,7 +559,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <>
                   <Separator />
                   <div>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneracao</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneração</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <SummaryItem label="Salário" value={formData.cashCompRange} />
                       {formData.hasAnnualBonus && <SummaryItem label="Bônus" value={formData.annualBonusRange} />}
