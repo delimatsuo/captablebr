@@ -85,6 +85,9 @@ jobs:
           # Fetch the Cloud Run DATABASE_URL and convert Unix socket to TCP for proxy
           CLOUD_URL=$(gcloud secrets versions access latest --secret=captablebr-database-url --project=${{ env.GCP_PROJECT_ID }})
           export DATABASE_URL=$(echo "$CLOUD_URL" | sed 's|?host=/cloudsql/.*||' | sed 's|@localhost/|@127.0.0.1:5432/|')
+          # Baseline: create _prisma_migrations table and mark prior migration as applied
+          # (idempotent — resolve is a no-op if already tracked)
+          npx prisma migrate resolve --applied 20260307000000_add_grant_model || true
           npx prisma migrate deploy
           kill $PROXY_PID || true
 
