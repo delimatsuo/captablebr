@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectItemWithDescription, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -365,15 +365,10 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="space-y-2">
                   <Label>Instrumento *</Label>
                   <Select value={formData.instrumentType} onValueChange={(v) => update("instrumentType", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione">{formData.instrumentType}</SelectValue></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {INSTRUMENT_TYPES.map((i) => (
-                        <SelectItem key={i} value={i} textValue={i} className="py-2.5">
-                          <div>
-                            <span className="font-medium">{i}</span>
-                            <p className="text-xs text-muted-foreground mt-0.5 font-normal">{INSTRUMENT_DESCRIPTIONS[i]}</p>
-                          </div>
-                        </SelectItem>
+                        <SelectItemWithDescription key={i} value={i} textValue={i} label={i} description={INSTRUMENT_DESCRIPTIONS[i]} className="py-2.5" />
                       ))}
                     </SelectContent>
                   </Select>
@@ -399,15 +394,10 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="space-y-2">
                   <Label>Tipo de Grant *</Label>
                   <Select value={formData.grantType} onValueChange={(v) => update("grantType", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione">{formData.grantType}</SelectValue></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {GRANT_TYPES.map((g) => (
-                        <SelectItem key={g} value={g} textValue={g} className="py-2.5">
-                          <div>
-                            <span className="font-medium">{g}</span>
-                            <p className="text-xs text-muted-foreground mt-0.5 font-normal">{GRANT_TYPE_DESCRIPTIONS[g]}</p>
-                          </div>
-                        </SelectItem>
+                        <SelectItemWithDescription key={g} value={g} textValue={g} label={g} description={GRANT_TYPE_DESCRIPTIONS[g]} className="py-2.5" />
                       ))}
                     </SelectContent>
                   </Select>
@@ -495,15 +485,10 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="space-y-2">
                   <Label>Cronograma *</Label>
                   <Select value={formData.vestingSchedule} onValueChange={(v) => update("vestingSchedule", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione">{formData.vestingSchedule}</SelectValue></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {VESTING_SCHEDULES.map((s) => (
-                        <SelectItem key={s} value={s} textValue={s} className="py-2.5">
-                          <div>
-                            <span className="font-medium">{s}</span>
-                            <p className="text-xs text-muted-foreground mt-0.5 font-normal">{VESTING_SCHEDULE_DESCRIPTIONS[s]}</p>
-                          </div>
-                        </SelectItem>
+                        <SelectItemWithDescription key={s} value={s} textValue={s} label={s} description={VESTING_SCHEDULE_DESCRIPTIONS[s]} className="py-2.5" />
                       ))}
                     </SelectContent>
                   </Select>
