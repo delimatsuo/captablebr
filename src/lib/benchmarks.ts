@@ -128,6 +128,8 @@ export async function getBenchmarks(
   let equityPercentiles = null;
   let vestingPercentiles = null;
 
+  const whereWithEquity = Prisma.sql`${where} AND s.equity_percentage IS NOT NULL`;
+
   if (submissionCount >= MIN_SUBMISSIONS_PERCENTILES) {
     const equityResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
@@ -138,7 +140,7 @@ export async function getBenchmarks(
         ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.equity_percentage)::numeric, 3) as p75,
         ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
       FROM submissions s
-      WHERE ${where}
+      WHERE ${whereWithEquity}
     `);
     equityPercentiles = {
       p25: Number(equityResult[0].p25),
@@ -168,7 +170,7 @@ export async function getBenchmarks(
     const equityResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
       SELECT ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
       FROM submissions s
-      WHERE ${where}
+      WHERE ${whereWithEquity}
     `);
     equityPercentiles = {
       p25: 0, p50: 0, p75: 0,
@@ -234,7 +236,7 @@ export async function getBenchmarks(
   >(Prisma.sql`
     SELECT s.is_first_in_role as is_first, ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
     FROM submissions s
-    WHERE ${where}
+    WHERE ${whereWithEquity}
     GROUP BY s.is_first_in_role
     HAVING COUNT(*) >= ${MIN_SUBMISSIONS_DISPLAY}
   `);

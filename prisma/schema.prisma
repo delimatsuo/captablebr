@@ -43,7 +43,7 @@ model Submission {
   // Role & equity (denormalized from Grant for benchmark queries)
   role               String
   instrumentType     String   @map("instrument_type")
-  equityPercentage   Decimal  @map("equity_percentage") @db.Decimal(10, 6)
+  equityPercentage   Decimal? @map("equity_percentage") @db.Decimal(10, 6)
   vestingTotalMonths Int      @map("vesting_total_months")
   cliffMonths        Int      @map("cliff_months")
   vestingSchedule    String   @map("vesting_schedule")
@@ -52,16 +52,17 @@ model Submission {
   hireYear           Int?     @map("hire_year")
   yearsExperience    String?  @map("years_experience")
 
-  // Cash comp & incentives
-  cashCompRange      String?  @map("cash_comp_range")
+  // Cash comp & incentives (direct amounts in BRL)
+  contractType       String?  @map("contract_type")
+  monthlySalary      Decimal? @map("monthly_salary") @db.Decimal(12, 2)
   hasAnnualBonus     Boolean? @map("has_annual_bonus")
-  annualBonusRange   String?  @map("annual_bonus_range")
+  annualBonus        Decimal? @map("annual_bonus") @db.Decimal(12, 2)
   hasCommission      Boolean? @map("has_commission")
-  commissionRange    String?  @map("commission_range")
+  commission         Decimal? @map("commission") @db.Decimal(12, 2)
   hasRetentionPlan   Boolean? @map("has_retention_plan")
-  retentionRange     String?  @map("retention_range")
+  retentionAmount    Decimal? @map("retention_amount") @db.Decimal(12, 2)
   hasSignOn          Boolean? @map("has_sign_on")
-  signOnRange        String?  @map("sign_on_range")
+  signOnAmount       Decimal? @map("sign_on_amount") @db.Decimal(12, 2)
 
   // AI extraction
   sourceDocumentUrl  String?  @map("source_document_url")
@@ -92,16 +93,18 @@ model Grant {
   grantDate              DateTime? @map("grant_date")
   grantLabel             String?  @map("grant_label")
 
-  // Equity (canonical = percentage; input can be shares)
-  equityPercentage       Decimal  @map("equity_percentage") @db.Decimal(10, 6)
+  // Equity (percentage is computed when possible)
+  equityPercentage       Decimal? @map("equity_percentage") @db.Decimal(10, 6)
   inputMode              String   @default("percentage") @map("input_mode")
   numberOfShares         BigInt?  @map("number_of_shares")
   totalSharesOutstanding BigInt?  @map("total_shares_outstanding")
 
-  // Instrument
+  // Pricing & valuation context
   instrumentType         String   @map("instrument_type")
   strikePrice            Decimal? @map("strike_price") @db.Decimal(14, 2)
   strikeCurrency         String   @default("BRL") @map("strike_currency")
+  currentSharePrice      Decimal? @map("current_share_price") @db.Decimal(14, 2)
+  lastValuation          Decimal? @map("last_valuation") @db.Decimal(16, 2)
 
   // Vesting
   vestingTotalMonths     Int      @map("vesting_total_months")

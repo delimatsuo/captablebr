@@ -90,7 +90,11 @@ export function DocumentUpload({ onExtracted }: Props) {
       }
       if (extracted.total_shares_outstanding) mapped.totalSharesOutstanding = extracted.total_shares_outstanding;
       if (extracted.strike_price) mapped.strikePrice = extracted.strike_price;
+      if (extracted.current_share_price) mapped.currentSharePrice = extracted.current_share_price;
+      if (extracted.last_valuation) mapped.lastValuation = extracted.last_valuation;
       if (extracted.grant_date) mapped.grantDate = extracted.grant_date;
+      if (extracted.contract_type) mapped.contractType = extracted.contract_type as SubmissionFormData["contractType"];
+      if (extracted.monthly_salary) mapped.monthlySalary = extracted.monthly_salary;
 
       onExtracted(mapped, objectName);
       toast.success(`Dados extraídos com confiança de ${Math.round((extracted.confidence || 0) * 100)}%`);
