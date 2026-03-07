@@ -63,7 +63,14 @@ jobs:
       - name: Build and push container image
         run: |
           IMAGE="${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker build -t "$IMAGE" .
+          docker build -t "$IMAGE" \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBDbUe9xtltpldgpzWgRkcEW8BrEwWeTh4 \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=paynequity.firebaseapp.com \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=paynequity \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=paynequity.firebasestorage.app \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=777685600587 \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=1:777685600587:web:146209024cbaec5dd9c0ce \
+            .
           docker push "$IMAGE"
 
       - name: Deploy to Cloud Run
@@ -82,7 +89,6 @@ jobs:
             --min-instances 0 \
             --max-instances 3 \
             --set-cloudsql-instances=${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db \
-            --set-secrets=DATABASE_URL=captablebr-database-url:latest \
-            --set-secrets=FIREBASE_ADMIN_KEY=captablebr-firebase-admin-key:latest \
-            --set-secrets=NEXT_PUBLIC_FIREBASE_CONFIG=captablebr-firebase-client-config:latest \
+            --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest \
+            --set-env-vars=GCP_PROJECT_ID=paynequity,GCP_LOCATION=us-central1,ADMIN_UID=Q5lAKMq2eKXM5VmGNC66NFB7ip32 \
             --quiet
