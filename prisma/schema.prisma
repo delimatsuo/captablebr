@@ -39,7 +39,7 @@ model Submission {
   subSector          String?  @map("sub_sector")
   headcountRange     String   @map("headcount_range")
 
-  // Role & equity
+  // Role & equity (denormalized from Grant for benchmark queries)
   role               String
   instrumentType     String   @map("instrument_type")
   equityPercentage   Decimal  @map("equity_percentage") @db.Decimal(10, 6)
@@ -70,10 +70,46 @@ model Submission {
   // Notification
   notifyEmail        String?  @map("notify_email")
 
+  // Grant relation (1:1 in Phase 1)
+  grant              Grant?
+
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@index([userId, status])
   @@index([role, stage, status])
   @@map("submissions")
+}
+
+model Grant {
+  id                     String   @id @default(uuid())
+  submissionId           String   @unique @map("submission_id")
+  submission             Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Grant identity
+  grantType              String   @map("grant_type")
+  grantDate              DateTime? @map("grant_date")
+  grantLabel             String?  @map("grant_label")
+
+  // Equity (canonical = percentage; input can be shares)
+  equityPercentage       Decimal  @map("equity_percentage") @db.Decimal(10, 6)
+  inputMode              String   @default("percentage") @map("input_mode")
+  numberOfShares         BigInt?  @map("number_of_shares")
+  totalSharesOutstanding BigInt?  @map("total_shares_outstanding")
+
+  // Instrument
+  instrumentType         String   @map("instrument_type")
+  strikePrice            Decimal? @map("strike_price") @db.Decimal(14, 2)
+  strikeCurrency         String   @default("BRL") @map("strike_currency")
+
+  // Vesting
+  vestingTotalMonths     Int      @map("vesting_total_months")
+  cliffMonths            Int      @map("cliff_months")
+  vestingSchedule        String   @map("vesting_schedule")
+  vestingStartDate       DateTime? @map("vesting_start_date")
+
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("grants")
 }

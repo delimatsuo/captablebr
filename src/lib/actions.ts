@@ -11,6 +11,37 @@ async function requireAuth() {
   return session;
 }
 
+function splitFormData(data: ReturnType<typeof submissionSchema.parse>) {
+  const {
+    instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
+    vestingSchedule, grantType, isFirstInRole, inputMode, numberOfShares,
+    totalSharesOutstanding, strikePrice, grantDate, grantLabel,
+    vestingStartDate, ...submissionFields
+  } = data;
+
+  const grantFields = {
+    instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
+    vestingSchedule, grantType, inputMode: inputMode ?? "percentage",
+    numberOfShares, totalSharesOutstanding, strikePrice, grantDate,
+    grantLabel, vestingStartDate,
+  };
+
+  // Denormalized fields kept on Submission for benchmark queries
+  const grantDenormFields = {
+    instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
+    vestingSchedule, grantType, isFirstInRole,
+  };
+
+  return { submissionFields, grantFields, grantDenormFields, isFirstInRole };
+}
+
+function recalcSharesPercentage(data: { inputMode?: string; numberOfShares?: number; totalSharesOutstanding?: number; equityPercentage: number }) {
+  if (data.inputMode === "shares" && data.numberOfShares && data.totalSharesOutstanding) {
+    return (data.numberOfShares / data.totalSharesOutstanding) * 100;
+  }
+  return data.equityPercentage;
+}
+
 // --- Submissions ---
 
 export async function getSubmission() {
@@ -18,6 +49,7 @@ export async function getSubmission() {
   return prisma.submission.findFirst({
     where: { userId: session.uid, status: "active" },
     orderBy: { createdAt: "desc" },
+    include: { grant: true },
   });
 }
 
@@ -26,27 +58,65 @@ export async function getSubmissions() {
   return prisma.submission.findMany({
     where: { userId: session.uid },
     orderBy: { createdAt: "desc" },
+    include: { grant: true },
   });
 }
 
 export async function upsertSubmission(formData: unknown) {
   const session = await requireAuth();
-  const data = submissionSchema.parse(formData);
+
+  // Pre-compute equityPercentage from shares before validation
+  const raw = formData as Record<string, unknown>;
+  if (raw?.inputMode === "shares" && raw?.numberOfShares && raw?.totalSharesOutstanding) {
+    raw.equityPercentage = (Number(raw.numberOfShares) / Number(raw.totalSharesOutstanding)) * 100;
+  }
+
+  const data = submissionSchema.parse(raw);
+
+  // Server-side shares-to-% recalculation (never trust client math)
+  data.equityPercentage = recalcSharesPercentage(data);
+
+  const { submissionFields, grantFields, grantDenormFields, isFirstInRole } = splitFormData(data);
 
   return prisma.$transaction(async (tx) => {
-    await tx.submission.updateMany({
+    const existing = await tx.submission.findFirst({
       where: { userId: session.uid, status: "active" },
-      data: { status: "archived" },
     });
 
-    return tx.submission.create({
-      data: {
-        ...data,
-        notifyEmail: data.notifyEmail || null,
-        userId: session.uid,
-        confirmedByUser: true,
-      },
-    });
+    if (existing) {
+      // In-place UPDATE (RA-3) — keeps the same ID, grant stays linked
+      await tx.submission.update({
+        where: { id: existing.id },
+        data: {
+          ...submissionFields,
+          ...grantDenormFields,
+          isFirstInRole,
+          notifyEmail: submissionFields.notifyEmail || null,
+          confirmedByUser: true,
+        },
+      });
+      // Upsert the grant (create if missing, update if exists)
+      await tx.grant.upsert({
+        where: { submissionId: existing.id },
+        create: { submissionId: existing.id, ...grantFields },
+        update: { ...grantFields },
+      });
+      return tx.submission.findUnique({ where: { id: existing.id }, include: { grant: true } });
+    } else {
+      // First submission — create with nested grant
+      return tx.submission.create({
+        data: {
+          ...submissionFields,
+          ...grantDenormFields,
+          isFirstInRole,
+          notifyEmail: submissionFields.notifyEmail || null,
+          userId: session.uid,
+          confirmedByUser: true,
+          grant: { create: grantFields },
+        },
+        include: { grant: true },
+      });
+    }
   });
 }
 
@@ -55,24 +125,60 @@ export async function upsertSubmissionFromAi(
   sourceDocumentUrl?: string
 ) {
   const session = await requireAuth();
-  const data = submissionSchema.parse(extractedData);
+
+  // Pre-compute equityPercentage from shares before validation
+  const raw = extractedData as Record<string, unknown>;
+  if (raw?.inputMode === "shares" && raw?.numberOfShares && raw?.totalSharesOutstanding) {
+    raw.equityPercentage = (Number(raw.numberOfShares) / Number(raw.totalSharesOutstanding)) * 100;
+  }
+
+  const data = submissionSchema.parse(raw);
+
+  // Server-side shares-to-% recalculation
+  data.equityPercentage = recalcSharesPercentage(data);
+
+  const { submissionFields, grantFields, grantDenormFields, isFirstInRole } = splitFormData(data);
 
   return prisma.$transaction(async (tx) => {
-    await tx.submission.updateMany({
+    const existing = await tx.submission.findFirst({
       where: { userId: session.uid, status: "active" },
-      data: { status: "archived" },
     });
 
-    return tx.submission.create({
-      data: {
-        ...data,
-        notifyEmail: data.notifyEmail || null,
-        userId: session.uid,
-        sourceDocumentUrl,
-        extractedByAi: true,
-        confirmedByUser: false,
-      },
-    });
+    if (existing) {
+      await tx.submission.update({
+        where: { id: existing.id },
+        data: {
+          ...submissionFields,
+          ...grantDenormFields,
+          isFirstInRole,
+          notifyEmail: submissionFields.notifyEmail || null,
+          sourceDocumentUrl,
+          extractedByAi: true,
+          confirmedByUser: false,
+        },
+      });
+      await tx.grant.upsert({
+        where: { submissionId: existing.id },
+        create: { submissionId: existing.id, ...grantFields },
+        update: { ...grantFields },
+      });
+      return tx.submission.findUnique({ where: { id: existing.id }, include: { grant: true } });
+    } else {
+      return tx.submission.create({
+        data: {
+          ...submissionFields,
+          ...grantDenormFields,
+          isFirstInRole,
+          notifyEmail: submissionFields.notifyEmail || null,
+          userId: session.uid,
+          sourceDocumentUrl,
+          extractedByAi: true,
+          confirmedByUser: false,
+          grant: { create: grantFields },
+        },
+        include: { grant: true },
+      });
+    }
   });
 }
 

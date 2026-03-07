@@ -3,6 +3,7 @@ import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
   ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
   EXPERIENCE_RANGES, CASH_COMP_RANGES, INCENTIVE_RANGES,
+  INPUT_MODES,
 } from "./types";
 
 export const submissionSchema = z.object({
@@ -31,6 +32,15 @@ export const submissionSchema = z.object({
   hireYear: z.coerce.number().int().min(2000).max(new Date().getFullYear()).optional(),
   yearsExperience: z.enum(EXPERIENCE_RANGES).optional(),
 
+  // Grant-specific fields
+  inputMode: z.enum(INPUT_MODES).default("percentage"),
+  numberOfShares: z.coerce.number().int().positive().optional(),
+  totalSharesOutstanding: z.coerce.number().int().positive().optional(),
+  strikePrice: z.coerce.number().positive().optional(),
+  grantDate: z.coerce.date().optional(),
+  grantLabel: z.string().max(100).trim().optional(),
+  vestingStartDate: z.coerce.date().optional(),
+
   // Cash comp & incentives
   cashCompRange: z.enum(CASH_COMP_RANGES).optional(),
   hasAnnualBonus: z.boolean().optional(),
@@ -47,6 +57,18 @@ export const submissionSchema = z.object({
 }).refine(
   (data) => data.cliffMonths <= data.vestingTotalMonths,
   { message: "Cliff não pode ser maior que o período total de vesting", path: ["cliffMonths"] }
+).refine(
+  (data) => {
+    if (data.inputMode !== "shares") return true;
+    if (!data.numberOfShares || !data.totalSharesOutstanding) return false;
+    if (data.numberOfShares > data.totalSharesOutstanding) return false;
+    const pct = (data.numberOfShares / data.totalSharesOutstanding) * 100;
+    return pct >= 0.001 && pct <= 30;
+  },
+  { message: "Verifique o número de ações e total outstanding", path: ["numberOfShares"] }
+).refine(
+  (data) => !["Stock Options", "SAR"].includes(data.instrumentType) || data.strikePrice !== undefined,
+  { message: "Preço de exercício é obrigatório para opções", path: ["strikePrice"] }
 );
 
 export type SubmissionFormData = z.infer<typeof submissionSchema>;

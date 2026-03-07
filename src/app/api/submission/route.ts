@@ -11,6 +11,7 @@ export async function GET() {
   const submission = await prisma.submission.findFirst({
     where: { userId: session.uid, status: "active" },
     orderBy: { createdAt: "desc" },
+    include: { grant: true },
   });
 
   if (!submission) {
@@ -43,5 +44,16 @@ export async function GET() {
     hasSignOn: submission.hasSignOn,
     signOnRange: submission.signOnRange,
     notifyEmail: submission.notifyEmail,
+    // Grant-specific fields
+    grant: submission.grant ? {
+      inputMode: submission.grant.inputMode,
+      numberOfShares: submission.grant.numberOfShares,
+      totalSharesOutstanding: submission.grant.totalSharesOutstanding,
+      strikePrice: submission.grant.strikePrice ? Number(submission.grant.strikePrice) : null,
+      strikeCurrency: submission.grant.strikeCurrency,
+      grantDate: submission.grant.grantDate,
+      grantLabel: submission.grant.grantLabel,
+      vestingStartDate: submission.grant.vestingStartDate,
+    } : null,
   });
 }
