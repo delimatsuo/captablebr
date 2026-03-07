@@ -263,7 +263,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {INSTRUMENT_TYPES.map((i) => (
-                        <SelectItem key={i} value={i} className="py-2.5">
+                        <SelectItem key={i} value={i} textValue={i} className="py-2.5">
                           <div>
                             <span className="font-medium">{i}</span>
                             <p className="text-xs text-muted-foreground mt-0.5 font-normal">{INSTRUMENT_DESCRIPTIONS[i]}</p>
@@ -293,7 +293,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {GRANT_TYPES.map((g) => (
-                        <SelectItem key={g} value={g} className="py-2.5">
+                        <SelectItem key={g} value={g} textValue={g} className="py-2.5">
                           <div>
                             <span className="font-medium">{g}</span>
                             <p className="text-xs text-muted-foreground mt-0.5 font-normal">{GRANT_TYPE_DESCRIPTIONS[g]}</p>
@@ -389,7 +389,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {VESTING_SCHEDULES.map((s) => (
-                        <SelectItem key={s} value={s} className="py-2.5">
+                        <SelectItem key={s} value={s} textValue={s} className="py-2.5">
                           <div>
                             <span className="font-medium">{s}</span>
                             <p className="text-xs text-muted-foreground mt-0.5 font-normal">{VESTING_SCHEDULE_DESCRIPTIONS[s]}</p>
