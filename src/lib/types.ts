@@ -35,6 +35,9 @@ export type VestingSchedule = (typeof VESTING_SCHEDULES)[number];
 export const GRANT_TYPES = ["New-hire", "Ongoing/Refresh", "Promotion"] as const;
 export type GrantType = (typeof GRANT_TYPES)[number];
 
+export const INPUT_MODES = ["percentage", "shares"] as const;
+export type InputMode = (typeof INPUT_MODES)[number];
+
 export const EXPERIENCE_RANGES = ["5-10", "10-15", "15-20", "20+"] as const;
 
 export const CASH_COMP_RANGES = [

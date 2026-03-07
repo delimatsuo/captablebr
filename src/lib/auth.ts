@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "./db";
 
-const DEV_MODE = !process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+const DEV_MODE = !process.env.FIREBASE_SERVICE_ACCOUNT_KEY && process.env.NODE_ENV !== "production";
 const DEV_USER_UID = "dev-user-001";
 
 async function getFirebaseAdmin() {

@@ -11,6 +11,10 @@ Extraia os seguintes campos deste documento:
 - Cargo/título do beneficiário (${ROLES.join(", ")})
 - Tipo de instrumento de equity (${INSTRUMENT_TYPES.join(", ")})
 - Percentual de equity (% do cap table fully diluted) — OBRIGATÓRIO, deve ser um número > 0
+- Número de ações/cotas recebidas (se mencionado)
+- Total de ações/cotas outstanding (fully diluted, se mencionado)
+- Preço de exercício / strike price (se mencionado, para opções)
+- Data do grant (se mencionada)
 - Período total de vesting (em meses)
 - Período de cliff (em meses)
 - Cronograma de vesting (${VESTING_SCHEDULES.join(", ")})
@@ -25,6 +29,10 @@ Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
   "role": "...",
   "instrument_type": "...",
   "equity_percentage": 0.0,
+  "number_of_shares": null,
+  "total_shares_outstanding": null,
+  "strike_price": null,
+  "grant_date": null,
   "vesting_total_months": 0,
   "cliff_months": 0,
   "vesting_schedule": "...",
@@ -36,12 +44,17 @@ Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
 
 Se um campo não puder ser determinado, defina como null.
 O campo equity_percentage DEVE ser um número positivo se encontrado no documento.
+Para grant_date, use formato ISO (YYYY-MM-DD).
 Inclua um score de confiança (0-1) para a extração geral.`;
 
 const extractionResultSchema = z.object({
   role: z.string().nullable(),
   instrument_type: z.string().nullable(),
   equity_percentage: z.number().positive().nullable(),
+  number_of_shares: z.number().int().positive().nullable().optional(),
+  total_shares_outstanding: z.number().int().positive().nullable().optional(),
+  strike_price: z.number().positive().nullable().optional(),
+  grant_date: z.string().nullable().optional(),
   vesting_total_months: z.number().int().positive().nullable(),
   cliff_months: z.number().int().min(0).nullable(),
   vesting_schedule: z.string().nullable(),

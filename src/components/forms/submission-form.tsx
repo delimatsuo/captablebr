@@ -15,9 +15,11 @@ import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
   ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
   EXPERIENCE_RANGES, CASH_COMP_RANGES, INCENTIVE_RANGES,
+  type InputMode,
 } from "@/lib/types";
 import { submissionSchema, type SubmissionFormData } from "@/lib/validations";
 import { upsertSubmission, upsertSubmissionFromAi } from "@/lib/actions";
+import { EquityInput } from "./equity-input";
 
 interface Props {
   initialData?: Partial<SubmissionFormData> | null;
@@ -61,6 +63,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<Partial<SubmissionFormData>>({
     isFirstInRole: false,
+    inputMode: "percentage",
     ...initialData,
   });
 
@@ -73,10 +76,16 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
   }
 
   function canAdvanceStep2() {
+    const hasEquity = formData.inputMode === "shares"
+      ? (formData.numberOfShares != null && formData.totalSharesOutstanding != null)
+      : formData.equityPercentage != null;
+    const needsStrike = formData.instrumentType === "Stock Options" || formData.instrumentType === "SAR";
+    const hasStrike = !needsStrike || formData.strikePrice != null;
     return (
       formData.role &&
       formData.instrumentType &&
-      formData.equityPercentage != null &&
+      hasEquity &&
+      hasStrike &&
       formData.vestingTotalMonths != null &&
       formData.cliffMonths != null &&
       formData.vestingSchedule &&
@@ -88,7 +97,12 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     setLoading(true);
 
     try {
-      const validated = submissionSchema.parse(formData);
+      // Compute equityPercentage from shares for client-side validation
+      const dataToSubmit = { ...formData };
+      if (dataToSubmit.inputMode === "shares" && dataToSubmit.numberOfShares && dataToSubmit.totalSharesOutstanding) {
+        dataToSubmit.equityPercentage = (dataToSubmit.numberOfShares / dataToSubmit.totalSharesOutstanding) * 100;
+      }
+      const validated = submissionSchema.parse(dataToSubmit);
 
       if (isAiExtracted && sourceDocumentUrl) {
         await upsertSubmissionFromAi(validated, sourceDocumentUrl);
@@ -260,25 +274,17 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Equity total (%) *</Label>
-                  <Input
-                    type="number"
-                    step="0.001"
-                    min="0.001"
-                    max="30"
-                    value={formData.equityPercentage ?? ""}
-                    onChange={(e) => update("equityPercentage", e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="Ex: 1.5"
-                    className="h-11"
-                    required
+                <div className="sm:col-span-2">
+                  <EquityInput
+                    inputMode={(formData.inputMode as InputMode) || "percentage"}
+                    equityPercentage={formData.equityPercentage}
+                    numberOfShares={formData.numberOfShares}
+                    totalSharesOutstanding={formData.totalSharesOutstanding}
+                    onInputModeChange={(mode) => update("inputMode", mode)}
+                    onEquityPercentageChange={(v) => update("equityPercentage", v)}
+                    onNumberOfSharesChange={(v) => update("numberOfShares", v)}
+                    onTotalSharesOutstandingChange={(v) => update("totalSharesOutstanding", v)}
                   />
-                  {(formData.equityPercentage ?? 0) > 10 && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                      Valor acima de 10% — verifique se está correto
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -296,6 +302,49 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* Strike price — conditional on Stock Options or SAR */}
+              {(formData.instrumentType === "Stock Options" || formData.instrumentType === "SAR") && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+                  <div className="space-y-2">
+                    <Label>Preço de exercício (strike price) *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={formData.strikePrice ?? ""}
+                      onChange={(e) => update("strikePrice", e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Ex: 1.50"
+                      className="h-11"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">Valor em BRL</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Optional grant metadata */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+                <div className="space-y-2">
+                  <Label>Data do grant</Label>
+                  <Input
+                    type="date"
+                    value={formData.grantDate instanceof Date ? formData.grantDate.toISOString().split("T")[0] : String(formData.grantDate || "")}
+                    onChange={(e) => update("grantDate", e.target.value || undefined)}
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Rótulo do grant</Label>
+                  <Input
+                    value={formData.grantLabel || ""}
+                    onChange={(e) => update("grantLabel", e.target.value || undefined)}
+                    placeholder="Ex: New-hire grant 2024"
+                    className="h-11"
+                    maxLength={100}
+                  />
                 </div>
               </div>
             </div>
@@ -349,6 +398,17 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-4">
+                <div className="space-y-2">
+                  <Label>Início do vesting</Label>
+                  <Input
+                    type="date"
+                    value={formData.vestingStartDate instanceof Date ? formData.vestingStartDate.toISOString().split("T")[0] : String(formData.vestingStartDate || "")}
+                    onChange={(e) => update("vestingStartDate", e.target.value || undefined)}
+                    className="h-11"
+                  />
                 </div>
               </div>
             </div>
@@ -546,12 +606,25 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryItem label="Cargo" value={formData.role} />
                   <SummaryItem label="Instrumento" value={formData.instrumentType} />
-                  <SummaryItem label="Equity" value={formData.equityPercentage != null ? `${formData.equityPercentage}%` : undefined} />
+                  <SummaryItem
+                    label="Equity"
+                    value={
+                      formData.inputMode === "shares" && formData.numberOfShares && formData.totalSharesOutstanding
+                        ? `${formData.numberOfShares.toLocaleString()} ações de ${formData.totalSharesOutstanding.toLocaleString()} = ${((formData.numberOfShares / formData.totalSharesOutstanding) * 100).toFixed(4)}%`
+                        : formData.equityPercentage != null ? `${formData.equityPercentage}%` : undefined
+                    }
+                  />
                   <SummaryItem label="Tipo" value={formData.grantType} />
                   <SummaryItem label="Vesting" value={formData.vestingTotalMonths != null ? `${formData.vestingTotalMonths} meses` : undefined} />
                   <SummaryItem label="Cliff" value={formData.cliffMonths != null ? `${formData.cliffMonths} meses` : undefined} />
                   <SummaryItem label="Cronograma" value={formData.vestingSchedule} />
                   <SummaryItem label="Primeiro no cargo" value={formData.isFirstInRole ? "Sim" : "Não"} />
+                  {formData.strikePrice != null && (
+                    <SummaryItem label="Strike price" value={`R$ ${formData.strikePrice}`} />
+                  )}
+                  {formData.grantDate && (
+                    <SummaryItem label="Data do grant" value={formData.grantDate instanceof Date ? formData.grantDate.toLocaleDateString("pt-BR") : String(formData.grantDate)} />
+                  )}
                 </div>
               </div>
 
