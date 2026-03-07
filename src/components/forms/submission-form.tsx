@@ -27,6 +27,7 @@ import { upsertSubmission, upsertSubmissionFromAi, deleteMyData } from "@/lib/ac
 import { EquityInput } from "./equity-input";
 
 const DRAFT_KEY = "captablebr-draft";
+const DRAFT_VERSION = 2; // Increment when schema changes to discard incompatible drafts
 const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface Props {
@@ -89,7 +90,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw);
-      if (Date.now() - draft.timestamp > DRAFT_MAX_AGE) {
+      if (draft.version !== DRAFT_VERSION || Date.now() - draft.timestamp > DRAFT_MAX_AGE) {
         localStorage.removeItem(DRAFT_KEY);
         return;
       }
@@ -113,6 +114,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
   const saveDraft = useCallback(() => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        version: DRAFT_VERSION,
         step,
         formData,
         timestamp: Date.now(),

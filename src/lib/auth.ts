@@ -2,14 +2,13 @@ import { cookies } from "next/headers";
 import { prisma } from "./db";
 
 const DEV_MODE = process.env.ENABLE_DEV_AUTH === "true" && process.env.NODE_ENV !== "production";
-
-if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-  throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is required in production");
-}
 const DEV_USER_UID = "dev-user-001";
 
 async function getFirebaseAdmin() {
-  // Dynamic import to avoid crashes when Firebase isn't configured
+  if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is required in production");
+  }
+
   const { initializeApp, getApps, cert } = await import("firebase-admin/app");
   const { getAuth } = await import("firebase-admin/auth");
 

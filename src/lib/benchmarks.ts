@@ -130,7 +130,14 @@ export async function getBenchmarks(
 
   const whereWithEquity = Prisma.sql`${where} AND s.equity_percentage IS NOT NULL`;
 
-  if (submissionCount >= MIN_SUBMISSIONS_PERCENTILES) {
+  // Count submissions with non-null equity separately for equity-specific thresholds
+  const equityCountResult = await prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+    SELECT COUNT(*) as count FROM submissions s WHERE ${whereWithEquity}
+  `);
+  const equityCount = Number(equityCountResult[0].count);
+
+  // Equity percentiles: gate on equity-specific count
+  if (equityCount >= MIN_SUBMISSIONS_PERCENTILES) {
     const equityResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
     >(Prisma.sql`
@@ -148,7 +155,20 @@ export async function getBenchmarks(
       p75: Number(equityResult[0].p75),
       avg: Number(equityResult[0].avg),
     };
+  } else if (equityCount >= MIN_SUBMISSIONS_AVERAGES) {
+    const equityResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
+      SELECT ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
+      FROM submissions s
+      WHERE ${whereWithEquity}
+    `);
+    equityPercentiles = {
+      p25: 0, p50: 0, p75: 0,
+      avg: Number(equityResult[0].avg),
+    };
+  }
 
+  // Vesting percentiles: gate on total submission count (vesting is always present)
+  if (submissionCount >= MIN_SUBMISSIONS_PERCENTILES) {
     const vestingResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
     >(Prisma.sql`
@@ -167,16 +187,6 @@ export async function getBenchmarks(
       avg: Number(vestingResult[0].avg),
     };
   } else if (submissionCount >= MIN_SUBMISSIONS_AVERAGES) {
-    const equityResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
-      SELECT ROUND(AVG(s.equity_percentage)::numeric, 3) as avg
-      FROM submissions s
-      WHERE ${whereWithEquity}
-    `);
-    equityPercentiles = {
-      p25: 0, p50: 0, p75: 0,
-      avg: Number(equityResult[0].avg),
-    };
-
     const vestingResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
       SELECT ROUND(AVG(s.vesting_total_months)::numeric, 1) as avg
       FROM submissions s
