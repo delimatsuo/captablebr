@@ -365,7 +365,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="space-y-2">
                   <Label>Instrumento *</Label>
                   <Select value={formData.instrumentType} onValueChange={(v) => update("instrumentType", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione">{formData.instrumentType}</SelectValue></SelectTrigger>
                     <SelectContent>
                       {INSTRUMENT_TYPES.map((i) => (
                         <SelectItem key={i} value={i} textValue={i} className="py-2.5">
@@ -399,7 +399,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="space-y-2">
                   <Label>Tipo de Grant *</Label>
                   <Select value={formData.grantType} onValueChange={(v) => update("grantType", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione">{formData.grantType}</SelectValue></SelectTrigger>
                     <SelectContent>
                       {GRANT_TYPES.map((g) => (
                         <SelectItem key={g} value={g} textValue={g} className="py-2.5">
@@ -495,7 +495,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="space-y-2">
                   <Label>Cronograma *</Label>
                   <Select value={formData.vestingSchedule} onValueChange={(v) => update("vestingSchedule", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione">{formData.vestingSchedule}</SelectValue></SelectTrigger>
                     <SelectContent>
                       {VESTING_SCHEDULES.map((s) => (
                         <SelectItem key={s} value={s} textValue={s} className="py-2.5">
