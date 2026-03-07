@@ -64,7 +64,14 @@ export async function getSubmissions() {
 
 export async function upsertSubmission(formData: unknown) {
   const session = await requireAuth();
-  const data = submissionSchema.parse(formData);
+
+  // Pre-compute equityPercentage from shares before validation
+  const raw = formData as Record<string, unknown>;
+  if (raw?.inputMode === "shares" && raw?.numberOfShares && raw?.totalSharesOutstanding) {
+    raw.equityPercentage = (Number(raw.numberOfShares) / Number(raw.totalSharesOutstanding)) * 100;
+  }
+
+  const data = submissionSchema.parse(raw);
 
   // Server-side shares-to-% recalculation (never trust client math)
   data.equityPercentage = recalcSharesPercentage(data);
@@ -118,7 +125,14 @@ export async function upsertSubmissionFromAi(
   sourceDocumentUrl?: string
 ) {
   const session = await requireAuth();
-  const data = submissionSchema.parse(extractedData);
+
+  // Pre-compute equityPercentage from shares before validation
+  const raw = extractedData as Record<string, unknown>;
+  if (raw?.inputMode === "shares" && raw?.numberOfShares && raw?.totalSharesOutstanding) {
+    raw.equityPercentage = (Number(raw.numberOfShares) / Number(raw.totalSharesOutstanding)) * 100;
+  }
+
+  const data = submissionSchema.parse(raw);
 
   // Server-side shares-to-% recalculation
   data.equityPercentage = recalcSharesPercentage(data);

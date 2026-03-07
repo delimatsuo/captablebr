@@ -84,6 +84,13 @@ export function DocumentUpload({ onExtracted }: Props) {
       if (extracted.grant_type) mapped.grantType = extracted.grant_type as SubmissionFormData["grantType"];
       if (extracted.stage) mapped.stage = extracted.stage as SubmissionFormData["stage"];
       if (extracted.sector) mapped.sector = extracted.sector as SubmissionFormData["sector"];
+      if (extracted.number_of_shares) {
+        mapped.numberOfShares = extracted.number_of_shares;
+        mapped.inputMode = "shares";
+      }
+      if (extracted.total_shares_outstanding) mapped.totalSharesOutstanding = extracted.total_shares_outstanding;
+      if (extracted.strike_price) mapped.strikePrice = extracted.strike_price;
+      if (extracted.grant_date) mapped.grantDate = extracted.grant_date;
 
       onExtracted(mapped, objectName);
       toast.success(`Dados extraídos com confiança de ${Math.round((extracted.confidence || 0) * 100)}%`);

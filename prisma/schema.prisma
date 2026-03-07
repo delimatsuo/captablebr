@@ -94,8 +94,8 @@ model Grant {
   // Equity (canonical = percentage; input can be shares)
   equityPercentage       Decimal  @map("equity_percentage") @db.Decimal(10, 6)
   inputMode              String   @default("percentage") @map("input_mode")
-  numberOfShares         Int?     @map("number_of_shares")
-  totalSharesOutstanding Int?     @map("total_shares_outstanding")
+  numberOfShares         BigInt?  @map("number_of_shares")
+  totalSharesOutstanding BigInt?  @map("total_shares_outstanding")
 
   // Instrument
   instrumentType         String   @map("instrument_type")

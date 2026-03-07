@@ -331,7 +331,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <Label>Data do grant</Label>
                   <Input
                     type="date"
-                    value={formData.grantDate instanceof Date ? formData.grantDate.toISOString().split("T")[0] : String(formData.grantDate || "")}
+                    value={formData.grantDate instanceof Date ? formData.grantDate.toISOString().split("T")[0] : String(formData.grantDate || "").split("T")[0]}
                     onChange={(e) => update("grantDate", e.target.value || undefined)}
                     className="h-11"
                   />
@@ -405,7 +405,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <Label>Início do vesting</Label>
                   <Input
                     type="date"
-                    value={formData.vestingStartDate instanceof Date ? formData.vestingStartDate.toISOString().split("T")[0] : String(formData.vestingStartDate || "")}
+                    value={formData.vestingStartDate instanceof Date ? formData.vestingStartDate.toISOString().split("T")[0] : String(formData.vestingStartDate || "").split("T")[0]}
                     onChange={(e) => update("vestingStartDate", e.target.value || undefined)}
                     className="h-11"
                   />
