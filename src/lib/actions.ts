@@ -64,7 +64,7 @@ function splitFlatFormData(data: ReturnType<typeof submissionSchema.parse>) {
   const {
     instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, isFirstInRole, inputMode, numberOfShares,
-    totalSharesOutstanding, strikePrice, currentSharePrice, lastValuation,
+    totalSharesOutstanding, strikePrice, strikeCurrency, currentSharePrice, lastValuation,
     grantDate, grantLabel, vestingStartDate, ...submissionFields
   } = data;
 
@@ -72,7 +72,7 @@ function splitFlatFormData(data: ReturnType<typeof submissionSchema.parse>) {
     instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, isFirstInRole,
     inputMode: inputMode ?? "percentage",
-    numberOfShares, totalSharesOutstanding, strikePrice,
+    numberOfShares, totalSharesOutstanding, strikePrice, strikeCurrency,
     currentSharePrice, lastValuation,
     grantDate, grantLabel, vestingStartDate,
   };

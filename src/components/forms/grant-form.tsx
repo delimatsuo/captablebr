@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItemWithDescription, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectItemWithDescription, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { EquityInput } from "./equity-input";
 import {
   INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
+  CURRENCIES,
   type InputMode,
 } from "@/lib/types";
 import type { GrantFormData } from "@/lib/validations";
@@ -42,12 +43,14 @@ interface Props {
   data: Partial<GrantFormData>;
   onSave: (data: Partial<GrantFormData>) => void;
   onCancel: () => void;
+  defaultCurrency?: string;
 }
 
-export function GrantForm({ data: initialData, onSave, onCancel }: Props) {
+export function GrantForm({ data: initialData, onSave, onCancel, defaultCurrency = "USD" }: Props) {
   const [data, setData] = useState<Partial<GrantFormData>>({
     inputMode: "percentage",
     isFirstInRole: false,
+    strikeCurrency: defaultCurrency as GrantFormData["strikeCurrency"],
     ...initialData,
   });
 
@@ -132,7 +135,15 @@ export function GrantForm({ data: initialData, onSave, onCancel }: Props) {
                 className="h-11"
                 required
               />
-              <p className="text-xs text-muted-foreground">Valor em BRL</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Moeda do strike</Label>
+              <Select value={data.strikeCurrency || defaultCurrency} onValueChange={(v) => update("strikeCurrency", v)}>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )}
