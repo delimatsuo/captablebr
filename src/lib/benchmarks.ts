@@ -202,7 +202,11 @@ export async function getBenchmarks(
     };
   }
 
-  // Cash compensation percentiles
+  // Cash compensation percentiles (converted to USD using fx_rate_used)
+  // CASE WHEN: if currency is BRL and fx_rate_used is present, divide by fx_rate_used to get USD
+  const salaryUsd = Prisma.sql`CASE WHEN s.currency = 'BRL' AND s.fx_rate_used IS NOT NULL THEN s.annual_salary / s.fx_rate_used ELSE s.annual_salary END`;
+  const bonusUsd = Prisma.sql`CASE WHEN s.currency = 'BRL' AND s.fx_rate_used IS NOT NULL THEN COALESCE(s.annual_bonus, 0) / s.fx_rate_used ELSE COALESCE(s.annual_bonus, 0) END`;
+
   const whereWithSalary = Prisma.sql`${where} AND s.annual_salary IS NOT NULL`;
   const salaryCountResult = await prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
     SELECT COUNT(*) as count FROM submissions s WHERE ${whereWithSalary}
@@ -214,10 +218,10 @@ export async function getBenchmarks(
       [{ p25: number; p50: number; p75: number; avg: number }]
     >(Prisma.sql`
       SELECT
-        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.annual_salary)::numeric, 0) as p25,
-        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.annual_salary)::numeric, 0) as p50,
-        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.annual_salary)::numeric, 0) as p75,
-        ROUND(AVG(s.annual_salary)::numeric, 0) as avg
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY ${salaryUsd})::numeric, 0) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY ${salaryUsd})::numeric, 0) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY ${salaryUsd})::numeric, 0) as p75,
+        ROUND(AVG(${salaryUsd})::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
@@ -225,10 +229,10 @@ export async function getBenchmarks(
       [{ p25: number; p50: number; p75: number; avg: number }]
     >(Prisma.sql`
       SELECT
-        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as p25,
-        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as p50,
-        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as p75,
-        ROUND(AVG(s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY ${salaryUsd} + ${bonusUsd})::numeric, 0) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY ${salaryUsd} + ${bonusUsd})::numeric, 0) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY ${salaryUsd} + ${bonusUsd})::numeric, 0) as p75,
+        ROUND(AVG(${salaryUsd} + ${bonusUsd})::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
@@ -248,12 +252,12 @@ export async function getBenchmarks(
     };
   } else if (salaryCount >= MIN_SUBMISSIONS_AVERAGES) {
     const salaryResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
-      SELECT ROUND(AVG(s.annual_salary)::numeric, 0) as avg
+      SELECT ROUND(AVG(${salaryUsd})::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
     const totalCashResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
-      SELECT ROUND(AVG(s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
+      SELECT ROUND(AVG(${salaryUsd} + ${bonusUsd})::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);

@@ -25,6 +25,8 @@ Extraia os seguintes campos deste documento:
 - Setor da empresa se mencionado (${SECTORS.join(", ")})
 - Tipo de contrato (${CONTRACT_TYPES.join(", ")})
 - Salário anual bruto em USD (se mencionado)
+- País da empresa (US, BR)
+- Moeda da remuneração (USD, BRL)
 
 IMPORTANTE: NÃO inclua nomes de pessoas, CPFs, endereços ou qualquer dado pessoal na resposta.
 
@@ -47,6 +49,8 @@ Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
   "sector": "...",
   "contract_type": null,
   "annual_salary": null,
+  "country": null,
+  "currency": null,
   "confidence": 0.0
 }
 
@@ -72,6 +76,8 @@ const extractionResultSchema = z.object({
   sector: z.string().nullable().optional(),
   contract_type: z.string().nullable().optional(),
   annual_salary: z.number().positive().nullable().optional(),
+  country: z.string().nullable().optional(),
+  currency: z.string().nullable().optional(),
   confidence: z.number().min(0).max(1),
 });
 

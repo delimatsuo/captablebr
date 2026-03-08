@@ -65,6 +65,10 @@ model Submission {
   country            String?  @map("country")              // ISO 3166-1 alpha-2 ("US", "BR")
   currency           String?  @default("USD") @map("currency") // ISO 4217 ("USD", "BRL")
 
+  // FX rate at submission time — BRL per 1 USD (e.g., 5.25). Divide BRL amount by this to get USD.
+  fxRateUsed         Decimal? @map("fx_rate_used") @db.Decimal(10, 4)
+  fxRateDate         DateTime? @map("fx_rate_date")
+
   // Cash comp & incentives (annual amounts, currency per `currency` field)
   contractType       String?  @map("contract_type")
   annualSalary       Decimal? @map("annual_salary") @db.Decimal(12, 2)
