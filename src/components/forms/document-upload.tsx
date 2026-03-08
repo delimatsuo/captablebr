@@ -94,7 +94,7 @@ export function DocumentUpload({ onExtracted }: Props) {
       if (extracted.last_valuation) mapped.lastValuation = extracted.last_valuation;
       if (extracted.grant_date) mapped.grantDate = extracted.grant_date;
       if (extracted.contract_type) mapped.contractType = extracted.contract_type as SubmissionFormData["contractType"];
-      if (extracted.monthly_salary) mapped.monthlySalary = extracted.monthly_salary;
+      if (extracted.annual_salary) mapped.annualSalary = extracted.annual_salary;
 
       onExtracted(mapped, objectName);
       toast.success(`Dados extraídos com confiança de ${Math.round((extracted.confidence || 0) * 100)}%`);

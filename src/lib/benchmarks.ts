@@ -8,7 +8,7 @@ export interface BenchmarkResult {
   equityPercentiles: { p25: number; p50: number; p75: number; avg: number } | null;
   vestingPercentiles: { p25: number; p50: number; p75: number; avg: number } | null;
   cashPercentiles: {
-    monthlySalary: { p25: number; p50: number; p75: number; avg: number };
+    annualSalary: { p25: number; p50: number; p75: number; avg: number };
     totalCash: { p25: number; p50: number; p75: number; avg: number };
   } | null;
   commonCliff: number | null;
@@ -203,7 +203,7 @@ export async function getBenchmarks(
   }
 
   // Cash compensation percentiles
-  const whereWithSalary = Prisma.sql`${where} AND s.monthly_salary IS NOT NULL`;
+  const whereWithSalary = Prisma.sql`${where} AND s.annual_salary IS NOT NULL`;
   const salaryCountResult = await prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
     SELECT COUNT(*) as count FROM submissions s WHERE ${whereWithSalary}
   `);
@@ -214,10 +214,10 @@ export async function getBenchmarks(
       [{ p25: number; p50: number; p75: number; avg: number }]
     >(Prisma.sql`
       SELECT
-        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.monthly_salary)::numeric, 0) as p25,
-        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.monthly_salary)::numeric, 0) as p50,
-        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.monthly_salary)::numeric, 0) as p75,
-        ROUND(AVG(s.monthly_salary)::numeric, 0) as avg
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.annual_salary)::numeric, 0) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.annual_salary)::numeric, 0) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.annual_salary)::numeric, 0) as p75,
+        ROUND(AVG(s.annual_salary)::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
@@ -225,15 +225,15 @@ export async function getBenchmarks(
       [{ p25: number; p50: number; p75: number; avg: number }]
     >(Prisma.sql`
       SELECT
-        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as p25,
-        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as p50,
-        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as p75,
-        ROUND(AVG(s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as p75,
+        ROUND(AVG(s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
     cashPercentiles = {
-      monthlySalary: {
+      annualSalary: {
         p25: Number(salaryResult[0].p25),
         p50: Number(salaryResult[0].p50),
         p75: Number(salaryResult[0].p75),
@@ -248,17 +248,17 @@ export async function getBenchmarks(
     };
   } else if (salaryCount >= MIN_SUBMISSIONS_AVERAGES) {
     const salaryResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
-      SELECT ROUND(AVG(s.monthly_salary)::numeric, 0) as avg
+      SELECT ROUND(AVG(s.annual_salary)::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
     const totalCashResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
-      SELECT ROUND(AVG(s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
+      SELECT ROUND(AVG(s.annual_salary + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
       FROM submissions s
       WHERE ${whereWithSalary}
     `);
     cashPercentiles = {
-      monthlySalary: {
+      annualSalary: {
         p25: 0, p50: 0, p75: 0,
         avg: Number(salaryResult[0].avg),
       },

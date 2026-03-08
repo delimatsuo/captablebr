@@ -30,7 +30,7 @@ export async function GET() {
     hireYear: submission.hireYear,
     yearsExperience: submission.yearsExperience,
     contractType: submission.contractType,
-    monthlySalary: submission.monthlySalary ? Number(submission.monthlySalary) : undefined,
+    annualSalary: submission.annualSalary ? Number(submission.annualSalary) : undefined,
     hasAnnualBonus: submission.hasAnnualBonus,
     annualBonus: submission.annualBonus ? Number(submission.annualBonus) : undefined,
     hasCommission: submission.hasCommission,

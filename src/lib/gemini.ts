@@ -24,7 +24,7 @@ Extraia os seguintes campos deste documento:
 - Estágio da empresa se mencionado (${STAGES.join(", ")})
 - Setor da empresa se mencionado (${SECTORS.join(", ")})
 - Tipo de contrato (${CONTRACT_TYPES.join(", ")})
-- Salário mensal bruto em BRL (se mencionado)
+- Salário anual bruto em USD (se mencionado)
 
 IMPORTANTE: NÃO inclua nomes de pessoas, CPFs, endereços ou qualquer dado pessoal na resposta.
 
@@ -46,7 +46,7 @@ Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
   "stage": "...",
   "sector": "...",
   "contract_type": null,
-  "monthly_salary": null,
+  "annual_salary": null,
   "confidence": 0.0
 }
 
@@ -71,7 +71,7 @@ const extractionResultSchema = z.object({
   stage: z.string().nullable().optional(),
   sector: z.string().nullable().optional(),
   contract_type: z.string().nullable().optional(),
-  monthly_salary: z.number().positive().nullable().optional(),
+  annual_salary: z.number().positive().nullable().optional(),
   confidence: z.number().min(0).max(1),
 });
 
