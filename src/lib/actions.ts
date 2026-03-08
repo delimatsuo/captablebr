@@ -8,7 +8,6 @@ import {
   grantSchema,
   accessRequestSchema,
 } from "./validations";
-import type { GrantFormData } from "./validations";
 import { redirect } from "next/navigation";
 
 async function requireAuth() {
@@ -388,7 +387,8 @@ export async function addGrant(grantData: unknown) {
     data.equityPercentage = computed;
   }
 
-  const { id: _id, ...grantFields } = data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _grantId, ...grantFields } = data;
 
   return prisma.$transaction(async (tx) => {
     const grant = await tx.grant.create({
@@ -442,7 +442,8 @@ export async function updateGrant(grantId: string, grantData: unknown) {
     data.equityPercentage = computed;
   }
 
-  const { id: _id, ...grantFields } = data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _grantId, ...grantFields } = data;
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.grant.update({
