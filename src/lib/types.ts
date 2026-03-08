@@ -43,5 +43,19 @@ export const EXPERIENCE_RANGES = ["5-10", "10-15", "15-20", "20+"] as const;
 export const CONTRACT_TYPES = ["CLT", "PJ", "Diretor Estatutário", "Other"] as const;
 export type ContractType = (typeof CONTRACT_TYPES)[number];
 
+export const COUNTRIES = [
+  { code: "US", label: "Estados Unidos" },
+  { code: "BR", label: "Brasil" },
+] as const;
+export const COUNTRY_CODES = COUNTRIES.map((c) => c.code) as unknown as readonly ["US", "BR"];
+export type CountryCode = (typeof COUNTRY_CODES)[number];
+
+export const CURRENCIES = [
+  { code: "USD", label: "Dólar", symbol: "$" },
+  { code: "BRL", label: "Real", symbol: "R$" },
+] as const;
+export const CURRENCY_CODES = CURRENCIES.map((c) => c.code) as unknown as readonly ["USD", "BRL"];
+export type CurrencyCode = (typeof CURRENCY_CODES)[number];
+
 export const VERIFICATION_RESULTS = ["auto_approved", "pending_review", "scrape_failed", "rejected"] as const;
 export type VerificationResult = (typeof VERIFICATION_RESULTS)[number];

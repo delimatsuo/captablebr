@@ -41,6 +41,8 @@ interface SubmissionData {
   sector: string;
   subSector?: string;
   headcountRange: string;
+  country?: string;
+  currency?: string;
   role: string;
   equityPercentage?: number;
   hireYear?: number;
@@ -60,9 +62,11 @@ interface SubmissionData {
   grants: GrantData[];
 }
 
-function formatBRL(value: number | undefined): string {
+function formatMoney(value: number | undefined, currency: string = "USD"): string {
   if (value == null) return "—";
-  return `R$ ${value.toLocaleString("pt-BR")}`;
+  const symbol = currency === "BRL" ? "R$" : "$";
+  const locale = currency === "BRL" ? "pt-BR" : "en-US";
+  return `${symbol} ${value.toLocaleString(locale)}`;
 }
 
 function DataItem({ label, value }: { label: string; value?: string }) {
@@ -163,6 +167,7 @@ export default function MyDataPage() {
             <DataItem label="Modelo" value={data.businessModel} />
             <DataItem label="Setor" value={data.sector} />
             <DataItem label="Funcionários" value={data.headcountRange} />
+            {data.country && <DataItem label="País" value={data.country === "BR" ? "Brasil" : data.country === "US" ? "Estados Unidos" : data.country} />}
             {data.subSector && <DataItem label="Sub-setor" value={data.subSector} />}
           </div>
         </CardContent>
@@ -177,13 +182,14 @@ export default function MyDataPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <DataItem label="Cargo" value={data.role} />
             {data.contractType && <DataItem label="Contrato" value={data.contractType} />}
-            <DataItem label="Salário anual" value={data.annualSalary != null ? `$ ${data.annualSalary.toLocaleString("en-US")}` : "—"} />
+            {data.currency && <DataItem label="Moeda" value={data.currency} />}
+            <DataItem label="Salário anual" value={formatMoney(data.annualSalary, data.currency)} />
             {data.hireYear && <DataItem label="Contratação" value={String(data.hireYear)} />}
             {data.yearsExperience && <DataItem label="Experiência" value={`${data.yearsExperience} anos`} />}
-            {data.hasAnnualBonus && <DataItem label="Bônus anual" value={formatBRL(data.annualBonus)} />}
-            {data.hasCommission && <DataItem label="Comissão" value={formatBRL(data.commission)} />}
-            {data.hasRetentionPlan && <DataItem label="Retenção" value={formatBRL(data.retentionAmount)} />}
-            {data.hasSignOn && <DataItem label="Sign-on" value={formatBRL(data.signOnAmount)} />}
+            {data.hasAnnualBonus && <DataItem label="Bônus anual" value={formatMoney(data.annualBonus, data.currency)} />}
+            {data.hasCommission && <DataItem label="Comissão" value={formatMoney(data.commission, data.currency)} />}
+            {data.hasRetentionPlan && <DataItem label="Retenção" value={formatMoney(data.retentionAmount, data.currency)} />}
+            {data.hasSignOn && <DataItem label="Sign-on" value={formatMoney(data.signOnAmount, data.currency)} />}
           </div>
         </CardContent>
       </Card>

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
   ROLES, EXPERIENCE_RANGES, CONTRACT_TYPES,
+  COUNTRIES, CURRENCIES,
 } from "@/lib/types";
 import { submissionWithGrantsSchema } from "@/lib/validations";
 import type { GrantFormData } from "@/lib/validations";
@@ -26,7 +27,7 @@ import { upsertSubmissionWithGrants, upsertSubmissionFromAi, deleteMyData } from
 import { GrantList } from "./grant-list";
 
 const DRAFT_KEY = "captablebr-draft";
-const DRAFT_VERSION = 3;
+const DRAFT_VERSION = 4;
 const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 interface SubmissionFormFields {
@@ -35,6 +36,8 @@ interface SubmissionFormFields {
   sector?: string;
   subSector?: string;
   headcountRange?: string;
+  country?: string;
+  currency?: string;
   role?: string;
   hireYear?: number;
   yearsExperience?: string;
@@ -65,9 +68,11 @@ const STEPS = [
   { label: "Confirmar", number: 4 },
 ];
 
-function formatBRL(value: number | undefined): string {
+function formatCurrency(value: number | undefined, currency: string = "USD"): string {
   if (value == null) return "—";
-  return `R$ ${value.toLocaleString("pt-BR")}`;
+  const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol || "$";
+  const locale = currency === "BRL" ? "pt-BR" : "en-US";
+  return `${symbol} ${value.toLocaleString(locale)}`;
 }
 
 export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }: Props) {
@@ -76,6 +81,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
   const [deleting, setDeleting] = useState(false);
   const [step, setStep] = useState(1);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [fxRate, setFxRate] = useState<number | null>(null);
   const [formData, setFormData] = useState<SubmissionFormFields>(() => {
     const defaults: SubmissionFormFields = {
       grants: [{ inputMode: "percentage", isFirstInRole: false }],
@@ -99,7 +105,16 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw);
-      if (draft.version !== DRAFT_VERSION || Date.now() - draft.timestamp > DRAFT_MAX_AGE) {
+      if (Date.now() - draft.timestamp > DRAFT_MAX_AGE) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      // Migrate v3 drafts: add currency default
+      if (draft.version === 3) {
+        draft.formData.currency = draft.formData.currency || "USD";
+        draft.version = DRAFT_VERSION;
+      }
+      if (draft.version !== DRAFT_VERSION) {
         localStorage.removeItem(DRAFT_KEY);
         return;
       }
@@ -117,6 +132,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       setDraftRestored(false);
     }
   }, [draftRestored]);
+
+  // Fetch FX rate on mount
+  useEffect(() => {
+    fetch("/api/fx-rate")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data?.rate) setFxRate(data.rate); })
+      .catch(() => {});
+  }, []);
 
   const saveDraft = useCallback(() => {
     try {
@@ -380,6 +403,24 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label>País</Label>
+                <Select
+                  value={formData.country || ""}
+                  onValueChange={(v) => {
+                    update("country", v || undefined);
+                    // Auto-set currency based on country
+                    if (v === "BR") update("currency", "BRL");
+                    else if (v === "US") update("currency", "USD");
+                  }}
+                >
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -430,7 +471,22 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Salário anual bruto (USD)</Label>
+                  <Label>Moeda</Label>
+                  <Select
+                    value={formData.currency || "USD"}
+                    onValueChange={(v) => update("currency", v)}
+                    disabled
+                  >
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Somente USD por enquanto</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Salário anual bruto ({CURRENCIES.find((c) => c.code === (formData.currency || "USD"))?.symbol || "$"})</Label>
                   <Input
                     type="number"
                     min="0"
@@ -440,6 +496,11 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                     placeholder="Ex: 350000"
                     className="h-11"
                   />
+                  {fxRate && (
+                    <p className="text-xs text-muted-foreground">
+                      Cotação atual: 1 USD = R$ {fxRate.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -592,6 +653,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
             <GrantList
               grants={formData.grants}
               onChange={(grants) => setFormData((prev) => ({ ...prev, grants }))}
+              currency={formData.currency || "USD"}
             />
           </CardContent>
         </Card>
@@ -615,6 +677,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <SummaryItem label="Modelo" value={formData.businessModel} />
                   <SummaryItem label="Setor" value={formData.sector} />
                   <SummaryItem label="Funcionários" value={formData.headcountRange} />
+                  {formData.country && <SummaryItem label="País" value={COUNTRIES.find((c) => c.code === formData.country)?.label} />}
                 </div>
               </div>
 
@@ -625,11 +688,12 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryItem label="Cargo" value={formData.role} />
                   {formData.contractType && <SummaryItem label="Contrato" value={formData.contractType} />}
-                  <SummaryItem label="Salário anual" value={formData.annualSalary != null ? `$ ${formData.annualSalary.toLocaleString("en-US")}` : "—"} />
-                  {formData.hasAnnualBonus && <SummaryItem label="Bônus anual" value={formatBRL(formData.annualBonus)} />}
-                  {formData.hasCommission && <SummaryItem label="Comissão" value={formatBRL(formData.commission)} />}
-                  {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formatBRL(formData.retentionAmount)} />}
-                  {formData.hasSignOn && <SummaryItem label="Sign-on" value={formatBRL(formData.signOnAmount)} />}
+                  <SummaryItem label="Moeda" value={formData.currency || "USD"} />
+                  <SummaryItem label="Salário anual" value={formatCurrency(formData.annualSalary, formData.currency)} />
+                  {formData.hasAnnualBonus && <SummaryItem label="Bônus anual" value={formatCurrency(formData.annualBonus, formData.currency)} />}
+                  {formData.hasCommission && <SummaryItem label="Comissão" value={formatCurrency(formData.commission, formData.currency)} />}
+                  {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formatCurrency(formData.retentionAmount, formData.currency)} />}
+                  {formData.hasSignOn && <SummaryItem label="Sign-on" value={formatCurrency(formData.signOnAmount, formData.currency)} />}
                 </div>
               </div>
 

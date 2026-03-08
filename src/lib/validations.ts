@@ -3,6 +3,7 @@ import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
   ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
   EXPERIENCE_RANGES, CONTRACT_TYPES, INPUT_MODES,
+  COUNTRY_CODES, CURRENCY_CODES,
 } from "./types";
 
 // --- Grant schema (standalone, used per-grant) ---
@@ -27,6 +28,7 @@ export const grantSchema = z.object({
   numberOfShares: z.coerce.number().int().positive().optional(),
   totalSharesOutstanding: z.coerce.number().int().positive().optional(),
   strikePrice: z.coerce.number().positive().optional(),
+  strikeCurrency: z.enum(CURRENCY_CODES).default("USD"),
   currentSharePrice: z.coerce.number().positive().optional(),
   lastValuation: z.coerce.number().positive().optional(),
   grantDate: z.coerce.date().optional(),
@@ -69,6 +71,8 @@ export const submissionBaseSchema = z.object({
   sector: z.enum(SECTORS, { message: "Selecione o setor" }),
   subSector: z.string().optional(),
   headcountRange: z.enum(HEADCOUNT_RANGES, { message: "Selecione o número de funcionários" }),
+  country: z.enum(COUNTRY_CODES, { message: "Selecione o país" }).optional(),
+  currency: z.enum(CURRENCY_CODES).default("USD"),
 
   // Role
   role: z.enum(ROLES, { message: "Selecione o cargo" }),
@@ -120,6 +124,7 @@ export const submissionSchema = submissionBaseSchema.extend({
   numberOfShares: z.coerce.number().int().positive().optional(),
   totalSharesOutstanding: z.coerce.number().int().positive().optional(),
   strikePrice: z.coerce.number().positive().optional(),
+  strikeCurrency: z.enum(CURRENCY_CODES).default("USD"),
   currentSharePrice: z.coerce.number().positive().optional(),
   lastValuation: z.coerce.number().positive().optional(),
   grantDate: z.coerce.date().optional(),

@@ -18,6 +18,7 @@ import type { GrantFormData } from "@/lib/validations";
 interface Props {
   grants: Partial<GrantFormData>[];
   onChange: (grants: Partial<GrantFormData>[]) => void;
+  currency?: string;
 }
 
 function equitySummaryForGrant(g: Partial<GrantFormData>): string {
@@ -44,7 +45,7 @@ function vestingSummary(g: Partial<GrantFormData>): string {
   return parts.join(", ") || "—";
 }
 
-export function GrantList({ grants, onChange }: Props) {
+export function GrantList({ grants, onChange, currency }: Props) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -155,6 +156,7 @@ export function GrantList({ grants, onChange }: Props) {
                 data={grants[editingIndex]}
                 onSave={(data) => handleSave(editingIndex, data)}
                 onCancel={() => setEditingIndex(null)}
+                defaultCurrency={currency}
               />
             </div>
           )}
@@ -173,6 +175,7 @@ export function GrantList({ grants, onChange }: Props) {
               data={{ inputMode: "percentage", isFirstInRole: false }}
               onSave={handleAdd}
               onCancel={() => setIsAdding(false)}
+              defaultCurrency={currency}
             />
           </div>
         </SheetContent>
