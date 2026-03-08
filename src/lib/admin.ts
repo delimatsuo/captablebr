@@ -6,23 +6,24 @@ import { DEV_MODE } from "./dev-mode";
 import { redirect } from "next/navigation";
 
 // Your Firebase UID — only this user can access admin features.
-const ADMIN_UID = DEV_MODE ? "dev-user-001" : process.env.ADMIN_UID;
-
-if (!DEV_MODE && !ADMIN_UID) {
-  throw new Error("ADMIN_UID environment variable is required in non-dev mode");
+function getAdminUid(): string | undefined {
+  return DEV_MODE ? "dev-user-001" : process.env.ADMIN_UID;
 }
 
 async function requireAdmin() {
+  const adminUid = getAdminUid();
   const session = await verifySession();
-  if (!session || session.uid !== ADMIN_UID) {
+  if (!session || !adminUid || session.uid !== adminUid) {
     redirect("/benchmarks");
   }
   return session;
 }
 
 export async function isAdmin(): Promise<boolean> {
+  const adminUid = getAdminUid();
+  if (!adminUid) return false;
   const session = await verifySession();
-  return session?.uid === ADMIN_UID;
+  return session?.uid === adminUid;
 }
 
 export async function getInvitations() {
