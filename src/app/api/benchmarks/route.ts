@@ -1,6 +1,7 @@
 import { verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getBenchmarks } from "@/lib/benchmarks";
+import { COUNTRY_CODES } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -25,7 +26,13 @@ export async function GET(request: NextRequest) {
   const businessModel = searchParams.get("businessModel") || undefined;
   const sector = searchParams.get("sector") || undefined;
 
-  const result = await getBenchmarks(role, stage, businessModel, sector);
+  const countryParam = searchParams.get("country") || undefined;
+  if (countryParam && !(COUNTRY_CODES as readonly string[]).includes(countryParam)) {
+    return NextResponse.json({ error: "Código de país inválido" }, { status: 400 });
+  }
+  const country = countryParam;
+
+  const result = await getBenchmarks(role, stage, businessModel, sector, country);
 
   if (!result) {
     return NextResponse.json(

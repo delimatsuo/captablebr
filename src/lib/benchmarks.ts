@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
-import { ROLES, STAGES, BUSINESS_MODELS, SECTORS } from "./types";
+import { ROLES, STAGES, BUSINESS_MODELS, SECTORS, COUNTRIES, COUNTRY_CODES } from "./types";
 
 export interface BenchmarkResult {
   segmentLabel: string;
@@ -22,6 +22,8 @@ interface SegmentFilter {
   stage?: string;
   businessModel?: string;
   sector?: string;
+  // Country is orthogonal — it never relaxes in the rollup cascade
+  country?: string;
 }
 
 const MIN_SUBMISSIONS_PERCENTILES = 10;
@@ -32,16 +34,23 @@ const VALID_ROLES = ROLES as readonly string[];
 const VALID_STAGES = STAGES as readonly string[];
 const VALID_BUSINESS_MODELS = BUSINESS_MODELS as readonly string[];
 const VALID_SECTORS = SECTORS as readonly string[];
+const VALID_COUNTRIES = COUNTRY_CODES as readonly string[];
 
 function validateFilter(filter: SegmentFilter): void {
   if (!VALID_ROLES.includes(filter.role)) throw new Error("Invalid role");
   if (filter.stage && !VALID_STAGES.includes(filter.stage)) throw new Error("Invalid stage");
   if (filter.businessModel && !VALID_BUSINESS_MODELS.includes(filter.businessModel)) throw new Error("Invalid businessModel");
   if (filter.sector && !VALID_SECTORS.includes(filter.sector)) throw new Error("Invalid sector");
+  if (filter.country && !VALID_COUNTRIES.includes(filter.country)) throw new Error("Invalid country");
 }
 
 function buildSegmentLabel(filter: SegmentFilter): string {
-  const parts = [filter.role];
+  const parts: string[] = [];
+  if (filter.country) {
+    const countryLabel = COUNTRIES.find((c) => c.code === filter.country)?.label;
+    if (countryLabel) parts.push(countryLabel);
+  }
+  parts.push(filter.role);
   if (filter.stage) parts.push(filter.stage);
   if (filter.businessModel) parts.push(filter.businessModel);
   if (filter.sector) parts.push(filter.sector);
@@ -50,23 +59,10 @@ function buildSegmentLabel(filter: SegmentFilter): string {
 
 async function getSubmissionCount(filter: SegmentFilter): Promise<number> {
   validateFilter(filter);
-
-  let query = Prisma.sql`
-    SELECT COUNT(*) as count FROM submissions s
-    WHERE s.role = ${filter.role}
-      AND s.confirmed_by_user = true`;
-
-  if (filter.stage) {
-    query = Prisma.sql`${query} AND s.stage = ${filter.stage}`;
-  }
-  if (filter.businessModel) {
-    query = Prisma.sql`${query} AND s.business_model = ${filter.businessModel}`;
-  }
-  if (filter.sector) {
-    query = Prisma.sql`${query} AND s.sector = ${filter.sector}`;
-  }
-
-  const result = await prisma.$queryRaw<[{ count: bigint }]>(query);
+  const where = buildBaseWhere(filter);
+  const result = await prisma.$queryRaw<[{ count: bigint }]>(
+    Prisma.sql`SELECT COUNT(*) as count FROM submissions s WHERE ${where}`
+  );
   return Number(result[0].count);
 }
 
@@ -74,24 +70,32 @@ function findBestSegment(
   role: string,
   stage?: string,
   businessModel?: string,
-  sector?: string
+  sector?: string,
+  country?: string
 ): SegmentFilter[] {
+  // Country stays pinned at every cascade level — it never relaxes
   const levels: SegmentFilter[] = [];
   if (stage && businessModel && sector) {
-    levels.push({ role, stage, businessModel, sector });
+    levels.push({ role, stage, businessModel, sector, country });
   }
   if (stage && businessModel) {
-    levels.push({ role, stage, businessModel });
+    levels.push({ role, stage, businessModel, country });
   }
   if (stage) {
-    levels.push({ role, stage });
+    levels.push({ role, stage, country });
   }
-  levels.push({ role });
+  levels.push({ role, country });
   return levels;
 }
 
 function buildBaseWhere(filter: SegmentFilter): Prisma.Sql {
   let where = Prisma.sql`s.role = ${filter.role} AND s.confirmed_by_user = true`;
+  // Country filter: when undefined ("Todos os mercados"), no clause is added —
+  // rows with country IS NULL are included. When a specific country is set,
+  // WHERE s.country = 'BR' naturally excludes NULLs via SQL semantics.
+  if (filter.country) {
+    where = Prisma.sql`${where} AND s.country = ${filter.country}`;
+  }
   if (filter.stage) {
     where = Prisma.sql`${where} AND s.stage = ${filter.stage}`;
   }
@@ -108,9 +112,11 @@ export async function getBenchmarks(
   role: string,
   stage?: string,
   businessModel?: string,
-  sector?: string
+  sector?: string,
+  country?: string
 ): Promise<BenchmarkResult | null> {
-  const segments = findBestSegment(role, stage, businessModel, sector);
+  // TODO: Add database index on `country` column when volume justifies it
+  const segments = findBestSegment(role, stage, businessModel, sector, country);
 
   let bestFilter: SegmentFilter | null = null;
   let submissionCount = 0;
