@@ -2,11 +2,17 @@
   "name": "captablebr",
   "version": "0.1.0",
   "private": true,
+  "prisma": {
+    "seed": "node --experimental-strip-types prisma/seed.ts"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "npx prisma db seed",
+    "seed:dry": "node --experimental-strip-types prisma/seed.ts --dry-run",
+    "seed:fresh": "node --experimental-strip-types prisma/seed.ts --clear"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",

@@ -39,7 +39,7 @@ interface SubmissionFormFields {
   hireYear?: number;
   yearsExperience?: string;
   contractType?: string;
-  monthlySalary?: number;
+  annualSalary?: number;
   hasAnnualBonus?: boolean;
   annualBonus?: number;
   hasCommission?: boolean;
@@ -430,14 +430,14 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Salário mensal bruto (R$)</Label>
+                  <Label>Salário anual bruto (USD)</Label>
                   <Input
                     type="number"
                     min="0"
-                    max="500000"
-                    value={formData.monthlySalary ?? ""}
-                    onChange={(e) => update("monthlySalary", e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="Ex: 45000"
+                    max="5000000"
+                    value={formData.annualSalary ?? ""}
+                    onChange={(e) => update("annualSalary", e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Ex: 350000"
                     className="h-11"
                   />
                 </div>
@@ -625,7 +625,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryItem label="Cargo" value={formData.role} />
                   {formData.contractType && <SummaryItem label="Contrato" value={formData.contractType} />}
-                  <SummaryItem label="Salário mensal" value={formatBRL(formData.monthlySalary)} />
+                  <SummaryItem label="Salário anual" value={formData.annualSalary != null ? `$ ${formData.annualSalary.toLocaleString("en-US")}` : "—"} />
                   {formData.hasAnnualBonus && <SummaryItem label="Bônus anual" value={formatBRL(formData.annualBonus)} />}
                   {formData.hasCommission && <SummaryItem label="Comissão" value={formatBRL(formData.commission)} />}
                   {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formatBRL(formData.retentionAmount)} />}

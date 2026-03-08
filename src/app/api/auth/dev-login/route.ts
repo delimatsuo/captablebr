@@ -1,9 +1,13 @@
-import { DEV_MODE, DEV_USER_UID } from "@/lib/auth";
+import { DEV_MODE, DEV_USER_UID } from "@/lib/dev-mode";
 import { NextResponse } from "next/server";
 
 export async function POST() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   if (!DEV_MODE) {
-    return NextResponse.json({ error: "Not available in production" }, { status: 404 });
+    return NextResponse.json({ error: "Dev auth not enabled" }, { status: 404 });
   }
 
   const response = NextResponse.json({ status: "ok", uid: DEV_USER_UID });

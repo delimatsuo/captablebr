@@ -46,7 +46,7 @@ interface SubmissionData {
   hireYear?: number;
   yearsExperience?: string;
   contractType?: string;
-  monthlySalary?: number;
+  annualSalary?: number;
   hasAnnualBonus?: boolean;
   annualBonus?: number;
   hasCommission?: boolean;
@@ -177,7 +177,7 @@ export default function MyDataPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <DataItem label="Cargo" value={data.role} />
             {data.contractType && <DataItem label="Contrato" value={data.contractType} />}
-            <DataItem label="Salário mensal" value={formatBRL(data.monthlySalary)} />
+            <DataItem label="Salário anual" value={data.annualSalary != null ? `$ ${data.annualSalary.toLocaleString("en-US")}` : "—"} />
             {data.hireYear && <DataItem label="Contratação" value={String(data.hireYear)} />}
             {data.yearsExperience && <DataItem label="Experiência" value={`${data.yearsExperience} anos`} />}
             {data.hasAnnualBonus && <DataItem label="Bônus anual" value={formatBRL(data.annualBonus)} />}

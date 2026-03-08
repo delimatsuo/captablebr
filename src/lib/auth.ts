@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "./db";
-
-const DEV_MODE = process.env.ENABLE_DEV_AUTH === "true" && process.env.NODE_ENV !== "production";
-const DEV_USER_UID = "dev-user-001";
+import { DEV_MODE, DEV_USER_UID } from "./dev-mode";
 
 async function getFirebaseAdmin() {
   if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
@@ -94,4 +92,4 @@ export async function createSessionCookie(idToken: string): Promise<string> {
   return adminAuth.createSessionCookie(idToken, { expiresIn });
 }
 
-export { DEV_MODE, DEV_USER_UID };
+export { DEV_MODE, DEV_USER_UID } from "./dev-mode";

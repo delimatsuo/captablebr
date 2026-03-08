@@ -18,8 +18,8 @@ interface Props {
   data: BenchmarkResult;
 }
 
-function formatBRL(value: number): string {
-  return `R$ ${value.toLocaleString("pt-BR")}`;
+function formatUSD(value: number): string {
+  return `$ ${value.toLocaleString("en-US")}`;
 }
 
 export function EquityPercentileChart({ data }: Props) {
@@ -144,17 +144,17 @@ export function VestingPercentileChart({ data }: Props) {
 
 export function CashCompensationChart({ data }: Props) {
   if (!data.cashPercentiles) return null;
-  const { monthlySalary, totalCash } = data.cashPercentiles;
-  const hasPercentiles = monthlySalary.p25 > 0 && monthlySalary.p50 > 0 && monthlySalary.p75 > 0;
+  const { annualSalary, totalCash } = data.cashPercentiles;
+  const hasPercentiles = annualSalary.p25 > 0 && annualSalary.p50 > 0 && annualSalary.p75 > 0;
 
   const salaryData = hasPercentiles
     ? [
-        { name: "P25", value: monthlySalary.p25, fill: INDIGO_LIGHT },
-        { name: "Mediana", value: monthlySalary.p50, fill: INDIGO_MID },
-        { name: "P75", value: monthlySalary.p75, fill: INDIGO_DARK },
-        { name: "Média", value: monthlySalary.avg, fill: TEAL_ACCENT },
+        { name: "P25", value: annualSalary.p25, fill: INDIGO_LIGHT },
+        { name: "Mediana", value: annualSalary.p50, fill: INDIGO_MID },
+        { name: "P75", value: annualSalary.p75, fill: INDIGO_DARK },
+        { name: "Média", value: annualSalary.avg, fill: TEAL_ACCENT },
       ]
-    : [{ name: "Média", value: monthlySalary.avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: annualSalary.avg, fill: INDIGO_MID }];
 
   const cashData = hasPercentiles
     ? [
@@ -169,7 +169,7 @@ export function CashCompensationChart({ data }: Props) {
     <>
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Salário Mensal (R$)</CardTitle>
+          <CardTitle className="text-base">Salário Anual (USD)</CardTitle>
           <CardDescription>
             {hasPercentiles
               ? "Distribuição salarial por percentil"
@@ -193,7 +193,7 @@ export function CashCompensationChart({ data }: Props) {
                 tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
               />
               <Tooltip
-                formatter={(value) => [formatBRL(Number(value)), "Salário"]}
+                formatter={(value) => [formatUSD(Number(value)), "Salário"]}
                 contentStyle={{
                   borderRadius: "8px",
                   border: "1px solid oklch(0.91 0.01 260)",
@@ -212,7 +212,7 @@ export function CashCompensationChart({ data }: Props) {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Remuneração Total Anual (R$)</CardTitle>
+          <CardTitle className="text-base">Remuneração Total Anual (USD)</CardTitle>
           <CardDescription>
             {hasPercentiles
               ? "Salário anual + bônus por percentil"
@@ -236,7 +236,7 @@ export function CashCompensationChart({ data }: Props) {
                 tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
               />
               <Tooltip
-                formatter={(value) => [formatBRL(Number(value)), "Total anual"]}
+                formatter={(value) => [formatUSD(Number(value)), "Total anual"]}
                 contentStyle={{
                   borderRadius: "8px",
                   border: "1px solid oklch(0.91 0.01 260)",
