@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { BenchmarkPreview } from "@/components/landing/benchmark-preview";
 
 const stats = [
   { value: "100%", label: "Anonimizado" },
@@ -11,30 +13,33 @@ const stats = [
 const steps = [
   {
     number: "01",
-    title: "Descreva sua empresa",
+    title: "Crie sua conta",
     description:
-      "Informe estágio, setor e modelo de negócio. Usamos apenas para segmentar — nenhuma empresa é identificada.",
+      "Cadastre-se com email e LinkedIn. Verificação automática via IA.",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
     ),
+    badge: null,
   },
   {
     number: "02",
-    title: "Compartilhe sua compensação",
+    title: "Acesse benchmarks",
     description:
-      "Informe seu pacote de equity ou faça upload do contrato. Nossa IA extrai os dados automaticamente.",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-    ),
-  },
-  {
-    number: "03",
-    title: "Acesse benchmarks do mercado",
-    description:
-      "Visualize percentis p25/p50/p75 de equity por cargo, segmentado por estágio, setor e modelo.",
+      "Visualize percentis de equity, salário e vesting por cargo e estágio.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
     ),
+    badge: null,
+  },
+  {
+    number: "03",
+    title: "Contribua seus dados",
+    description:
+      "Compartilhe sua compensação para melhorar os benchmarks.",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+    ),
+    badge: "opcional",
   },
 ];
 
@@ -43,10 +48,18 @@ const roles = [
 ];
 
 const trustItems = [
-  { title: "Você só compartilha seus próprios dados", desc: "Nenhum dado de terceiros é solicitado." },
-  { title: "Nenhum executivo ou empresa é identificado", desc: "Anonimização total nos benchmarks." },
+  { title: "Acesso gratuito", desc: "Sem necessidade de compartilhar dados." },
+  { title: "Verificação via LinkedIn", desc: "Apenas executivos verificados." },
+  { title: "100% anonimizado", desc: "Nenhum executivo ou empresa é identificado." },
   { title: "Mínimo de 10 executivos por segmento", desc: "Benchmarks só com dados suficientes." },
   { title: "Documentos efêmeros", desc: "Deletados após extração por IA." },
+];
+
+const platformCards = [
+  { title: "Equity (%) por cargo", desc: "Percentis p25/p50/p75 por cargo e estágio" },
+  { title: "Salário anual", desc: "Faixas por estágio e setor" },
+  { title: "Vesting e cliff", desc: "Prazos mais comuns do mercado" },
+  { title: "Instrumentos", desc: "Stock Options, Phantom, RSU, Cotas" },
 ];
 
 export default function HomePage() {
@@ -64,7 +77,7 @@ export default function HomePage() {
               <Button variant="ghost" size="sm">Entrar</Button>
             </Link>
             <Link href="/request-access">
-              <Button size="sm">Solicitar acesso</Button>
+              <Button size="sm">Cadastre-se grátis</Button>
             </Link>
           </div>
         </div>
@@ -84,18 +97,17 @@ export default function HomePage() {
               <span className="text-primary">competitiva?</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Benchmarks anonimizados reportados por executivos.
-              Compartilhe sua compensação, veja a do mercado.
+              Benchmarks anonimizados de equity e remuneração para executivos C-level de startups brasileiras. Acesso gratuito.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/request-access">
                 <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/25">
-                  Solicitar acesso
+                  Cadastre-se grátis
                 </Button>
               </Link>
-              <Link href="#como-funciona">
+              <Link href="#benchmark-preview">
                 <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-                  Como funciona
+                  Ver exemplo
                 </Button>
               </Link>
             </div>
@@ -125,7 +137,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How it works + Trust */}
+      {/* Benchmark Preview */}
+      <section id="benchmark-preview" className="py-20 sm:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Veja o que você vai encontrar
+            </h2>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <BenchmarkPreview />
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
       <section id="como-funciona" className="py-20 sm:py-28 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -147,16 +173,48 @@ export default function HomePage() {
                     {step.number}
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold mb-3">{step.title}</h3>
+                <h3 className="text-lg font-semibold mb-3">
+                  {step.title}
+                  {step.badge && (
+                    <span className="ml-2 text-xs bg-muted-foreground/10 text-muted-foreground rounded-full px-2 py-0.5">
+                      {step.badge}
+                    </span>
+                  )}
+                </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   {step.description}
                 </p>
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Trust bullets */}
-          <div className="max-w-3xl mx-auto mt-20 grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
+      {/* What You'll See */}
+      <section className="py-20 sm:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-semibold tracking-tight">
+              O que você encontra na plataforma
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {platformCards.map((card) => (
+              <Card key={card.title}>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
+                  <p className="text-sm text-muted-foreground">{card.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust */}
+      <section className="py-20 sm:py-28 bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
             {trustItems.map((item) => (
               <div key={item.title} className="flex items-start gap-3">
                 <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -177,17 +235,17 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center rounded-3xl bg-zinc-900 p-12 sm:p-16 shadow-2xl">
             <h2 className="text-3xl font-semibold tracking-tight text-white mb-4">
-              Pronto para comparar sua compensação?
+              Pronto para ver como sua compensação se compara?
             </h2>
             <p className="text-zinc-400 text-lg mb-8">
-              Junte-se a executivos que já comparam sua compensação no CaptableBR.
+              Verificação automática via IA. Acesso em minutos.
             </p>
             <Link href="/request-access">
               <Button
                 size="lg"
                 className="h-12 px-8 text-base font-semibold bg-white text-zinc-900 hover:bg-zinc-100 shadow-lg"
               >
-                Solicitar acesso
+                Criar minha conta grátis
               </Button>
             </Link>
           </div>

@@ -16,12 +16,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const isDevMode = !process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const isDevMode = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";
 
   async function handleDevLogin() {
     setLoading(true);
     await fetch("/api/auth/dev-login", { method: "POST" });
-    router.push("/submit");
+    router.push("/benchmarks");
   }
 
   async function createSession(idToken: string): Promise<boolean> {
@@ -50,7 +50,7 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       const idToken = await result.user.getIdToken();
       const ok = await createSession(idToken);
-      if (ok) router.push("/submit");
+      if (ok) router.push("/benchmarks");
     } catch {
       setError("Email ou senha incorretos.");
     } finally {
@@ -65,7 +65,7 @@ export default function LoginPage() {
       const result = await signInWithPopup(getFirebaseAuth(), getGoogleProvider());
       const idToken = await result.user.getIdToken();
       const ok = await createSession(idToken);
-      if (ok) router.push("/submit");
+      if (ok) router.push("/benchmarks");
     } catch {
       setError("Falha no login com Google.");
     } finally {

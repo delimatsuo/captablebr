@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { href: "/benchmarks", label: "Benchmarks" },
   { href: "/submit", label: "Minha Compensação" },
   { href: "/my-data", label: "Meus Dados" },
-  { href: "/benchmarks", label: "Benchmarks" },
 ];
 
 export function DashboardNav() {

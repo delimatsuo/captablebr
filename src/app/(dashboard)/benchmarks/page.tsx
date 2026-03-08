@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { SegmentSelector } from "@/components/dashboard/segment-selector";
 import {
   EquityPercentileChart,
@@ -11,16 +10,18 @@ import {
   SummaryCards,
 } from "@/components/dashboard/benchmark-chart";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import type { BenchmarkResult } from "@/lib/benchmarks";
 
 export default function BenchmarksPage() {
-  const router = useRouter();
   const [role, setRole] = useState("CTO");
   const [stage, setStage] = useState("all");
   const [businessModel, setBusinessModel] = useState("all");
   const [sector, setSector] = useState("all");
   const [data, setData] = useState<BenchmarkResult | null>(null);
+  const [hasSubmission, setHasSubmission] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -35,23 +36,21 @@ export default function BenchmarksPage() {
 
     try {
       const res = await fetch(`/api/benchmarks?${params}`);
-      if (res.status === 403) {
-        router.push("/submit");
-        return;
-      }
       if (res.status === 404) {
         setData(null);
         setError("Dados insuficientes para este segmento. Tente filtros mais amplos.");
         return;
       }
       if (!res.ok) throw new Error();
-      setData(await res.json());
+      const json = await res.json();
+      setHasSubmission(json.hasSubmission);
+      setData(json);
     } catch {
       setError("Erro ao carregar benchmarks");
     } finally {
       setLoading(false);
     }
-  }, [role, stage, businessModel, sector, router]);
+  }, [role, stage, businessModel, sector]);
 
   useEffect(() => {
     fetchBenchmarks();
@@ -83,6 +82,19 @@ export default function BenchmarksPage() {
         onBusinessModelChange={setBusinessModel}
         onSectorChange={setSector}
       />
+
+      {!hasSubmission && data && (
+        <Card>
+          <CardContent className="flex items-center justify-between gap-4 py-4 px-5">
+            <p className="text-sm text-muted-foreground">
+              Estes benchmarks são baseados em {data.sampleSize} executivos. Contribua seus dados para aumentar a precisão.
+            </p>
+            <Button asChild size="sm" variant="outline" className="shrink-0">
+              <Link href="/submit">Contribuir meus dados</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

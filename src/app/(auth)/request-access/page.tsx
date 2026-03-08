@@ -5,37 +5,76 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ROLES } from "@/lib/types";
+
+const ROLE_LABELS: Record<string, string> = {
+  "CEO": "CEO",
+  "COO": "COO",
+  "CFO": "CFO",
+  "CTO": "CTO",
+  "CMO": "CMO",
+  "CRO/VP Sales": "CRO/VP Vendas",
+  "CPO/VP Product": "CPO/VP Produto",
+  "CHRO/VP People": "CHRO/VP Pessoas",
+  "VP Engineering": "VP Engenharia",
+  "Other C-Level": "Outro C-Level",
+  "Other VP": "Outro VP",
+};
+
+type FormState = "form" | "verifying" | "approved" | "pending" | "error";
 
 export default function RequestAccessPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [role, setRole] = useState("");
+  const [lgpdConsent, setLgpdConsent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [formState, setFormState] = useState<FormState>("form");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setErrorMessage("");
+
+    if (!lgpdConsent) {
+      setErrorMessage("Você precisa autorizar o processamento do perfil do LinkedIn.");
+      return;
+    }
+
+    setFormState("verifying");
 
     try {
-      const res = await fetch("/api/access-request", {
+      const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ name, email, linkedinUrl, role, lgpdConsent }),
       });
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Erro ao enviar");
       }
-      setSubmitted(true);
+
+      const data = await res.json();
+
+      if (data.status === "approved") {
+        setFormState("approved");
+      } else {
+        setFormState("pending");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar solicitação");
-    } finally {
-      setLoading(false);
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao enviar solicitação");
+      setFormState("error");
     }
   }
 
@@ -51,17 +90,16 @@ export default function RequestAccessPage() {
             <span className="text-2xl font-bold">CaptableBR</span>
           </div>
           <h2 className="text-3xl font-bold mb-4 leading-tight">
-            Acesso exclusivo para executivos
+            Acesso gratuito para executivos
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed mb-8">
-            CaptableBR é uma plataforma exclusiva para executivos de startups brasileiras.
-            Solicite acesso e entraremos em contato.
+            CaptableBR oferece benchmarks gratuitos de equity e remuneração para executivos de startups brasileiras.
           </p>
           <div className="space-y-4">
             {[
-              "Acesso por convite direto",
+              "Verificação automática via IA",
               "Dados 100% anonimizados",
-              "Apenas executivos verificados",
+              "Acesso imediato após verificação",
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <div className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -84,26 +122,107 @@ export default function RequestAccessPage() {
               </div>
               <span className="text-lg font-bold">CaptableBR</span>
             </div>
-            {submitted ? (
+
+            {formState === "approved" && (
               <>
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <CardTitle className="text-2xl">Solicitação enviada!</CardTitle>
+                <CardTitle className="text-2xl">Perfil verificado!</CardTitle>
                 <CardDescription>
-                  Sua solicitação será avaliada e você receberá um convite por email caso aprovada.
+                  Faça login com Google para acessar os benchmarks.
                 </CardDescription>
               </>
-            ) : (
+            )}
+
+            {formState === "pending" && (
               <>
-                <CardTitle className="text-2xl">Solicitar acesso</CardTitle>
+                <div className="h-12 w-12 rounded-xl bg-yellow-100 flex items-center justify-center mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <CardTitle className="text-2xl">Perfil em análise</CardTitle>
                 <CardDescription>
-                  Preencha o formulário abaixo. Avaliaremos sua solicitação e enviaremos um convite.
+                  Seu perfil está em análise. Você receberá um email quando aprovado.
+                </CardDescription>
+              </>
+            )}
+
+            {formState === "verifying" && (
+              <>
+                <CardTitle className="text-2xl">Verificando...</CardTitle>
+                <CardDescription>
+                  Verificando seu perfil no LinkedIn...
+                </CardDescription>
+              </>
+            )}
+
+            {formState === "error" && (
+              <>
+                <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-destructive"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                </div>
+                <CardTitle className="text-2xl">Erro na verificação</CardTitle>
+                <CardDescription>{errorMessage}</CardDescription>
+              </>
+            )}
+
+            {formState === "form" && (
+              <>
+                <CardTitle className="text-2xl">Criar conta</CardTitle>
+                <CardDescription>
+                  Preencha o formulário abaixo. Verificaremos seu perfil do LinkedIn automaticamente.
                 </CardDescription>
               </>
             )}
           </CardHeader>
-          {!submitted && (
+
+          {formState === "verifying" && (
+            <CardContent className="space-y-4">
+              <Progress value={undefined} className="w-full" />
+              <p className="text-sm text-muted-foreground text-center">
+                Isso pode levar até 60 segundos...
+              </p>
+            </CardContent>
+          )}
+
+          {formState === "approved" && (
+            <CardContent>
+              <Link href="/login">
+                <Button className="w-full h-11">Fazer login</Button>
+              </Link>
+            </CardContent>
+          )}
+
+          {formState === "pending" && (
+            <CardContent>
+              <Link href="/login">
+                <Button variant="outline" className="w-full h-11">
+                  Voltar para login
+                </Button>
+              </Link>
+            </CardContent>
+          )}
+
+          {formState === "error" && (
+            <CardContent className="space-y-3">
+              <Button
+                className="w-full h-11"
+                onClick={() => {
+                  setErrorMessage("");
+                  setFormState("form");
+                }}
+              >
+                Tentar novamente
+              </Button>
+              <Link href="/login">
+                <Button variant="outline" className="w-full h-11">
+                  Voltar para login
+                </Button>
+              </Link>
+            </CardContent>
+          )}
+
+          {formState === "form" && (
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -130,26 +249,52 @@ export default function RequestAccessPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">Por que deseja acesso?</Label>
-                  <Textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Conte um pouco sobre sua posição e por que gostaria de usar a plataforma..."
-                    className="min-h-[100px] resize-none"
+                  <Label htmlFor="linkedinUrl">LinkedIn</Label>
+                  <Input
+                    id="linkedinUrl"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    placeholder="linkedin.com/in/seu-perfil"
+                    className="h-11"
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Cargo</Label>
+                  <Select value={role} onValueChange={setRole} required>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Selecione seu cargo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLES.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {ROLE_LABELS[r] || r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                {error && (
+                <div className="flex items-start space-x-3 pt-2">
+                  <Checkbox
+                    id="lgpdConsent"
+                    checked={lgpdConsent}
+                    onCheckedChange={(checked) => setLgpdConsent(checked === true)}
+                  />
+                  <Label htmlFor="lgpdConsent" className="text-sm leading-snug cursor-pointer">
+                    Autorizo o processamento do meu perfil do LinkedIn para verificação
+                  </Label>
+                </div>
+
+                {errorMessage && (
                   <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-                    {error}
+                    {errorMessage}
                   </div>
                 )}
 
-                <Button type="submit" className="w-full h-11" disabled={loading}>
-                  {loading ? "Enviando..." : "Enviar solicitação"}
+                <Button type="submit" className="w-full h-11" disabled={!role || !lgpdConsent}>
+                  Verificar e criar conta
                 </Button>
               </form>
 
@@ -159,15 +304,6 @@ export default function RequestAccessPage() {
                   Entrar
                 </Link>
               </p>
-            </CardContent>
-          )}
-          {submitted && (
-            <CardContent>
-              <Link href="/login">
-                <Button variant="outline" className="w-full h-11">
-                  Voltar para login
-                </Button>
-              </Link>
             </CardContent>
           )}
         </Card>

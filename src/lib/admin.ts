@@ -2,11 +2,15 @@
 
 import { prisma } from "./db";
 import { verifySession } from "./auth";
+import { DEV_MODE } from "./dev-mode";
 import { redirect } from "next/navigation";
 
 // Your Firebase UID — only this user can access admin features.
-// Set via env var or hardcode after first login.
-const ADMIN_UID = process.env.ADMIN_UID || "dev-user-001";
+const ADMIN_UID = DEV_MODE ? "dev-user-001" : process.env.ADMIN_UID;
+
+if (!DEV_MODE && !ADMIN_UID) {
+  throw new Error("ADMIN_UID environment variable is required in non-dev mode");
+}
 
 async function requireAdmin() {
   const session = await verifySession();
@@ -82,5 +86,13 @@ export async function rejectAccessRequest(requestId: string) {
   return prisma.accessRequest.update({
     where: { id: requestId },
     data: { status: "rejected" },
+  });
+}
+
+export async function revokeAccess(email: string) {
+  await requireAdmin();
+  const normalized = email.toLowerCase().trim();
+  await prisma.invitation.delete({
+    where: { email: normalized },
   });
 }
