@@ -227,6 +227,7 @@ export interface GeneratedSubmission {
   role: string;
   country: string;
   currency: string;
+  fxRateUsed: number;
   contractType: string;
   annualSalary: number;
   hasAnnualBonus: boolean;
@@ -327,6 +328,7 @@ export function generateSubmission(
     role,
     country: "US",
     currency: "USD",
+    fxRateUsed: 1.0,
     contractType,
     annualSalary,
     hasAnnualBonus,

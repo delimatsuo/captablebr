@@ -26,6 +26,7 @@ export async function GET() {
     headcountRange: submission.headcountRange,
     country: submission.country,
     currency: submission.currency,
+    fxRateUsed: submission.fxRateUsed ? Number(submission.fxRateUsed) : undefined,
     role: submission.role,
     equityPercentage: submission.equityPercentage ? Number(submission.equityPercentage) : undefined,
     isFirstInRole: submission.isFirstInRole,

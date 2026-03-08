@@ -43,6 +43,7 @@ interface SubmissionData {
   headcountRange: string;
   country?: string;
   currency?: string;
+  fxRateUsed?: number;
   role: string;
   equityPercentage?: number;
   hireYear?: number;
@@ -190,6 +191,9 @@ export default function MyDataPage() {
             {data.hasCommission && <DataItem label="Comissão" value={formatMoney(data.commission, data.currency)} />}
             {data.hasRetentionPlan && <DataItem label="Retenção" value={formatMoney(data.retentionAmount, data.currency)} />}
             {data.hasSignOn && <DataItem label="Sign-on" value={formatMoney(data.signOnAmount, data.currency)} />}
+            {data.fxRateUsed && data.currency === "BRL" && (
+              <DataItem label="Câmbio registrado" value={`1 USD = R$ ${data.fxRateUsed.toFixed(2)}`} />
+            )}
           </div>
         </CardContent>
       </Card>

@@ -8,7 +8,28 @@ import {
   grantSchema,
   accessRequestSchema,
 } from "./validations";
+import { getUsdBrlRate } from "./fx";
 import { redirect } from "next/navigation";
+
+/**
+ * Fetch FX rate data for a submission based on currency.
+ * Must be called BEFORE any Prisma transaction.
+ * Returns { fxRateUsed, fxRateDate } or nulls for graceful degradation.
+ */
+async function getFxDataForSubmission(currency?: string): Promise<{
+  fxRateUsed: number | null;
+  fxRateDate: Date | null;
+}> {
+  if (!currency || currency === "USD") {
+    return { fxRateUsed: 1.0, fxRateDate: new Date() };
+  }
+  // BRL or other non-USD currency
+  const rate = await getUsdBrlRate();
+  return {
+    fxRateUsed: rate,
+    fxRateDate: rate != null ? new Date() : null,
+  };
+}
 
 async function requireAuth() {
   const session = await verifySession();
@@ -136,6 +157,9 @@ export async function upsertSubmissionWithGrants(
 
   const { grants: grantsData, ...submissionFields } = data;
 
+  // Fetch FX rate BEFORE transaction (never inside it)
+  const { fxRateUsed, fxRateDate } = await getFxDataForSubmission(submissionFields.currency);
+
   return prisma.$transaction(async (tx) => {
     const submission = await tx.submission.upsert({
       where: { userId: session.uid },
@@ -143,6 +167,8 @@ export async function upsertSubmissionWithGrants(
         userId: session.uid,
         ...submissionFields,
         notifyEmail: submissionFields.notifyEmail || null,
+        fxRateUsed,
+        fxRateDate,
         confirmedByUser: true,
         ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
         ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
@@ -158,6 +184,8 @@ export async function upsertSubmissionWithGrants(
       update: {
         ...submissionFields,
         notifyEmail: submissionFields.notifyEmail || null,
+        fxRateUsed,
+        fxRateDate,
         confirmedByUser: true,
         ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
         ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
@@ -238,6 +266,9 @@ export async function upsertSubmission(formData: unknown) {
 
   const { submissionFields, grantFields, grantDenormFields } = splitFlatFormData(data);
 
+  // Fetch FX rate BEFORE transaction
+  const { fxRateUsed, fxRateDate } = await getFxDataForSubmission(submissionFields.currency);
+
   return prisma.$transaction(async (tx) => {
     const existing = await tx.submission.findUnique({
       where: { userId: session.uid },
@@ -250,6 +281,8 @@ export async function upsertSubmission(formData: unknown) {
           ...submissionFields,
           ...grantDenormFields,
           notifyEmail: submissionFields.notifyEmail || null,
+          fxRateUsed,
+          fxRateDate,
           confirmedByUser: true,
         },
       });
@@ -276,6 +309,8 @@ export async function upsertSubmission(formData: unknown) {
           ...grantDenormFields,
           notifyEmail: submissionFields.notifyEmail || null,
           userId: session.uid,
+          fxRateUsed,
+          fxRateDate,
           confirmedByUser: true,
           grants: { create: grantFields },
         },
@@ -315,6 +350,9 @@ export async function upsertSubmissionFromAi(
 
   const { submissionFields, grantFields, grantDenormFields } = splitFlatFormData(data);
 
+  // Fetch FX rate BEFORE transaction
+  const { fxRateUsed, fxRateDate } = await getFxDataForSubmission(submissionFields.currency);
+
   return prisma.$transaction(async (tx) => {
     const existing = await tx.submission.findUnique({
       where: { userId: session.uid },
@@ -327,6 +365,8 @@ export async function upsertSubmissionFromAi(
           ...submissionFields,
           ...grantDenormFields,
           notifyEmail: submissionFields.notifyEmail || null,
+          fxRateUsed,
+          fxRateDate,
           sourceDocumentUrl,
           extractedByAi: true,
           confirmedByUser: false,
@@ -354,6 +394,8 @@ export async function upsertSubmissionFromAi(
           ...grantDenormFields,
           notifyEmail: submissionFields.notifyEmail || null,
           userId: session.uid,
+          fxRateUsed,
+          fxRateDate,
           sourceDocumentUrl,
           extractedByAi: true,
           confirmedByUser: false,

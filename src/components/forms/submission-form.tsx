@@ -475,14 +475,12 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                   <Select
                     value={formData.currency || "USD"}
                     onValueChange={(v) => update("currency", v)}
-                    disabled
                   >
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">Somente USD por enquanto</p>
                 </div>
 
                 <div className="space-y-2">
