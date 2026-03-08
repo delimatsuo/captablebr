@@ -32,7 +32,7 @@ export function BenchmarkPreview() {
       </CardHeader>
       <CardContent>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
             <BarChart
               data={data}
               margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
@@ -71,7 +71,7 @@ export function BenchmarkPreview() {
           </p>
           <Link href="/request-access">
             <Button size="lg" className="shadow-lg shadow-primary/25">
-              Cadastre-se gr&aacute;tis
+              Cadastre-se grátis
             </Button>
           </Link>
         </div>
