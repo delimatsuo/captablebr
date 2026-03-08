@@ -16,6 +16,7 @@ import Link from "next/link";
 import type { BenchmarkResult } from "@/lib/benchmarks";
 
 export default function BenchmarksPage() {
+  const [country, setCountry] = useState("all");
   const [role, setRole] = useState("CTO");
   const [stage, setStage] = useState("all");
   const [businessModel, setBusinessModel] = useState("all");
@@ -30,6 +31,7 @@ export default function BenchmarksPage() {
     setError("");
 
     const params = new URLSearchParams({ role });
+    if (country !== "all") params.set("country", country);
     if (stage !== "all") params.set("stage", stage);
     if (businessModel !== "all") params.set("businessModel", businessModel);
     if (sector !== "all") params.set("sector", sector);
@@ -50,7 +52,7 @@ export default function BenchmarksPage() {
     } finally {
       setLoading(false);
     }
-  }, [role, stage, businessModel, sector]);
+  }, [country, role, stage, businessModel, sector]);
 
   useEffect(() => {
     fetchBenchmarks();
@@ -66,17 +68,19 @@ export default function BenchmarksPage() {
         <div>
           <h1 className="text-2xl font-bold">Benchmarks</h1>
           <p className="text-muted-foreground text-sm">
-            Dados anonimizados e agregados do mercado brasileiro
+            Dados anonimizados e agregados
           </p>
         </div>
       </div>
 
       {/* Filters */}
       <SegmentSelector
+        country={country}
         role={role}
         stage={stage}
         businessModel={businessModel}
         sector={sector}
+        onCountryChange={setCountry}
         onRoleChange={setRole}
         onStageChange={setStage}
         onBusinessModelChange={setBusinessModel}
