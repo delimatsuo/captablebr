@@ -26,9 +26,9 @@ export function seededRandom(seed: number): () => number {
 
 /** Box-Muller transform — returns a standard normal variate */
 function boxMuller(rng: () => number): number {
-  let u1: number, u2: number;
+  let u1: number;
   do { u1 = rng(); } while (u1 === 0);
-  u2 = rng();
+  const u2 = rng();
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
