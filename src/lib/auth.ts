@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "./db";
-import { DEV_MODE, DEV_USER_UID } from "./dev-mode";
+import { DEV_MODE } from "./dev-mode";
 
 async function getFirebaseAdmin() {
   if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
