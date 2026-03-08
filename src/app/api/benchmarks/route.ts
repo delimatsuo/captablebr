@@ -9,17 +9,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  // Check give-to-get gate
   const submission = await prisma.submission.findUnique({
     where: { userId: session.uid },
+    select: { confirmedByUser: true },
   });
-
-  if (!submission || !submission.confirmedByUser) {
-    return NextResponse.json(
-      { error: "Submeta sua compensação para acessar os benchmarks" },
-      { status: 403 }
-    );
-  }
+  const hasSubmission = !!submission?.confirmedByUser;
 
   const { searchParams } = request.nextUrl;
   const role = searchParams.get("role");
@@ -40,5 +34,5 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, hasSubmission });
 }

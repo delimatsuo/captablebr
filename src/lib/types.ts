@@ -42,3 +42,6 @@ export const EXPERIENCE_RANGES = ["5-10", "10-15", "15-20", "20+"] as const;
 
 export const CONTRACT_TYPES = ["CLT", "PJ", "Diretor Estatutário", "Other"] as const;
 export type ContractType = (typeof CONTRACT_TYPES)[number];
+
+export const VERIFICATION_RESULTS = ["auto_approved", "pending_review", "scrape_failed", "rejected"] as const;
+export type VerificationResult = (typeof VERIFICATION_RESULTS)[number];

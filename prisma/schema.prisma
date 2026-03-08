@@ -18,12 +18,22 @@ model Invitation {
 }
 
 model AccessRequest {
-  id        String   @id @default(uuid())
-  email     String
-  name      String
-  message   String
-  status    String   @default("pending") // pending, approved, rejected
-  createdAt DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(uuid())
+  email              String
+  name               String
+  message            String?
+  status             String   @default("pending") // pending, approved, rejected
+  linkedinUrl        String?  @map("linkedin_url")
+  linkedinData       Json?    @map("linkedin_data")
+  role               String?
+  detectedTitle      String?  @map("detected_title")
+  verificationResult String?  @map("verification_result")
+  verificationReason String?  @map("verification_reason")
+  autoVerified       Boolean  @default(false) @map("auto_verified")
+  requestToken       String   @default(uuid()) @map("request_token")
+  lgpdConsent        Boolean  @default(false) @map("lgpd_consent")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("access_requests")
 }
@@ -51,9 +61,13 @@ model Submission {
   hireYear           Int?     @map("hire_year")
   yearsExperience    String?  @map("years_experience")
 
-  // Cash comp & incentives (direct amounts in BRL)
+  // Country & currency (for multi-market benchmarks)
+  country            String?  @map("country")              // ISO 3166-1 alpha-2 ("US", "BR")
+  currency           String?  @default("USD") @map("currency") // ISO 4217 ("USD", "BRL")
+
+  // Cash comp & incentives (annual amounts, currency per `currency` field)
   contractType       String?  @map("contract_type")
-  monthlySalary      Decimal? @map("monthly_salary") @db.Decimal(12, 2)
+  annualSalary       Decimal? @map("annual_salary") @db.Decimal(12, 2)
   hasAnnualBonus     Boolean? @map("has_annual_bonus")
   annualBonus        Decimal? @map("annual_bonus") @db.Decimal(12, 2)
   hasCommission      Boolean? @map("has_commission")

@@ -75,9 +75,9 @@ export const submissionBaseSchema = z.object({
   hireYear: z.coerce.number().int().min(2000).max(new Date().getFullYear()).optional(),
   yearsExperience: z.enum(EXPERIENCE_RANGES).optional(),
 
-  // Cash comp & incentives (direct amounts in BRL)
+  // Cash comp & incentives (annual amounts in USD)
   contractType: z.enum(CONTRACT_TYPES, { message: "Selecione o tipo de contrato" }).optional(),
-  monthlySalary: z.coerce.number().positive("Salário deve ser positivo").max(500000, "Máximo R$ 500.000").optional(),
+  annualSalary: z.coerce.number().positive("Salário deve ser positivo").max(5000000, "Máximo $5.000.000").optional(),
   hasAnnualBonus: z.boolean().optional(),
   annualBonus: z.coerce.number().min(0).max(5000000, "Máximo R$ 5.000.000").optional(),
   hasCommission: z.boolean().optional(),
@@ -160,3 +160,13 @@ export const accessRequestSchema = z.object({
 });
 
 export type AccessRequestFormData = z.infer<typeof accessRequestSchema>;
+
+export const signupSchema = z.object({
+  email: z.string().email("Email inválido"),
+  name: z.string().min(2, "Nome é obrigatório"),
+  linkedinUrl: z.string().min(1, "LinkedIn é obrigatório"),
+  role: z.enum(ROLES, { message: "Selecione o cargo" }),
+  lgpdConsent: z.literal(true, { message: "Consentimento obrigatório" }),
+});
+
+export type SignupFormData = z.infer<typeof signupSchema>;
