@@ -18,6 +18,10 @@ interface Props {
   data: BenchmarkResult;
 }
 
+function formatBRL(value: number): string {
+  return `R$ ${value.toLocaleString("pt-BR")}`;
+}
+
 export function EquityPercentileChart({ data }: Props) {
   if (!data.equityPercentiles) return null;
   const { p25, p50, p75, avg } = data.equityPercentiles;
@@ -135,6 +139,120 @@ export function VestingPercentileChart({ data }: Props) {
         </ResponsiveContainer>
       </CardContent>
     </Card>
+  );
+}
+
+export function CashCompensationChart({ data }: Props) {
+  if (!data.cashPercentiles) return null;
+  const { monthlySalary, totalCash } = data.cashPercentiles;
+  const hasPercentiles = monthlySalary.p25 > 0 && monthlySalary.p50 > 0 && monthlySalary.p75 > 0;
+
+  const salaryData = hasPercentiles
+    ? [
+        { name: "P25", value: monthlySalary.p25, fill: INDIGO_LIGHT },
+        { name: "Mediana", value: monthlySalary.p50, fill: INDIGO_MID },
+        { name: "P75", value: monthlySalary.p75, fill: INDIGO_DARK },
+        { name: "Média", value: monthlySalary.avg, fill: TEAL_ACCENT },
+      ]
+    : [{ name: "Média", value: monthlySalary.avg, fill: INDIGO_MID }];
+
+  const cashData = hasPercentiles
+    ? [
+        { name: "P25", value: totalCash.p25, fill: INDIGO_LIGHT },
+        { name: "Mediana", value: totalCash.p50, fill: INDIGO_MID },
+        { name: "P75", value: totalCash.p75, fill: INDIGO_DARK },
+        { name: "Média", value: totalCash.avg, fill: TEAL_ACCENT },
+      ]
+    : [{ name: "Média", value: totalCash.avg, fill: INDIGO_MID }];
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Salário Mensal (R$)</CardTitle>
+          <CardDescription>
+            {hasPercentiles
+              ? "Distribuição salarial por percentil"
+              : "Média do mercado"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={salaryData} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                formatter={(value) => [formatBRL(Number(value)), "Salário"]}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "1px solid oklch(0.91 0.01 260)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                }}
+              />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {salaryData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Remuneração Total Anual (R$)</CardTitle>
+          <CardDescription>
+            {hasPercentiles
+              ? "Salário anual + bônus por percentil"
+              : "Média do mercado"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={cashData} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                formatter={(value) => [formatBRL(Number(value)), "Total anual"]}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "1px solid oklch(0.91 0.01 260)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                }}
+              />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {cashData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </>
   );
 }
 

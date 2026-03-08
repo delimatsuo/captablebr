@@ -10,11 +10,11 @@ export async function GET(request: NextRequest) {
   }
 
   // Check give-to-get gate
-  const submission = await prisma.submission.findFirst({
-    where: { userId: session.uid, status: "active", confirmedByUser: true },
+  const submission = await prisma.submission.findUnique({
+    where: { userId: session.uid },
   });
 
-  if (!submission) {
+  if (!submission || !submission.confirmedByUser) {
     return NextResponse.json(
       { error: "Submeta sua compensação para acessar os benchmarks" },
       { status: 403 }

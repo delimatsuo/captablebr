@@ -30,8 +30,7 @@ model AccessRequest {
 
 model Submission {
   id                 String   @id @default(uuid())
-  userId             String   @map("user_id")
-  status             String   @default("active") // active, archived
+  userId             String   @unique @map("user_id")
 
   // Company context (for segmentation, NOT identifying)
   stage              String
@@ -40,7 +39,7 @@ model Submission {
   subSector          String?  @map("sub_sector")
   headcountRange     String   @map("headcount_range")
 
-  // Role & equity (denormalized from Grant for benchmark queries)
+  // Role & equity (denormalized from primary Grant for benchmark queries)
   role               String
   instrumentType     String   @map("instrument_type")
   equityPercentage   Decimal? @map("equity_percentage") @db.Decimal(10, 6)
@@ -72,26 +71,26 @@ model Submission {
   // Notification
   notifyEmail        String?  @map("notify_email")
 
-  // Grant relation (1:1 in Phase 1)
-  grant              Grant?
+  // Grant relation (1:many)
+  grants             Grant[]
 
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  @@index([userId, status])
-  @@index([role, stage, status])
+  @@index([role, stage])
   @@map("submissions")
 }
 
 model Grant {
   id                     String   @id @default(uuid())
-  submissionId           String   @unique @map("submission_id")
+  submissionId           String   @map("submission_id")
   submission             Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   // Grant identity
   grantType              String   @map("grant_type")
   grantDate              DateTime? @map("grant_date")
   grantLabel             String?  @map("grant_label")
+  isFirstInRole          Boolean  @default(false) @map("is_first_in_role")
 
   // Equity (percentage is computed when possible)
   equityPercentage       Decimal? @map("equity_percentage") @db.Decimal(10, 6)
@@ -115,5 +114,6 @@ model Grant {
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
+  @@index([submissionId])
   @@map("grants")
 }

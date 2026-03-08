@@ -6,6 +6,7 @@ import { SegmentSelector } from "@/components/dashboard/segment-selector";
 import {
   EquityPercentileChart,
   VestingPercentileChart,
+  CashCompensationChart,
   InstrumentDistributionChart,
   SummaryCards,
 } from "@/components/dashboard/benchmark-chart";
@@ -64,7 +65,7 @@ export default function BenchmarksPage() {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Benchmarks de Equity</h1>
+          <h1 className="text-2xl font-bold">Benchmarks</h1>
           <p className="text-muted-foreground text-sm">
             Dados anonimizados e agregados do mercado brasileiro
           </p>
@@ -124,11 +125,18 @@ export default function BenchmarksPage() {
           {/* Summary metrics */}
           <SummaryCards data={data} />
 
-          {/* Charts */}
+          {/* Equity & Vesting Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EquityPercentileChart data={data} />
             <VestingPercentileChart data={data} />
           </div>
+
+          {/* Cash Compensation Charts */}
+          {data.cashPercentiles && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CashCompensationChart data={data} />
+            </div>
+          )}
 
           <InstrumentDistributionChart data={data} />
         </>

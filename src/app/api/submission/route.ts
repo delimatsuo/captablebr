@@ -8,10 +8,9 @@ export async function GET() {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const submission = await prisma.submission.findFirst({
-    where: { userId: session.uid, status: "active" },
-    orderBy: { createdAt: "desc" },
-    include: { grant: true },
+  const submission = await prisma.submission.findUnique({
+    where: { userId: session.uid },
+    include: { grants: { orderBy: { createdAt: "asc" } } },
   });
 
   if (!submission) {
@@ -19,18 +18,14 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    id: submission.id,
     stage: submission.stage,
     businessModel: submission.businessModel,
     sector: submission.sector,
     subSector: submission.subSector,
     headcountRange: submission.headcountRange,
     role: submission.role,
-    instrumentType: submission.instrumentType,
     equityPercentage: submission.equityPercentage ? Number(submission.equityPercentage) : undefined,
-    vestingTotalMonths: submission.vestingTotalMonths,
-    cliffMonths: submission.cliffMonths,
-    vestingSchedule: submission.vestingSchedule,
-    grantType: submission.grantType,
     isFirstInRole: submission.isFirstInRole,
     hireYear: submission.hireYear,
     yearsExperience: submission.yearsExperience,
@@ -45,15 +40,25 @@ export async function GET() {
     hasSignOn: submission.hasSignOn,
     signOnAmount: submission.signOnAmount ? Number(submission.signOnAmount) : undefined,
     notifyEmail: submission.notifyEmail,
-    // Grant-specific fields
-    inputMode: submission.grant?.inputMode ?? "percentage",
-    numberOfShares: submission.grant?.numberOfShares ? Number(submission.grant.numberOfShares) : undefined,
-    totalSharesOutstanding: submission.grant?.totalSharesOutstanding ? Number(submission.grant.totalSharesOutstanding) : undefined,
-    strikePrice: submission.grant?.strikePrice ? Number(submission.grant.strikePrice) : undefined,
-    currentSharePrice: submission.grant?.currentSharePrice ? Number(submission.grant.currentSharePrice) : undefined,
-    lastValuation: submission.grant?.lastValuation ? Number(submission.grant.lastValuation) : undefined,
-    grantDate: submission.grant?.grantDate,
-    grantLabel: submission.grant?.grantLabel,
-    vestingStartDate: submission.grant?.vestingStartDate,
+    confirmedByUser: submission.confirmedByUser,
+    grants: submission.grants.map((g) => ({
+      id: g.id,
+      instrumentType: g.instrumentType,
+      equityPercentage: g.equityPercentage ? Number(g.equityPercentage) : undefined,
+      vestingTotalMonths: g.vestingTotalMonths,
+      cliffMonths: g.cliffMonths,
+      vestingSchedule: g.vestingSchedule,
+      grantType: g.grantType,
+      isFirstInRole: g.isFirstInRole,
+      inputMode: g.inputMode,
+      numberOfShares: g.numberOfShares ? Number(g.numberOfShares) : undefined,
+      totalSharesOutstanding: g.totalSharesOutstanding ? Number(g.totalSharesOutstanding) : undefined,
+      strikePrice: g.strikePrice ? Number(g.strikePrice) : undefined,
+      currentSharePrice: g.currentSharePrice ? Number(g.currentSharePrice) : undefined,
+      lastValuation: g.lastValuation ? Number(g.lastValuation) : undefined,
+      grantDate: g.grantDate,
+      grantLabel: g.grantLabel,
+      vestingStartDate: g.vestingStartDate,
+    })),
   });
 }
