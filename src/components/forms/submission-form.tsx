@@ -246,7 +246,12 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       } else {
         // Multi-grant path (or AI + manually added grants): use full grants sync
         submissionWithGrantsSchema.parse(dataToSubmit);
-        await upsertSubmissionWithGrants(dataToSubmit);
+        await upsertSubmissionWithGrants(
+          dataToSubmit,
+          isAiExtracted && sourceDocumentUrl
+            ? { sourceDocumentUrl, extractedByAi: true }
+            : undefined
+        );
       }
 
       clearDraft();

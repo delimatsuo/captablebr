@@ -95,7 +95,10 @@ export async function getSubmission() {
   });
 }
 
-export async function upsertSubmissionWithGrants(formData: unknown) {
+export async function upsertSubmissionWithGrants(
+  formData: unknown,
+  opts?: { sourceDocumentUrl?: string; extractedByAi?: boolean }
+) {
   const session = await requireAuth();
 
   const raw = formData as Record<string, unknown>;
@@ -141,6 +144,8 @@ export async function upsertSubmissionWithGrants(formData: unknown) {
         ...submissionFields,
         notifyEmail: submissionFields.notifyEmail || null,
         confirmedByUser: true,
+        ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
+        ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
         // Denormalized from primary grant
         instrumentType: primaryGrant.instrumentType,
         equityPercentage: aggregateEquity,
@@ -154,6 +159,8 @@ export async function upsertSubmissionWithGrants(formData: unknown) {
         ...submissionFields,
         notifyEmail: submissionFields.notifyEmail || null,
         confirmedByUser: true,
+        ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
+        ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
         // Denormalized from primary grant
         instrumentType: primaryGrant.instrumentType,
         equityPercentage: aggregateEquity,
