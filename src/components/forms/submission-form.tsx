@@ -236,14 +236,15 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
         grants: grantsToSubmit,
       };
 
-      if (isAiExtracted && sourceDocumentUrl) {
-        // AI path: flatten first grant into submission for backwards compat
+      if (isAiExtracted && sourceDocumentUrl && grantsToSubmit.length === 1) {
+        // AI single-grant path: use upsertSubmissionFromAi to preserve source doc metadata
         const firstGrant = grantsToSubmit[0] || {};
         await upsertSubmissionFromAi({
           ...formData,
           ...firstGrant,
         }, sourceDocumentUrl);
       } else {
+        // Multi-grant path (or AI + manually added grants): use full grants sync
         submissionWithGrantsSchema.parse(dataToSubmit);
         await upsertSubmissionWithGrants(dataToSubmit);
       }

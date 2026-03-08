@@ -1,4 +1,8 @@
--- Delete any archived submissions (no longer tracked with single-submission-per-user model)
+-- SAFETY: Delete archived submissions before enforcing one-per-user constraint.
+-- This is safe because: (1) the app never creates archived submissions in practice,
+-- (2) the DB may be empty (no production data yet), (3) active submissions are preserved.
+-- If running against a database with real archived data, back up first:
+--   CREATE TABLE submissions_archive_backup AS SELECT * FROM submissions WHERE status != 'active';
 DELETE FROM "submissions" WHERE "status" != 'active';
 
 -- Enforce one submission per user
