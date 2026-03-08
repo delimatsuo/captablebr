@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { signOut } from "firebase/auth";
+import { getFirebaseAuth } from "@/lib/firebase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +29,7 @@ export function DashboardNav() {
 
   async function handleLogout() {
     await fetch("/api/auth/session", { method: "DELETE" });
+    await signOut(getFirebaseAuth()).catch(() => {});
     router.push("/login");
   }
 
