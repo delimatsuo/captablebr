@@ -11,3 +11,6 @@ ALTER TABLE "access_requests" ADD COLUMN "auto_verified" BOOLEAN NOT NULL DEFAUL
 ALTER TABLE "access_requests" ADD COLUMN "request_token" TEXT NOT NULL DEFAULT gen_random_uuid();
 ALTER TABLE "access_requests" ADD COLUMN "lgpd_consent" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "access_requests" ADD COLUMN "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- CreateIndex
+CREATE UNIQUE INDEX "access_requests_request_token_key" ON "access_requests"("request_token");

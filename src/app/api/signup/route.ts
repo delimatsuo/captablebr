@@ -54,39 +54,50 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check for existing invitation or pending access request
-  const [existingInvitation, existingRequest] = await Promise.all([
-    prisma.invitation.findUnique({ where: { email: normalizedEmail } }),
-    prisma.accessRequest.findFirst({
-      where: { email: normalizedEmail, status: { in: ["pending", "approved"] } },
-    }),
-  ]);
+  // Check for existing invitation or pending access request, and create atomically
+  let accessRequest;
+  try {
+    accessRequest = await prisma.$transaction(async (tx) => {
+      const existingInvitation = await tx.invitation.findUnique({
+        where: { email: normalizedEmail },
+      });
+      if (existingInvitation) {
+        throw new Error("DUPLICATE_INVITATION");
+      }
 
-  if (existingInvitation) {
-    return NextResponse.json(
-      { error: "Este email já possui acesso. Faça login." },
-      { status: 409 }
-    );
+      const existingRequest = await tx.accessRequest.findFirst({
+        where: { email: normalizedEmail, status: { in: ["pending", "approved"] } },
+      });
+      if (existingRequest) {
+        throw new Error("DUPLICATE_REQUEST");
+      }
+
+      return tx.accessRequest.create({
+        data: {
+          email: normalizedEmail,
+          name,
+          linkedinUrl,
+          role,
+          lgpdConsent,
+          status: "pending",
+        },
+      });
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "DUPLICATE_INVITATION") {
+      return NextResponse.json(
+        { error: "Este email já possui acesso. Faça login." },
+        { status: 409 }
+      );
+    }
+    if (err instanceof Error && err.message === "DUPLICATE_REQUEST") {
+      return NextResponse.json(
+        { error: "Já existe uma solicitação para este email." },
+        { status: 409 }
+      );
+    }
+    throw err;
   }
-
-  if (existingRequest) {
-    return NextResponse.json(
-      { error: "Já existe uma solicitação para este email." },
-      { status: 409 }
-    );
-  }
-
-  // Create access request
-  const accessRequest = await prisma.accessRequest.create({
-    data: {
-      email: normalizedEmail,
-      name,
-      linkedinUrl,
-      role,
-      lgpdConsent,
-      status: "pending",
-    },
-  });
 
   // Run verification synchronously (up to ~60s)
   const verification = await runVerification(linkedinUrl, name, role);

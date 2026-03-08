@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Token obrigatório" }, { status: 400 });
   }
 
-  const accessRequest = await prisma.accessRequest.findFirst({
+  const accessRequest = await prisma.accessRequest.findUnique({
     where: { requestToken: token },
     select: { status: true, verificationResult: true },
   });

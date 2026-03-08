@@ -28,7 +28,7 @@ export function validateLinkedInUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     const hostname = parsed.hostname.toLowerCase();
-    if (!hostname.endsWith("linkedin.com")) return false;
+    if (!["linkedin.com", "www.linkedin.com"].includes(hostname)) return false;
     if (!parsed.pathname.startsWith("/in/")) return false;
     // Must have a profile slug after /in/
     const slug = parsed.pathname.replace(/^\/in\//, "").replace(/\/$/, "");
