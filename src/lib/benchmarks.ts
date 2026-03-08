@@ -7,6 +7,10 @@ export interface BenchmarkResult {
   sampleSize: number;
   equityPercentiles: { p25: number; p50: number; p75: number; avg: number } | null;
   vestingPercentiles: { p25: number; p50: number; p75: number; avg: number } | null;
+  cashPercentiles: {
+    monthlySalary: { p25: number; p50: number; p75: number; avg: number };
+    totalCash: { p25: number; p50: number; p75: number; avg: number };
+  } | null;
   commonCliff: number | null;
   instrumentDistribution: Record<string, number>;
   grantTypeDistribution: Record<string, number>;
@@ -50,7 +54,6 @@ async function getSubmissionCount(filter: SegmentFilter): Promise<number> {
   let query = Prisma.sql`
     SELECT COUNT(*) as count FROM submissions s
     WHERE s.role = ${filter.role}
-      AND s.status = 'active'
       AND s.confirmed_by_user = true`;
 
   if (filter.stage) {
@@ -88,7 +91,7 @@ function findBestSegment(
 }
 
 function buildBaseWhere(filter: SegmentFilter): Prisma.Sql {
-  let where = Prisma.sql`s.role = ${filter.role} AND s.status = 'active' AND s.confirmed_by_user = true`;
+  let where = Prisma.sql`s.role = ${filter.role} AND s.confirmed_by_user = true`;
   if (filter.stage) {
     where = Prisma.sql`${where} AND s.stage = ${filter.stage}`;
   }
@@ -127,6 +130,7 @@ export async function getBenchmarks(
 
   let equityPercentiles = null;
   let vestingPercentiles = null;
+  let cashPercentiles = null;
 
   const whereWithEquity = Prisma.sql`${where} AND s.equity_percentage IS NOT NULL`;
 
@@ -198,6 +202,73 @@ export async function getBenchmarks(
     };
   }
 
+  // Cash compensation percentiles
+  const whereWithSalary = Prisma.sql`${where} AND s.monthly_salary IS NOT NULL`;
+  const salaryCountResult = await prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+    SELECT COUNT(*) as count FROM submissions s WHERE ${whereWithSalary}
+  `);
+  const salaryCount = Number(salaryCountResult[0].count);
+
+  if (salaryCount >= MIN_SUBMISSIONS_PERCENTILES) {
+    const salaryResult = await prisma.$queryRaw<
+      [{ p25: number; p50: number; p75: number; avg: number }]
+    >(Prisma.sql`
+      SELECT
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.monthly_salary)::numeric, 0) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.monthly_salary)::numeric, 0) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.monthly_salary)::numeric, 0) as p75,
+        ROUND(AVG(s.monthly_salary)::numeric, 0) as avg
+      FROM submissions s
+      WHERE ${whereWithSalary}
+    `);
+    const totalCashResult = await prisma.$queryRaw<
+      [{ p25: number; p50: number; p75: number; avg: number }]
+    >(Prisma.sql`
+      SELECT
+        ROUND(percentile_cont(0.25) WITHIN GROUP (ORDER BY s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as p25,
+        ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as p50,
+        ROUND(percentile_cont(0.75) WITHIN GROUP (ORDER BY s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as p75,
+        ROUND(AVG(s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
+      FROM submissions s
+      WHERE ${whereWithSalary}
+    `);
+    cashPercentiles = {
+      monthlySalary: {
+        p25: Number(salaryResult[0].p25),
+        p50: Number(salaryResult[0].p50),
+        p75: Number(salaryResult[0].p75),
+        avg: Number(salaryResult[0].avg),
+      },
+      totalCash: {
+        p25: Number(totalCashResult[0].p25),
+        p50: Number(totalCashResult[0].p50),
+        p75: Number(totalCashResult[0].p75),
+        avg: Number(totalCashResult[0].avg),
+      },
+    };
+  } else if (salaryCount >= MIN_SUBMISSIONS_AVERAGES) {
+    const salaryResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
+      SELECT ROUND(AVG(s.monthly_salary)::numeric, 0) as avg
+      FROM submissions s
+      WHERE ${whereWithSalary}
+    `);
+    const totalCashResult = await prisma.$queryRaw<[{ avg: number }]>(Prisma.sql`
+      SELECT ROUND(AVG(s.monthly_salary * 12 + COALESCE(s.annual_bonus, 0))::numeric, 0) as avg
+      FROM submissions s
+      WHERE ${whereWithSalary}
+    `);
+    cashPercentiles = {
+      monthlySalary: {
+        p25: 0, p50: 0, p75: 0,
+        avg: Number(salaryResult[0].avg),
+      },
+      totalCash: {
+        p25: 0, p50: 0, p75: 0,
+        avg: Number(totalCashResult[0].avg),
+      },
+    };
+  }
+
   // Instrument distribution
   const instrumentRows = await prisma.$queryRaw<
     { instrument_type: string; count: bigint }[]
@@ -266,6 +337,7 @@ export async function getBenchmarks(
     sampleSize: submissionCount < 15 ? 0 : submissionCount,
     equityPercentiles,
     vestingPercentiles,
+    cashPercentiles,
     commonCliff,
     instrumentDistribution,
     grantTypeDistribution,

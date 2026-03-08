@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectItemWithDescription, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -18,53 +18,52 @@ import {
 import { cn } from "@/lib/utils";
 import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
-  ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
-  EXPERIENCE_RANGES, CONTRACT_TYPES,
-  type InputMode,
+  ROLES, EXPERIENCE_RANGES, CONTRACT_TYPES,
 } from "@/lib/types";
-import { submissionSchema, type SubmissionFormData } from "@/lib/validations";
-import { upsertSubmission, upsertSubmissionFromAi, deleteMyData } from "@/lib/actions";
-import { EquityInput } from "./equity-input";
+import { submissionWithGrantsSchema } from "@/lib/validations";
+import type { GrantFormData } from "@/lib/validations";
+import { upsertSubmissionWithGrants, upsertSubmissionFromAi, deleteMyData } from "@/lib/actions";
+import { GrantList } from "./grant-list";
 
 const DRAFT_KEY = "captablebr-draft";
-const DRAFT_VERSION = 2; // Increment when schema changes to discard incompatible drafts
-const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DRAFT_VERSION = 3;
+const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+interface SubmissionFormFields {
+  stage?: string;
+  businessModel?: string;
+  sector?: string;
+  subSector?: string;
+  headcountRange?: string;
+  role?: string;
+  hireYear?: number;
+  yearsExperience?: string;
+  contractType?: string;
+  monthlySalary?: number;
+  hasAnnualBonus?: boolean;
+  annualBonus?: number;
+  hasCommission?: boolean;
+  commission?: number;
+  hasRetentionPlan?: boolean;
+  retentionAmount?: number;
+  hasSignOn?: boolean;
+  signOnAmount?: number;
+  notifyEmail?: string;
+  grants: Partial<GrantFormData>[];
+}
 
 interface Props {
-  initialData?: Partial<SubmissionFormData> | null;
+  initialData?: Partial<SubmissionFormFields> | null;
   sourceDocumentUrl?: string;
   isAiExtracted?: boolean;
 }
 
 const STEPS = [
   { label: "Sobre a empresa", number: 1 },
-  { label: "Sua compensação", number: 2 },
-  { label: "Confirmar", number: 3 },
+  { label: "Cargo e remuneração", number: 2 },
+  { label: "Seus grants", number: 3 },
+  { label: "Confirmar", number: 4 },
 ];
-
-const INSTRUMENT_DESCRIPTIONS: Record<string, string> = {
-  "Stock Options": "Direito de comprar ações a um preço pré-definido (strike price)",
-  "Phantom Stock": "Bônus em dinheiro atrelado ao valor das ações, sem participação societária real",
-  "RSU": "Ações restritas concedidas que vestem ao longo do tempo",
-  "Partnership Quotas (Cotas)": "Participação societária direta em cotas da empresa (modelo Ltda.)",
-  "SAR": "Stock Appreciation Rights — direito de receber a valorização das ações em dinheiro",
-  "Vesting Shares": "Ações adquiridas progressivamente conforme cronograma de vesting",
-  "Other": "Outro instrumento de equity",
-};
-
-const GRANT_TYPE_DESCRIPTIONS: Record<string, string> = {
-  "New-hire": "Primeiro grant recebido ao entrar na empresa",
-  "Ongoing/Refresh": "Grant adicional para retenção ou renovação",
-  "Promotion": "Grant recebido por promoção de cargo",
-};
-
-const VESTING_SCHEDULE_DESCRIPTIONS: Record<string, string> = {
-  "Monthly after cliff": "Vesting mensal após o período de cliff",
-  "Quarterly after cliff": "Vesting trimestral após o período de cliff",
-  "Annual": "Vesting anual em parcelas iguais",
-  "Cliff only (all at once)": "100% do equity liberado de uma vez ao final do cliff",
-  "Other": "Outro cronograma de vesting",
-};
 
 function formatBRL(value: number | undefined): string {
   if (value == null) return "—";
@@ -77,15 +76,25 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
   const [deleting, setDeleting] = useState(false);
   const [step, setStep] = useState(1);
   const [draftRestored, setDraftRestored] = useState(false);
-  const [formData, setFormData] = useState<Partial<SubmissionFormData>>({
-    isFirstInRole: false,
-    inputMode: "percentage",
-    ...initialData,
+  const [formData, setFormData] = useState<SubmissionFormFields>(() => {
+    const defaults: SubmissionFormFields = {
+      grants: [{ inputMode: "percentage", isFirstInRole: false }],
+    };
+    if (initialData) {
+      return {
+        ...defaults,
+        ...initialData,
+        grants: initialData.grants?.length
+          ? initialData.grants
+          : [{ inputMode: "percentage", isFirstInRole: false }],
+      };
+    }
+    return defaults;
   });
 
   // Restore draft from localStorage on mount
   useEffect(() => {
-    if (initialData) return; // Don't restore draft if we have server data
+    if (initialData) return;
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
@@ -102,7 +111,6 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     }
   }, [initialData]);
 
-  // Show toast when draft is restored
   useEffect(() => {
     if (draftRestored) {
       toast.info("Rascunho restaurado");
@@ -110,7 +118,6 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     }
   }, [draftRestored]);
 
-  // Auto-save to localStorage on formData/step change
   const saveDraft = useCallback(() => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
@@ -128,7 +135,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     saveDraft();
   }, [saveDraft]);
 
-  function update(field: keyof SubmissionFormData, value: unknown) {
+  function update(field: keyof Omit<SubmissionFormFields, "grants">, value: unknown) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -137,47 +144,114 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
   }
 
   function canAdvanceStep2() {
-    const hasEquity = formData.inputMode === "shares"
-      ? formData.numberOfShares != null
-      : formData.equityPercentage != null;
-    const needsStrike = formData.instrumentType === "Stock Options" || formData.instrumentType === "SAR";
-    const hasStrike = !needsStrike || formData.strikePrice != null;
-    return (
-      formData.role &&
-      formData.instrumentType &&
-      hasEquity &&
-      hasStrike &&
-      formData.vestingTotalMonths != null &&
-      formData.cliffMonths != null &&
-      formData.vestingSchedule &&
-      formData.grantType
-    );
+    return formData.role;
+  }
+
+  function canAdvanceStep3() {
+    return formData.grants.length > 0 && formData.grants.every((g) => {
+      const hasEquity = g.inputMode === "shares"
+        ? g.numberOfShares != null
+        : g.equityPercentage != null;
+      const needsStrike = g.instrumentType === "Stock Options" || g.instrumentType === "SAR";
+      const hasStrike = !needsStrike || g.strikePrice != null;
+      return (
+        g.instrumentType &&
+        hasEquity &&
+        hasStrike &&
+        g.vestingTotalMonths != null &&
+        g.cliffMonths != null &&
+        g.vestingSchedule &&
+        g.grantType
+      );
+    });
   }
 
   function clearDraft() {
     try { localStorage.removeItem(DRAFT_KEY); } catch {}
   }
 
+  // Compute aggregate equity for display
+  function aggregateEquitySummary(): string {
+    const values: number[] = [];
+    let hasNull = false;
+    for (const g of formData.grants) {
+      let pct = g.equityPercentage;
+      if (g.inputMode === "shares" && g.numberOfShares) {
+        if (g.totalSharesOutstanding && g.totalSharesOutstanding > 0) {
+          pct = (g.numberOfShares / g.totalSharesOutstanding) * 100;
+        } else if (g.lastValuation && g.currentSharePrice && g.currentSharePrice > 0) {
+          pct = (g.numberOfShares / (g.lastValuation / g.currentSharePrice)) * 100;
+        } else {
+          pct = undefined;
+        }
+      }
+      if (pct != null && pct >= 0.001 && pct <= 30) {
+        values.push(pct);
+      } else {
+        hasNull = true;
+      }
+    }
+    if (values.length === 0) return "—";
+    const sum = values.reduce((a, b) => a + b, 0);
+    const text = `${sum.toFixed(4)}%`;
+    return hasNull ? `${text} (parcialmente calculado)` : text;
+  }
+
+  function grantEquitySummary(g: Partial<GrantFormData>): string {
+    if (g.inputMode === "shares" && g.numberOfShares) {
+      const sharesStr = g.numberOfShares.toLocaleString("pt-BR");
+      let pct: number | null = null;
+      if (g.totalSharesOutstanding && g.totalSharesOutstanding > 0) {
+        pct = (g.numberOfShares / g.totalSharesOutstanding) * 100;
+      } else if (g.lastValuation && g.currentSharePrice && g.currentSharePrice > 0) {
+        pct = (g.numberOfShares / (g.lastValuation / g.currentSharePrice)) * 100;
+      }
+      if (pct != null && pct >= 0.001 && pct <= 30) {
+        return `${sharesStr} ações (${pct.toFixed(4)}%)`;
+      }
+      return `${sharesStr} ações`;
+    }
+    return g.equityPercentage != null ? `${g.equityPercentage}%` : "—";
+  }
+
   async function handleSubmit() {
     setLoading(true);
 
     try {
-      const dataToSubmit = { ...formData };
-      // Compute equityPercentage for client-side validation
-      if (dataToSubmit.inputMode === "shares" && dataToSubmit.numberOfShares) {
-        if (dataToSubmit.totalSharesOutstanding) {
-          dataToSubmit.equityPercentage = (dataToSubmit.numberOfShares / dataToSubmit.totalSharesOutstanding) * 100;
-        } else if (dataToSubmit.lastValuation && dataToSubmit.currentSharePrice && dataToSubmit.currentSharePrice > 0) {
-          const derivedTotal = dataToSubmit.lastValuation / dataToSubmit.currentSharePrice;
-          dataToSubmit.equityPercentage = (dataToSubmit.numberOfShares / derivedTotal) * 100;
+      // Pre-compute equityPercentage for each grant
+      const grantsToSubmit = formData.grants.map((g) => {
+        const grant = { ...g };
+        if (grant.inputMode === "shares" && grant.numberOfShares) {
+          if (grant.totalSharesOutstanding) {
+            grant.equityPercentage = (grant.numberOfShares / grant.totalSharesOutstanding) * 100;
+          } else if (grant.lastValuation && grant.currentSharePrice && grant.currentSharePrice > 0) {
+            grant.equityPercentage = (grant.numberOfShares / (grant.lastValuation / grant.currentSharePrice)) * 100;
+          }
         }
-      }
-      const validated = submissionSchema.parse(dataToSubmit);
+        return grant;
+      });
 
-      if (isAiExtracted && sourceDocumentUrl) {
-        await upsertSubmissionFromAi(validated, sourceDocumentUrl);
+      const dataToSubmit = {
+        ...formData,
+        grants: grantsToSubmit,
+      };
+
+      if (isAiExtracted && sourceDocumentUrl && grantsToSubmit.length === 1) {
+        // AI single-grant path: use upsertSubmissionFromAi to preserve source doc metadata
+        const firstGrant = grantsToSubmit[0] || {};
+        await upsertSubmissionFromAi({
+          ...formData,
+          ...firstGrant,
+        }, sourceDocumentUrl);
       } else {
-        await upsertSubmission(validated);
+        // Multi-grant path (or AI + manually added grants): use full grants sync
+        submissionWithGrantsSchema.parse(dataToSubmit);
+        await upsertSubmissionWithGrants(
+          dataToSubmit,
+          isAiExtracted && sourceDocumentUrl
+            ? { sourceDocumentUrl, extractedByAi: true }
+            : undefined
+        );
       }
 
       clearDraft();
@@ -208,25 +282,6 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
     } finally {
       setDeleting(false);
     }
-  }
-
-  // Compute equity summary text for step 3
-  function equitySummary(): string {
-    if (formData.inputMode === "shares" && formData.numberOfShares) {
-      const sharesStr = formData.numberOfShares.toLocaleString("pt-BR");
-      let pct: number | null = null;
-      if (formData.totalSharesOutstanding && formData.totalSharesOutstanding > 0) {
-        pct = (formData.numberOfShares / formData.totalSharesOutstanding) * 100;
-      } else if (formData.lastValuation && formData.currentSharePrice && formData.currentSharePrice > 0) {
-        const derivedTotal = formData.lastValuation / formData.currentSharePrice;
-        pct = (formData.numberOfShares / derivedTotal) * 100;
-      }
-      if (pct != null && pct >= 0.001 && pct <= 30) {
-        return `${sharesStr} ações (${pct.toFixed(4)}%)`;
-      }
-      return `${sharesStr} ações (% não calculado)`;
-    }
-    return formData.equityPercentage != null ? `${formData.equityPercentage}%` : "—";
   }
 
   return (
@@ -340,17 +395,16 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
         </Card>
       )}
 
-      {/* Step 2: Compensation */}
+      {/* Step 2: Role + Salary */}
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Sua compensação</CardTitle>
-            <CardDescription>Dados sobre seu pacote de equity e remuneração</CardDescription>
+            <CardTitle className="text-lg">Cargo e remuneração</CardTitle>
+            <CardDescription>Dados sobre seu cargo e remuneração em dinheiro</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Role & equity */}
             <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Cargo e equity</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Cargo e perfil</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <Label>Cargo *</Label>
@@ -363,224 +417,55 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Instrumento *</Label>
-                  <Select value={formData.instrumentType} onValueChange={(v) => update("instrumentType", v)}>
+                  <Label>Tipo de contrato</Label>
+                  <Select
+                    value={formData.contractType || ""}
+                    onValueChange={(v) => update("contractType", v || undefined)}
+                  >
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {INSTRUMENT_TYPES.map((i) => (
-                        <SelectItemWithDescription key={i} value={i} textValue={i} label={i} description={INSTRUMENT_DESCRIPTIONS[i]} className="py-2.5" />
-                      ))}
+                      {CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="sm:col-span-2">
-                  <EquityInput
-                    inputMode={(formData.inputMode as InputMode) || "percentage"}
-                    equityPercentage={formData.equityPercentage}
-                    numberOfShares={formData.numberOfShares}
-                    totalSharesOutstanding={formData.totalSharesOutstanding}
-                    currentSharePrice={formData.currentSharePrice}
-                    lastValuation={formData.lastValuation}
-                    onInputModeChange={(mode) => update("inputMode", mode)}
-                    onEquityPercentageChange={(v) => update("equityPercentage", v)}
-                    onNumberOfSharesChange={(v) => update("numberOfShares", v)}
-                    onTotalSharesOutstandingChange={(v) => update("totalSharesOutstanding", v)}
-                    onCurrentSharePriceChange={(v) => update("currentSharePrice", v)}
-                    onLastValuationChange={(v) => update("lastValuation", v)}
-                  />
-                </div>
-
                 <div className="space-y-2">
-                  <Label>Tipo de Grant *</Label>
-                  <Select value={formData.grantType} onValueChange={(v) => update("grantType", v)}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {GRANT_TYPES.map((g) => (
-                        <SelectItemWithDescription key={g} value={g} textValue={g} label={g} description={GRANT_TYPE_DESCRIPTIONS[g]} className="py-2.5" />
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Strike price — conditional on Stock Options or SAR */}
-              {(formData.instrumentType === "Stock Options" || formData.instrumentType === "SAR") && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
-                  <div className="space-y-2">
-                    <Label>Preço de exercício (strike price) *</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={formData.strikePrice ?? ""}
-                      onChange={(e) => update("strikePrice", e.target.value ? Number(e.target.value) : undefined)}
-                      placeholder="Ex: 1.50"
-                      className="h-11"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">Valor em BRL</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Optional grant metadata */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
-                <div className="space-y-2">
-                  <Label>Data do grant</Label>
-                  <Input
-                    type="date"
-                    value={formData.grantDate instanceof Date ? formData.grantDate.toISOString().split("T")[0] : String(formData.grantDate || "").split("T")[0]}
-                    onChange={(e) => update("grantDate", e.target.value || undefined)}
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Rótulo do grant</Label>
-                  <Input
-                    value={formData.grantLabel || ""}
-                    onChange={(e) => update("grantLabel", e.target.value || undefined)}
-                    placeholder="Ex: New-hire grant 2024"
-                    className="h-11"
-                    maxLength={100}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Vesting */}
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Vesting</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div className="space-y-2">
-                  <Label>Período Total (meses) *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="120"
-                    value={formData.vestingTotalMonths ?? ""}
-                    onChange={(e) => update("vestingTotalMonths", e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="Ex: 48"
-                    className="h-11"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Cliff (meses) *</Label>
+                  <Label>Salário mensal bruto (R$)</Label>
                   <Input
                     type="number"
                     min="0"
-                    max="48"
-                    value={formData.cliffMonths ?? ""}
-                    onChange={(e) => update("cliffMonths", e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="Ex: 12"
+                    max="500000"
+                    value={formData.monthlySalary ?? ""}
+                    onChange={(e) => update("monthlySalary", e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Ex: 45000"
                     className="h-11"
-                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Cronograma *</Label>
-                  <Select value={formData.vestingSchedule} onValueChange={(v) => update("vestingSchedule", v)}>
+                  <Label>Ano da Contratação</Label>
+                  <Input
+                    type="number"
+                    min="2000"
+                    max={new Date().getFullYear()}
+                    value={formData.hireYear ?? ""}
+                    onChange={(e) => update("hireYear", e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Ex: 2024"
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Sua experiência</Label>
+                  <Select
+                    value={formData.yearsExperience || ""}
+                    onValueChange={(v) => update("yearsExperience", v || undefined)}
+                  >
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {VESTING_SCHEDULES.map((s) => (
-                        <SelectItemWithDescription key={s} value={s} textValue={s} label={s} description={VESTING_SCHEDULE_DESCRIPTIONS[s]} className="py-2.5" />
-                      ))}
+                      {EXPERIENCE_RANGES.map((e) => <SelectItem key={e} value={e}>{e} anos</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-4">
-                <div className="space-y-2">
-                  <Label>Início do vesting</Label>
-                  <Input
-                    type="date"
-                    value={formData.vestingStartDate instanceof Date ? formData.vestingStartDate.toISOString().split("T")[0] : String(formData.vestingStartDate || "").split("T")[0]}
-                    onChange={(e) => update("vestingStartDate", e.target.value || undefined)}
-                    className="h-11"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Profile & comp */}
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Remuneração e perfil</p>
-              <div className="space-y-5">
-                <div className="flex items-center gap-3 rounded-lg border p-4">
-                  <Checkbox
-                    id="isFirstInRole"
-                    checked={formData.isFirstInRole}
-                    onCheckedChange={(v) => update("isFirstInRole", v === true)}
-                  />
-                  <div>
-                    <Label htmlFor="isFirstInRole" className="font-medium cursor-pointer">
-                      Primeira contratação externa para este cargo
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Selecione se você foi o primeiro executivo contratado do mercado para esta posição
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label>Tipo de contrato</Label>
-                    <Select
-                      value={formData.contractType || ""}
-                      onValueChange={(v) => update("contractType", v || undefined)}
-                    >
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {CONTRACT_TYPES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Salário mensal bruto (R$)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="500000"
-                      value={formData.monthlySalary ?? ""}
-                      onChange={(e) => update("monthlySalary", e.target.value ? Number(e.target.value) : undefined)}
-                      placeholder="Ex: 45000"
-                      className="h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Ano da Contratação</Label>
-                    <Input
-                      type="number"
-                      min="2000"
-                      max={new Date().getFullYear()}
-                      value={formData.hireYear ?? ""}
-                      onChange={(e) => update("hireYear", e.target.value ? Number(e.target.value) : undefined)}
-                      placeholder="Ex: 2024"
-                      className="h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Sua experiência</Label>
-                    <Select
-                      value={formData.yearsExperience || ""}
-                      onValueChange={(v) => update("yearsExperience", v || undefined)}
-                    >
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {EXPERIENCE_RANGES.map((e) => <SelectItem key={e} value={e}>{e} anos</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
               </div>
             </div>
@@ -696,8 +581,24 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
         </Card>
       )}
 
-      {/* Step 3: Confirm */}
+      {/* Step 3: Grants */}
       {step === 3 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Seus grants de equity</CardTitle>
+            <CardDescription>Adicione todos os grants que você recebeu (new-hire, refresh, promoção)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GrantList
+              grants={formData.grants}
+              onChange={(grants) => setFormData((prev) => ({ ...prev, grants }))}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Confirm */}
+      {step === 4 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Confirmar dados</CardTitle>
@@ -706,7 +607,6 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Summary */}
             <div className="space-y-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Empresa</p>
@@ -721,36 +621,46 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               <Separator />
 
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Compensação</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <SummaryItem label="Cargo" value={formData.role} />
-                  <SummaryItem label="Instrumento" value={formData.instrumentType} />
-                  <SummaryItem label="Equity" value={equitySummary()} />
-                  <SummaryItem label="Tipo" value={formData.grantType} />
-                  <SummaryItem label="Vesting" value={formData.vestingTotalMonths != null ? `${formData.vestingTotalMonths} meses` : undefined} />
-                  <SummaryItem label="Cliff" value={formData.cliffMonths != null ? `${formData.cliffMonths} meses` : undefined} />
-                  <SummaryItem label="Cronograma" value={formData.vestingSchedule} />
-                  <SummaryItem label="Primeiro no cargo" value={formData.isFirstInRole ? "Sim" : "Não"} />
-                  {formData.strikePrice != null && (
-                    <SummaryItem label="Strike price" value={`R$ ${formData.strikePrice}`} />
-                  )}
-                  {formData.grantDate && (
-                    <SummaryItem label="Data do grant" value={formData.grantDate instanceof Date ? formData.grantDate.toLocaleDateString("pt-BR") : String(formData.grantDate)} />
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneração</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <SummaryItem label="Cargo" value={formData.role} />
                   {formData.contractType && <SummaryItem label="Contrato" value={formData.contractType} />}
                   <SummaryItem label="Salário mensal" value={formatBRL(formData.monthlySalary)} />
                   {formData.hasAnnualBonus && <SummaryItem label="Bônus anual" value={formatBRL(formData.annualBonus)} />}
                   {formData.hasCommission && <SummaryItem label="Comissão" value={formatBRL(formData.commission)} />}
                   {formData.hasRetentionPlan && <SummaryItem label="Retenção" value={formatBRL(formData.retentionAmount)} />}
                   {formData.hasSignOn && <SummaryItem label="Sign-on" value={formatBRL(formData.signOnAmount)} />}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                    Grants ({formData.grants.length})
+                  </p>
+                  <p className="text-sm font-medium">
+                    Total equity: {aggregateEquitySummary()}
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {formData.grants.map((g, i) => (
+                    <div key={i} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{g.grantLabel || `Grant ${i + 1}`}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {g.instrumentType} / {g.grantType}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <SummaryItem label="Equity" value={grantEquitySummary(g)} />
+                        <SummaryItem label="Vesting" value={g.vestingTotalMonths != null ? `${g.vestingTotalMonths} meses` : undefined} />
+                        <SummaryItem label="Cliff" value={g.cliffMonths != null ? `${g.cliffMonths} meses` : undefined} />
+                        <SummaryItem label="Cronograma" value={g.vestingSchedule} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -784,11 +694,15 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
           )}
         </div>
         <div className="flex items-center gap-2">
-          {step < 3 ? (
+          {step < 4 ? (
             <Button
               type="button"
               onClick={() => setStep(step + 1)}
-              disabled={step === 1 ? !canAdvanceStep1() : !canAdvanceStep2()}
+              disabled={
+                step === 1 ? !canAdvanceStep1() :
+                step === 2 ? !canAdvanceStep2() :
+                !canAdvanceStep3()
+              }
               className="h-11 px-8"
             >
               Continuar
@@ -813,7 +727,10 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
           className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
           onClick={() => {
             clearDraft();
-            setFormData({ isFirstInRole: false, inputMode: "percentage", ...initialData });
+            setFormData({
+              grants: [{ inputMode: "percentage", isFirstInRole: false }],
+              ...initialData,
+            });
             setStep(1);
             toast.info("Rascunho descartado");
           }}

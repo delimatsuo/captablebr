@@ -4,19 +4,56 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubmissionForm } from "@/components/forms/submission-form";
 import { DocumentUpload } from "@/components/forms/document-upload";
-import type { SubmissionFormData } from "@/lib/validations";
+import type { SubmissionFormData, GrantFormData } from "@/lib/validations";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SubmissionApiData = Record<string, any>;
+
+function normalizeApiData(data: SubmissionApiData) {
+  const { grants: apiGrants, instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
+    vestingSchedule, grantType, isFirstInRole, inputMode, numberOfShares, totalSharesOutstanding,
+    strikePrice, currentSharePrice, lastValuation, grantDate, grantLabel, vestingStartDate,
+    ...submissionFields } = data;
+
+  // If API returns grants array, use it directly
+  if (apiGrants && Array.isArray(apiGrants) && apiGrants.length > 0) {
+    return { ...submissionFields, grants: apiGrants as Partial<GrantFormData>[] };
+  }
+
+  // Legacy: build grant from flat fields
+  const legacyGrant: Partial<GrantFormData> = {
+    instrumentType,
+    equityPercentage,
+    vestingTotalMonths,
+    cliffMonths,
+    vestingSchedule,
+    grantType,
+    isFirstInRole: isFirstInRole ?? false,
+    inputMode: inputMode || "percentage",
+    numberOfShares,
+    totalSharesOutstanding,
+    strikePrice,
+    currentSharePrice,
+    lastValuation,
+    grantDate: grantDate ? new Date(grantDate) : undefined,
+    grantLabel,
+    vestingStartDate: vestingStartDate ? new Date(vestingStartDate) : undefined,
+  };
+
+  return { ...submissionFields, grants: [legacyGrant] };
+}
 
 export default function SubmitPage() {
   const [extractedData, setExtractedData] = useState<Partial<SubmissionFormData> | null>(null);
   const [sourceDocumentUrl, setSourceDocumentUrl] = useState<string | undefined>();
-  const [existingData, setExistingData] = useState<Partial<SubmissionFormData> | null>(null);
+  const [existingData, setExistingData] = useState<ReturnType<typeof normalizeApiData> | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetch("/api/submission")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data) setExistingData(data);
+        if (data) setExistingData(normalizeApiData(data));
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
@@ -48,7 +85,7 @@ export default function SubmitPage() {
           </h1>
           <p className="text-muted-foreground text-sm">
             {existingData
-              ? "Atualize seus dados de compensação. Os dados anteriores serão arquivados."
+              ? "Atualize seus dados de compensação."
               : "Compartilhe seus dados de compensação para acessar benchmarks do mercado."}
           </p>
         </div>
@@ -70,7 +107,7 @@ export default function SubmitPage() {
           <DocumentUpload onExtracted={handleExtracted} />
           {extractedData && (
             <SubmissionForm
-              initialData={{ ...existingData, ...extractedData }}
+              initialData={existingData ? { ...existingData, ...normalizeApiData(extractedData as SubmissionApiData) } : normalizeApiData(extractedData as SubmissionApiData)}
               sourceDocumentUrl={sourceDocumentUrl}
               isAiExtracted
             />
