@@ -142,7 +142,18 @@ export async function upsertSubmissionWithGrants(
     }
   }
 
-  const data = submissionWithGrantsSchema.parse(raw);
+  let data;
+  try {
+    data = submissionWithGrantsSchema.parse(raw);
+  } catch (parseErr) {
+    console.error("[upsertSubmissionWithGrants] Validation error:", parseErr);
+    if (parseErr && typeof parseErr === "object" && "issues" in parseErr) {
+      const issues = (parseErr as { issues: { message: string; path: (string | number)[] }[] }).issues;
+      const msg = issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      throw new Error(`Dados inválidos: ${msg}`);
+    }
+    throw new Error("Dados inválidos");
+  }
 
   // Server-side recomputation per grant
   for (const grant of data.grants) {
@@ -160,83 +171,90 @@ export async function upsertSubmissionWithGrants(
   // Fetch FX rate BEFORE transaction (never inside it)
   const { fxRateUsed, fxRateDate } = await getFxDataForSubmission(submissionFields.currency);
 
-  return prisma.$transaction(async (tx) => {
-    const submission = await tx.submission.upsert({
-      where: { userId: session.uid },
-      create: {
-        userId: session.uid,
-        ...submissionFields,
-        notifyEmail: submissionFields.notifyEmail || null,
-        fxRateUsed,
-        fxRateDate,
-        confirmedByUser: true,
-        ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
-        ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
-        // Denormalized from primary grant
-        instrumentType: primaryGrant.instrumentType,
-        equityPercentage: aggregateEquity,
-        vestingTotalMonths: primaryGrant.vestingTotalMonths,
-        cliffMonths: primaryGrant.cliffMonths,
-        vestingSchedule: primaryGrant.vestingSchedule,
-        grantType: primaryGrant.grantType,
-        isFirstInRole: primaryGrant.isFirstInRole,
-      },
-      update: {
-        ...submissionFields,
-        notifyEmail: submissionFields.notifyEmail || null,
-        fxRateUsed,
-        fxRateDate,
-        confirmedByUser: true,
-        ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
-        ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
-        // Denormalized from primary grant
-        instrumentType: primaryGrant.instrumentType,
-        equityPercentage: aggregateEquity,
-        vestingTotalMonths: primaryGrant.vestingTotalMonths,
-        cliffMonths: primaryGrant.cliffMonths,
-        vestingSchedule: primaryGrant.vestingSchedule,
-        grantType: primaryGrant.grantType,
-        isFirstInRole: primaryGrant.isFirstInRole,
-      },
-    });
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const submission = await tx.submission.upsert({
+        where: { userId: session.uid },
+        create: {
+          userId: session.uid,
+          ...submissionFields,
+          notifyEmail: submissionFields.notifyEmail || null,
+          fxRateUsed,
+          fxRateDate,
+          confirmedByUser: true,
+          ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
+          ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
+          // Denormalized from primary grant
+          instrumentType: primaryGrant.instrumentType,
+          equityPercentage: aggregateEquity,
+          vestingTotalMonths: primaryGrant.vestingTotalMonths,
+          cliffMonths: primaryGrant.cliffMonths,
+          vestingSchedule: primaryGrant.vestingSchedule,
+          grantType: primaryGrant.grantType,
+          isFirstInRole: primaryGrant.isFirstInRole,
+        },
+        update: {
+          ...submissionFields,
+          notifyEmail: submissionFields.notifyEmail || null,
+          fxRateUsed,
+          fxRateDate,
+          confirmedByUser: true,
+          ...(opts?.sourceDocumentUrl != null && { sourceDocumentUrl: opts.sourceDocumentUrl }),
+          ...(opts?.extractedByAi != null && { extractedByAi: opts.extractedByAi }),
+          // Denormalized from primary grant
+          instrumentType: primaryGrant.instrumentType,
+          equityPercentage: aggregateEquity,
+          vestingTotalMonths: primaryGrant.vestingTotalMonths,
+          cliffMonths: primaryGrant.cliffMonths,
+          vestingSchedule: primaryGrant.vestingSchedule,
+          grantType: primaryGrant.grantType,
+          isFirstInRole: primaryGrant.isFirstInRole,
+        },
+      });
 
-    // Sync grants: update existing, create new, delete removed
-    const existingGrants = await tx.grant.findMany({
-      where: { submissionId: submission.id },
-    });
-    const existingIds = new Set(existingGrants.map((g) => g.id));
-    const incomingIds = new Set<string>();
+      // Sync grants: update existing, create new, delete removed
+      const existingGrants = await tx.grant.findMany({
+        where: { submissionId: submission.id },
+      });
+      const existingIds = new Set(existingGrants.map((g) => g.id));
+      const incomingIds = new Set<string>();
 
-    for (const grant of grantsData) {
-      const { id: grantId, ...grantFields } = grant;
-      if (grantId && existingIds.has(grantId)) {
-        // Update existing grant
-        await tx.grant.update({
-          where: { id: grantId },
-          data: grantFields,
-        });
-        incomingIds.add(grantId);
-      } else {
-        // Create new grant
-        await tx.grant.create({
-          data: { submissionId: submission.id, ...grantFields },
+      for (const grant of grantsData) {
+        const { id: grantId, ...grantFields } = grant;
+        if (grantId && existingIds.has(grantId)) {
+          // Update existing grant
+          await tx.grant.update({
+            where: { id: grantId },
+            data: grantFields,
+          });
+          incomingIds.add(grantId);
+        } else {
+          // Create new grant
+          await tx.grant.create({
+            data: { submissionId: submission.id, ...grantFields },
+          });
+        }
+      }
+
+      // Delete grants not in incoming list
+      const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+      if (toDelete.length > 0) {
+        await tx.grant.deleteMany({
+          where: { id: { in: toDelete } },
         });
       }
-    }
 
-    // Delete grants not in incoming list
-    const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
-    if (toDelete.length > 0) {
-      await tx.grant.deleteMany({
-        where: { id: { in: toDelete } },
+      return tx.submission.findUnique({
+        where: { id: submission.id },
+        include: { grants: { orderBy: { createdAt: "asc" } } },
       });
-    }
-
-    return tx.submission.findUnique({
-      where: { id: submission.id },
-      include: { grants: { orderBy: { createdAt: "asc" } } },
     });
-  });
+  } catch (txErr) {
+    console.error("[upsertSubmissionWithGrants] Transaction error:", txErr);
+    throw new Error(
+      txErr instanceof Error ? txErr.message : "Erro ao salvar no banco de dados"
+    );
+  }
 }
 
 export async function upsertSubmission(formData: unknown) {

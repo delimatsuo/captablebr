@@ -9,6 +9,18 @@ import type { SubmissionFormData, GrantFormData } from "@/lib/validations";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SubmissionApiData = Record<string, any>;
 
+/** Convert null values to undefined (Prisma returns null, Zod .optional() expects undefined) */
+function stripNulls<T>(obj: T): T {
+  if (obj === null) return undefined as T;
+  if (Array.isArray(obj)) return obj.map(stripNulls) as T;
+  if (typeof obj === "object" && obj !== null) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [k, v === null ? undefined : v])
+    ) as T;
+  }
+  return obj;
+}
+
 function normalizeApiData(data: SubmissionApiData) {
   const { grants: apiGrants, instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, isFirstInRole, inputMode, numberOfShares, totalSharesOutstanding,
@@ -17,7 +29,7 @@ function normalizeApiData(data: SubmissionApiData) {
 
   // If API returns grants array, use it directly
   if (apiGrants && Array.isArray(apiGrants) && apiGrants.length > 0) {
-    return { ...submissionFields, grants: apiGrants as Partial<GrantFormData>[] };
+    return { ...stripNulls(submissionFields), grants: apiGrants.map(stripNulls) as Partial<GrantFormData>[] };
   }
 
   // Legacy: build grant from flat fields
@@ -40,7 +52,7 @@ function normalizeApiData(data: SubmissionApiData) {
     vestingStartDate: vestingStartDate ? new Date(vestingStartDate) : undefined,
   };
 
-  return { ...submissionFields, grants: [legacyGrant] };
+  return { ...stripNulls(submissionFields), grants: [stripNulls(legacyGrant)] };
 }
 
 export default function SubmitPage() {
