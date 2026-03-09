@@ -1,7 +1,7 @@
 import { verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getBenchmarks, getStageComparison } from "@/lib/benchmarks";
-import { COUNTRY_CODES } from "@/lib/types";
+import { COUNTRY_CODES, ROLES } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -20,6 +20,9 @@ export async function GET(request: NextRequest) {
   const role = searchParams.get("role");
   if (!role) {
     return NextResponse.json({ error: "Parâmetro 'role' obrigatório" }, { status: 400 });
+  }
+  if (!(ROLES as readonly string[]).includes(role)) {
+    return NextResponse.json({ error: "Cargo inválido" }, { status: 400 });
   }
 
   const stage = searchParams.get("stage") || undefined;

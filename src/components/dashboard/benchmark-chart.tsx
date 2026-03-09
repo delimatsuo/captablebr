@@ -5,7 +5,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { BenchmarkResult } from "@/lib/benchmarks";
+import type { BenchmarkResult, StageComparisonResult } from "@/lib/benchmarks";
 
 // Indigo ramp + single teal accent
 const INDIGO_LIGHT = "oklch(0.80 0.10 260)";
@@ -336,8 +336,6 @@ export function InstrumentDistributionChart({ data }: Props) {
 // ---------------------------------------------------------------------------
 // Multi-stage comparison charts (all stages side by side)
 // ---------------------------------------------------------------------------
-
-import type { StageComparisonResult } from "@/lib/benchmarks";
 
 interface ComparisonProps {
   data: StageComparisonResult;

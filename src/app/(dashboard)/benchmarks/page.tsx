@@ -48,14 +48,14 @@ export default function BenchmarksPage() {
         return;
       }
       if (!res.ok) throw new Error();
-      const json = await res.json();
-      setHasSubmission(json.hasSubmission);
+      const { hasSubmission: hs, mode, ...rest } = await res.json();
+      setHasSubmission(hs);
 
-      if (json.mode === "comparison") {
-        setComparison(json as StageComparisonResult);
+      if (mode === "comparison") {
+        setComparison(rest as StageComparisonResult);
         setData(null);
       } else {
-        setData(json as BenchmarkResult);
+        setData(rest as BenchmarkResult);
         setComparison(null);
       }
     } catch {

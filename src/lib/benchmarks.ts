@@ -411,12 +411,10 @@ export interface StageComparisonResult {
   stages: StageComparisonItem[];
 }
 
-const ALL_STAGES = ["Pre-Seed/Seed", "Series A", "Series B", "Series C+"] as const;
-
 export function getStageComparison(role: string): StageComparisonResult | null {
   const stages: StageComparisonItem[] = [];
 
-  for (const stage of ALL_STAGES) {
+  for (const stage of STAGES) {
     const ref = getReferenceBenchmark(role, stage);
     if (!ref || !ref.equityPercentiles || !ref.cashPercentiles) continue;
     stages.push({
