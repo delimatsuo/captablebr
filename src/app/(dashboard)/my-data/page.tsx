@@ -97,8 +97,8 @@ export default function MyDataPage() {
     setDeleting(true);
     try {
       await deleteMyData();
+      try { localStorage.removeItem("captablebr-draft"); } catch {}
       toast.success("Dados excluídos");
-      router.push("/submit");
       router.refresh();
     } catch {
       toast.error("Erro ao excluir dados");
