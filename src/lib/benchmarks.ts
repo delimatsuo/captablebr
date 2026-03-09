@@ -111,7 +111,7 @@ function findBestSegment(
 }
 
 // ---------------------------------------------------------------------------
-// Static reference data path (Radford Pre-IPO Survey)
+// Static reference data path (US market)
 // ---------------------------------------------------------------------------
 
 function getStaticBenchmarks(
@@ -391,6 +391,6 @@ export async function getBenchmarks(
   const userResult = await getUserCollectedBenchmarks(role, stage, businessModel, sector, country);
   if (userResult) return userResult;
 
-  // Fall back to static Radford reference data (US market, requires stage)
+  // Fall back to static reference data (US market, requires stage)
   return getStaticBenchmarks(role, stage);
 }
