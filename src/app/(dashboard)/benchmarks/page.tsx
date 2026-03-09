@@ -93,10 +93,10 @@ export default function BenchmarksPage() {
         <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
           <CardContent className="flex items-center justify-between gap-4 py-4 px-5">
             <p className="text-sm text-amber-800 dark:text-amber-200">
-              Benchmarks baseados em dados de referência do mercado norte-americano (Radford Pre-IPO Survey).
+              Benchmarks baseados em dados de referência do mercado norte-americano.
               {!stage || stage === "all"
                 ? " Selecione um estágio para ver dados de referência."
-                : " Contribua seus dados para gerar benchmarks a partir de participantes."}
+                : " Contribua seus dados para gerarmos benchmarks do mercado brasileiro."}
             </p>
             {!hasSubmission && (
               <Button asChild size="sm" variant="outline" className="shrink-0">

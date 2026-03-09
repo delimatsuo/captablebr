@@ -347,7 +347,7 @@ export function SummaryCards({ data }: Props) {
 
   metrics.push({
     label: "Fonte",
-    value: isReference ? "Radford" : data.sampleSize > 0 ? String(data.sampleSize) : "N >= 5",
+    value: isReference ? "Referência" : data.sampleSize > 0 ? String(data.sampleSize) : "N >= 5",
     sub: isReference ? "Mercado EUA" : data.sampleSize > 0 ? "executivos" : "dados suficientes",
   });
 
