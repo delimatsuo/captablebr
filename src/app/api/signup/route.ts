@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email, name, linkedinUrl, role, lgpdConsent } = parsed.data;
+  const { email, name, linkedinUrl, role, lgpdConsent, tosConsent } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
   // Validate LinkedIn URL format
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
           linkedinUrl,
           role,
           lgpdConsent,
+          tosConsent,
           status: "pending",
         },
       });

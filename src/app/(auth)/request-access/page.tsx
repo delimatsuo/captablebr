@@ -39,12 +39,18 @@ export default function RequestAccessPage() {
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [role, setRole] = useState("");
   const [lgpdConsent, setLgpdConsent] = useState(false);
+  const [tosConsent, setTosConsent] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [formState, setFormState] = useState<FormState>("form");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage("");
+
+    if (!tosConsent) {
+      setErrorMessage("Você precisa aceitar os Termos de Uso para continuar.");
+      return;
+    }
 
     if (!lgpdConsent) {
       setErrorMessage("Você precisa autorizar o processamento do perfil do LinkedIn.");
@@ -57,7 +63,7 @@ export default function RequestAccessPage() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, linkedinUrl, role, lgpdConsent }),
+        body: JSON.stringify({ name, email, linkedinUrl, role, lgpdConsent, tosConsent }),
       });
 
       if (!res.ok) {
@@ -277,6 +283,24 @@ export default function RequestAccessPage() {
 
                 <div className="flex items-start space-x-3 pt-2">
                   <Checkbox
+                    id="tosConsent"
+                    checked={tosConsent}
+                    onCheckedChange={(checked) => setTosConsent(checked === true)}
+                  />
+                  <Label htmlFor="tosConsent" className="text-sm leading-snug cursor-pointer">
+                    Li e aceito os{" "}
+                    <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline">
+                      Termos de Uso
+                    </Link>
+                    {" "}e a{" "}
+                    <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline">
+                      Política de Privacidade
+                    </Link>
+                  </Label>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Checkbox
                     id="lgpdConsent"
                     checked={lgpdConsent}
                     onCheckedChange={(checked) => setLgpdConsent(checked === true)}
@@ -293,7 +317,7 @@ export default function RequestAccessPage() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full h-11" disabled={!role || !lgpdConsent}>
+                <Button type="submit" className="w-full h-11" disabled={!role || !tosConsent || !lgpdConsent}>
                   Verificar e criar conta
                 </Button>
               </form>

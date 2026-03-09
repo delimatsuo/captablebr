@@ -36,7 +36,21 @@ export default function TermsPage() {
         da sua situação.
       </p>
 
-      <h2>6. Contato</h2>
+      <h2>6. Sobre</h2>
+      <p>
+        CaptableBR é um produto da{" "}
+        <a
+          href="https://ellaexecutivesearch.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline"
+        >
+          Ella Executive Search
+        </a>
+        .
+      </p>
+
+      <h2>7. Contato</h2>
       <p>
         Para dúvidas sobre os termos, entre em contato pelo email:
         contato@captablebr.com

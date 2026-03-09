@@ -32,6 +32,7 @@ model AccessRequest {
   autoVerified       Boolean  @default(false) @map("auto_verified")
   requestToken       String   @unique @default(uuid()) @map("request_token")
   lgpdConsent        Boolean  @default(false) @map("lgpd_consent")
+  tosConsent         Boolean  @default(false) @map("tos_consent")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 

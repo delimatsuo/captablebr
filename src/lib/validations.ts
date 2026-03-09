@@ -172,6 +172,7 @@ export const signupSchema = z.object({
   linkedinUrl: z.string().min(1, "LinkedIn é obrigatório"),
   role: z.enum(ROLES, { message: "Selecione o cargo" }),
   lgpdConsent: z.literal(true, { message: "Consentimento obrigatório" }),
+  tosConsent: z.literal(true, { message: "Aceitação dos termos obrigatória" }),
 });
 
 export type SignupFormData = z.infer<typeof signupSchema>;

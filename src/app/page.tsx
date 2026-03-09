@@ -269,7 +269,16 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-xs text-muted-foreground">
-              {new Date().getFullYear()} CaptableBR. Dados anonimizados.
+              {new Date().getFullYear()} CaptableBR. Um produto{" "}
+              <a
+                href="https://ellaexecutivesearch.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground transition-colors"
+              >
+                Ella Executive Search
+              </a>
+              .
             </p>
           </div>
         </div>
