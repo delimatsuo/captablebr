@@ -1,10 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import { ROLES, STAGES, BUSINESS_MODELS, SECTORS, COUNTRIES, COUNTRY_CODES } from "./types";
+import { getReferenceBenchmark } from "./benchmark-data";
 
 export interface BenchmarkResult {
   segmentLabel: string;
   sampleSize: number;
+  dataSource: "market-reference" | "user-collected";
   equityPercentiles: { p25: number; p50: number; p75: number; avg: number } | null;
   vestingPercentiles: { p25: number; p50: number; p75: number; avg: number } | null;
   cashPercentiles: {
@@ -57,6 +59,26 @@ function buildSegmentLabel(filter: SegmentFilter): string {
   return parts.join(" / ");
 }
 
+function buildBaseWhere(filter: SegmentFilter): Prisma.Sql {
+  let where = Prisma.sql`s.role = ${filter.role} AND s.confirmed_by_user = true`;
+  // Country filter: when undefined ("Todos os mercados"), no clause is added —
+  // rows with country IS NULL are included. When a specific country is set,
+  // WHERE s.country = 'BR' naturally excludes NULLs via SQL semantics.
+  if (filter.country) {
+    where = Prisma.sql`${where} AND s.country = ${filter.country}`;
+  }
+  if (filter.stage) {
+    where = Prisma.sql`${where} AND s.stage = ${filter.stage}`;
+  }
+  if (filter.businessModel) {
+    where = Prisma.sql`${where} AND s.business_model = ${filter.businessModel}`;
+  }
+  if (filter.sector) {
+    where = Prisma.sql`${where} AND s.sector = ${filter.sector}`;
+  }
+  return where;
+}
+
 async function getSubmissionCount(filter: SegmentFilter): Promise<number> {
   validateFilter(filter);
   const where = buildBaseWhere(filter);
@@ -88,32 +110,38 @@ function findBestSegment(
   return levels;
 }
 
-function buildBaseWhere(filter: SegmentFilter): Prisma.Sql {
-  let where = Prisma.sql`s.role = ${filter.role} AND s.confirmed_by_user = true`;
-  // Country filter: when undefined ("Todos os mercados"), no clause is added —
-  // rows with country IS NULL are included. When a specific country is set,
-  // WHERE s.country = 'BR' naturally excludes NULLs via SQL semantics.
-  if (filter.country) {
-    where = Prisma.sql`${where} AND s.country = ${filter.country}`;
-  }
-  if (filter.stage) {
-    where = Prisma.sql`${where} AND s.stage = ${filter.stage}`;
-  }
-  if (filter.businessModel) {
-    where = Prisma.sql`${where} AND s.business_model = ${filter.businessModel}`;
-  }
-  if (filter.sector) {
-    where = Prisma.sql`${where} AND s.sector = ${filter.sector}`;
-  }
-  return where;
+// ---------------------------------------------------------------------------
+// Static reference data path (Radford Pre-IPO Survey)
+// ---------------------------------------------------------------------------
+
+function getStaticBenchmarks(
+  role: string,
+  stage?: string,
+): BenchmarkResult | null {
+  // Static data is keyed by role × stage. Without a stage, we can't look up.
+  if (!stage) return null;
+
+  const ref = getReferenceBenchmark(role, stage);
+  if (!ref) return null;
+
+  return {
+    segmentLabel: `${role} / ${stage}`,
+    sampleSize: 0,
+    dataSource: "market-reference",
+    ...ref,
+  };
 }
 
-export async function getBenchmarks(
+// ---------------------------------------------------------------------------
+// User-collected data path (DB queries)
+// ---------------------------------------------------------------------------
+
+async function getUserCollectedBenchmarks(
   role: string,
   stage?: string,
   businessModel?: string,
   sector?: string,
-  country?: string
+  country?: string,
 ): Promise<BenchmarkResult | null> {
   // TODO: Add database index on `country` column when volume justifies it
   const segments = findBestSegment(role, stage, businessModel, sector, country);
@@ -140,13 +168,11 @@ export async function getBenchmarks(
 
   const whereWithEquity = Prisma.sql`${where} AND s.equity_percentage IS NOT NULL`;
 
-  // Count submissions with non-null equity separately for equity-specific thresholds
   const equityCountResult = await prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
     SELECT COUNT(*) as count FROM submissions s WHERE ${whereWithEquity}
   `);
   const equityCount = Number(equityCountResult[0].count);
 
-  // Equity percentiles: gate on equity-specific count
   if (equityCount >= MIN_SUBMISSIONS_PERCENTILES) {
     const equityResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
@@ -177,7 +203,6 @@ export async function getBenchmarks(
     };
   }
 
-  // Vesting percentiles: gate on total submission count (vesting is always present)
   if (submissionCount >= MIN_SUBMISSIONS_PERCENTILES) {
     const vestingResult = await prisma.$queryRaw<
       [{ p25: number; p50: number; p75: number; avg: number }]
@@ -209,7 +234,6 @@ export async function getBenchmarks(
   }
 
   // Cash compensation percentiles (converted to USD using fx_rate_used)
-  // CASE WHEN: if currency is BRL and fx_rate_used is present, divide by fx_rate_used to get USD
   const salaryUsd = Prisma.sql`CASE WHEN s.currency = 'BRL' AND s.fx_rate_used IS NOT NULL THEN s.annual_salary / s.fx_rate_used ELSE s.annual_salary END`;
   const bonusUsd = Prisma.sql`CASE WHEN s.currency = 'BRL' AND s.fx_rate_used IS NOT NULL THEN COALESCE(s.annual_bonus, 0) / s.fx_rate_used ELSE COALESCE(s.annual_bonus, 0) END`;
 
@@ -279,7 +303,6 @@ export async function getBenchmarks(
     };
   }
 
-  // Instrument distribution
   const instrumentRows = await prisma.$queryRaw<
     { instrument_type: string; count: bigint }[]
   >(Prisma.sql`
@@ -294,7 +317,6 @@ export async function getBenchmarks(
     instrumentDistribution[row.instrument_type] = Math.round((Number(row.count) / totalInstruments) * 100);
   }
 
-  // Grant type distribution
   const grantTypeRows = await prisma.$queryRaw<
     { grant_type: string; count: bigint }[]
   >(Prisma.sql`
@@ -309,7 +331,6 @@ export async function getBenchmarks(
     grantTypeDistribution[row.grant_type] = Math.round((Number(row.count) / totalGrants) * 100);
   }
 
-  // Most common cliff
   const cliffResult = await prisma.$queryRaw<[{ cliff_months: number }]>(Prisma.sql`
     SELECT s.cliff_months
     FROM submissions s
@@ -320,7 +341,6 @@ export async function getBenchmarks(
   `);
   const commonCliff = cliffResult.length > 0 ? Number(cliffResult[0].cliff_months) : null;
 
-  // First-in-role premium
   let firstInRolePremium = null;
   const premiumResult = await prisma.$queryRaw<
     { is_first: boolean; avg: number }[]
@@ -345,6 +365,7 @@ export async function getBenchmarks(
   return {
     segmentLabel: buildSegmentLabel(bestFilter),
     sampleSize: submissionCount < 15 ? 0 : submissionCount,
+    dataSource: "user-collected",
     equityPercentiles,
     vestingPercentiles,
     cashPercentiles,
@@ -353,4 +374,23 @@ export async function getBenchmarks(
     grantTypeDistribution,
     firstInRolePremium,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — tries user-collected data first, falls back to static reference
+// ---------------------------------------------------------------------------
+
+export async function getBenchmarks(
+  role: string,
+  stage?: string,
+  businessModel?: string,
+  sector?: string,
+  country?: string
+): Promise<BenchmarkResult | null> {
+  // Try user-collected data first
+  const userResult = await getUserCollectedBenchmarks(role, stage, businessModel, sector, country);
+  if (userResult) return userResult;
+
+  // Fall back to static Radford reference data (US market, requires stage)
+  return getStaticBenchmarks(role, stage);
 }

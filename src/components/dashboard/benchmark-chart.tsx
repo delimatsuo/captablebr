@@ -334,18 +334,22 @@ export function InstrumentDistributionChart({ data }: Props) {
 }
 
 export function SummaryCards({ data }: Props) {
-  const metrics: { label: string; value: string; sub: string }[] = [
-    {
+  const isReference = data.dataSource === "market-reference";
+  const metrics: { label: string; value: string; sub: string }[] = [];
+
+  if (!isReference && data.commonCliff != null) {
+    metrics.push({
       label: "Cliff mais comum",
-      value: data.commonCliff != null ? `${data.commonCliff}m` : "N/A",
-      sub: data.commonCliff != null ? "meses" : "",
-    },
-    {
-      label: "Amostra",
-      value: data.sampleSize > 0 ? String(data.sampleSize) : "N >= 5",
-      sub: data.sampleSize > 0 ? "executivos" : "dados suficientes",
-    },
-  ];
+      value: `${data.commonCliff}m`,
+      sub: "meses",
+    });
+  }
+
+  metrics.push({
+    label: "Fonte",
+    value: isReference ? "Radford" : data.sampleSize > 0 ? String(data.sampleSize) : "N >= 5",
+    sub: isReference ? "Mercado EUA" : data.sampleSize > 0 ? "executivos" : "dados suficientes",
+  });
 
   if (data.firstInRolePremium) {
     metrics.push(

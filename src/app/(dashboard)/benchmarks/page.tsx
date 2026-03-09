@@ -40,7 +40,9 @@ export default function BenchmarksPage() {
       const res = await fetch(`/api/benchmarks?${params}`);
       if (res.status === 404) {
         setData(null);
-        setError("Dados insuficientes para este segmento. Tente filtros mais amplos.");
+        setError(stage === "all"
+          ? "Selecione um estágio (ex: Series A) para ver benchmarks de referência do mercado."
+          : "Dados insuficientes para este segmento. Tente filtros mais amplos.");
         return;
       }
       if (!res.ok) throw new Error();
@@ -87,7 +89,25 @@ export default function BenchmarksPage() {
         onSectorChange={setSector}
       />
 
-      {!hasSubmission && data && (
+      {data?.dataSource === "market-reference" && (
+        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+          <CardContent className="flex items-center justify-between gap-4 py-4 px-5">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Benchmarks baseados em dados de referência do mercado norte-americano (Radford Pre-IPO Survey).
+              {!stage || stage === "all"
+                ? " Selecione um estágio para ver dados de referência."
+                : " Contribua seus dados para gerar benchmarks a partir de participantes."}
+            </p>
+            {!hasSubmission && (
+              <Button asChild size="sm" variant="outline" className="shrink-0">
+                <Link href="/submit">Contribuir meus dados</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {data?.dataSource === "user-collected" && !hasSubmission && (
         <Card>
           <CardContent className="flex items-center justify-between gap-4 py-4 px-5">
             <p className="text-sm text-muted-foreground">
@@ -131,11 +151,15 @@ export default function BenchmarksPage() {
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
               {data.segmentLabel}
             </Badge>
-            {data.sampleSize > 0 && (
+            {data.dataSource === "market-reference" ? (
+              <Badge variant="secondary" className="text-xs py-1 px-3">
+                Referência — Mercado EUA
+              </Badge>
+            ) : data.sampleSize > 0 ? (
               <Badge variant="secondary" className="text-xs py-1 px-3">
                 Baseado em {data.sampleSize} executivos
               </Badge>
-            )}
+            ) : null}
           </div>
 
           {/* Summary metrics */}

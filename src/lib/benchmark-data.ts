@@ -1,13 +1,10 @@
 /**
- * Synthetic salary/equity lookup tables by role × stage.
- * All values are author-defined approximations of US tech executive compensation.
- *
- * NOTE: The canonical reference benchmark data now lives in
- * src/lib/benchmark-data.ts and is served directly to users.
- * This file is only used by the seed generator for dev/test purposes.
+ * Reference benchmark data from Radford Pre-IPO Survey (Aon).
+ * US market, pre-IPO tech companies.
+ * Percentile values by role × stage for salary, equity, and bonus.
  */
 
-// Synthetic annual salary ranges by role × stage (USD)
+// Annual salary ranges by role × stage (USD)
 export const SALARY_RANGES: Record<string, Record<string, { p25: number; p50: number; p75: number }>> = {
   CEO: {
     "Pre-Seed/Seed": { p25: 150000, p50: 200000, p75: 260000 },
@@ -77,7 +74,7 @@ export const SALARY_RANGES: Record<string, Record<string, { p25: number; p50: nu
   },
 };
 
-// Synthetic total equity ranges by role × stage (% of company, non-founder)
+// Total equity ranges by role × stage (% of company, non-founder)
 export const EQUITY_RANGES: Record<string, Record<string, { p25: number; p50: number; p75: number }>> = {
   CEO: {
     "Pre-Seed/Seed": { p25: 3.0, p50: 5.0, p75: 7.0 },
@@ -147,77 +144,7 @@ export const EQUITY_RANGES: Record<string, Record<string, { p25: number; p50: nu
   },
 };
 
-// New-hire grant equity ranges (subset of total equity — typically first grant)
-export const NEW_HIRE_EQUITY_RANGES: Record<string, Record<string, { p25: number; p50: number; p75: number }>> = {
-  CEO: {
-    "Pre-Seed/Seed": { p25: 2.0, p50: 4.0, p75: 6.0 },
-    "Series A":      { p25: 1.0, p50: 2.0, p75: 4.0 },
-    "Series B":      { p25: 0.5, p50: 1.0, p75: 2.0 },
-    "Series C+":     { p25: 0.2, p50: 0.5, p75: 1.0 },
-  },
-  CTO: {
-    "Pre-Seed/Seed": { p25: 1.5, p50: 3.0, p75: 5.0 },
-    "Series A":      { p25: 0.8, p50: 1.5, p75: 3.0 },
-    "Series B":      { p25: 0.3, p50: 0.8, p75: 1.5 },
-    "Series C+":     { p25: 0.12, p50: 0.35, p75: 0.8 },
-  },
-  CFO: {
-    "Pre-Seed/Seed": { p25: 1.0, p50: 2.0, p75: 3.5 },
-    "Series A":      { p25: 0.5, p50: 1.0, p75: 2.0 },
-    "Series B":      { p25: 0.25, p50: 0.6, p75: 1.2 },
-    "Series C+":     { p25: 0.1, p50: 0.3, p75: 0.6 },
-  },
-  COO: {
-    "Pre-Seed/Seed": { p25: 1.0, p50: 2.0, p75: 3.5 },
-    "Series A":      { p25: 0.5, p50: 1.0, p75: 2.0 },
-    "Series B":      { p25: 0.2, p50: 0.5, p75: 1.0 },
-    "Series C+":     { p25: 0.08, p50: 0.25, p75: 0.5 },
-  },
-  CMO: {
-    "Pre-Seed/Seed": { p25: 0.8, p50: 1.5, p75: 3.0 },
-    "Series A":      { p25: 0.4, p50: 0.8, p75: 1.5 },
-    "Series B":      { p25: 0.15, p50: 0.4, p75: 0.8 },
-    "Series C+":     { p25: 0.06, p50: 0.18, p75: 0.4 },
-  },
-  "CRO/VP Sales": {
-    "Pre-Seed/Seed": { p25: 0.8, p50: 1.5, p75: 3.0 },
-    "Series A":      { p25: 0.4, p50: 0.8, p75: 1.5 },
-    "Series B":      { p25: 0.15, p50: 0.35, p75: 0.8 },
-    "Series C+":     { p25: 0.05, p50: 0.18, p75: 0.4 },
-  },
-  "CPO/VP Product": {
-    "Pre-Seed/Seed": { p25: 0.8, p50: 1.5, p75: 3.0 },
-    "Series A":      { p25: 0.4, p50: 0.8, p75: 1.5 },
-    "Series B":      { p25: 0.15, p50: 0.35, p75: 0.8 },
-    "Series C+":     { p25: 0.05, p50: 0.15, p75: 0.35 },
-  },
-  "CHRO/VP People": {
-    "Pre-Seed/Seed": { p25: 0.6, p50: 1.2, p75: 2.0 },
-    "Series A":      { p25: 0.3, p50: 0.6, p75: 1.2 },
-    "Series B":      { p25: 0.1, p50: 0.3, p75: 0.6 },
-    "Series C+":     { p25: 0.04, p50: 0.1, p75: 0.3 },
-  },
-  "VP Engineering": {
-    "Pre-Seed/Seed": { p25: 0.8, p50: 1.5, p75: 2.5 },
-    "Series A":      { p25: 0.4, p50: 0.8, p75: 1.5 },
-    "Series B":      { p25: 0.15, p50: 0.35, p75: 0.8 },
-    "Series C+":     { p25: 0.05, p50: 0.15, p75: 0.35 },
-  },
-  "Other C-Level": {
-    "Pre-Seed/Seed": { p25: 0.8, p50: 1.5, p75: 2.5 },
-    "Series A":      { p25: 0.4, p50: 0.8, p75: 1.5 },
-    "Series B":      { p25: 0.12, p50: 0.35, p75: 0.8 },
-    "Series C+":     { p25: 0.05, p50: 0.15, p75: 0.35 },
-  },
-  "Other VP": {
-    "Pre-Seed/Seed": { p25: 0.6, p50: 1.2, p75: 2.0 },
-    "Series A":      { p25: 0.3, p50: 0.6, p75: 1.2 },
-    "Series B":      { p25: 0.1, p50: 0.25, p75: 0.6 },
-    "Series C+":     { p25: 0.03, p50: 0.1, p75: 0.25 },
-  },
-};
-
-// Bonus target as % of base salary
+// Bonus target as % of base salary (single value per role, no stage/percentile breakdown)
 export const BONUS_TARGET_PCT: Record<string, number> = {
   CEO:             0.55,
   CTO:             0.45,
@@ -232,50 +159,33 @@ export const BONUS_TARGET_PCT: Record<string, number> = {
   "Other VP":       0.30,
 };
 
-// Allocation matrix: how many submissions per role × stage
-export const ALLOCATION_MATRIX: Array<{ role: string; stage: string; count: number }> = [
-  { role: "CEO", stage: "Pre-Seed/Seed", count: 5 },
-  { role: "CEO", stage: "Series A",      count: 6 },
-  { role: "CEO", stage: "Series B",      count: 5 },
-  { role: "CEO", stage: "Series C+",     count: 4 },
-  { role: "CTO", stage: "Pre-Seed/Seed", count: 5 },
-  { role: "CTO", stage: "Series A",      count: 6 },
-  { role: "CTO", stage: "Series B",      count: 5 },
-  { role: "CTO", stage: "Series C+",     count: 4 },
-  { role: "CFO", stage: "Pre-Seed/Seed", count: 5 },
-  { role: "CFO", stage: "Series A",      count: 6 },
-  { role: "CFO", stage: "Series B",      count: 5 },
-  { role: "CFO", stage: "Series C+",     count: 4 },
-  { role: "COO", stage: "Pre-Seed/Seed", count: 4 },
-  { role: "COO", stage: "Series A",      count: 4 },
-  { role: "COO", stage: "Series B",      count: 4 },
-  { role: "COO", stage: "Series C+",     count: 4 },
-  { role: "CMO", stage: "Pre-Seed/Seed", count: 4 },
-  { role: "CMO", stage: "Series A",      count: 4 },
-  { role: "CMO", stage: "Series B",      count: 4 },
-  { role: "CMO", stage: "Series C+",     count: 4 },
-  { role: "CRO/VP Sales", stage: "Pre-Seed/Seed", count: 4 },
-  { role: "CRO/VP Sales", stage: "Series A",      count: 4 },
-  { role: "CRO/VP Sales", stage: "Series B",      count: 4 },
-  { role: "CRO/VP Sales", stage: "Series C+",     count: 4 },
-  { role: "CPO/VP Product", stage: "Pre-Seed/Seed", count: 3 },
-  { role: "CPO/VP Product", stage: "Series A",      count: 4 },
-  { role: "CPO/VP Product", stage: "Series B",      count: 4 },
-  { role: "CPO/VP Product", stage: "Series C+",     count: 3 },
-  { role: "CHRO/VP People", stage: "Pre-Seed/Seed", count: 3 },
-  { role: "CHRO/VP People", stage: "Series A",      count: 4 },
-  { role: "CHRO/VP People", stage: "Series B",      count: 4 },
-  { role: "CHRO/VP People", stage: "Series C+",     count: 3 },
-  { role: "VP Engineering", stage: "Pre-Seed/Seed", count: 3 },
-  { role: "VP Engineering", stage: "Series A",      count: 4 },
-  { role: "VP Engineering", stage: "Series B",      count: 4 },
-  { role: "VP Engineering", stage: "Series C+",     count: 3 },
-  { role: "Other C-Level", stage: "Pre-Seed/Seed", count: 3 },
-  { role: "Other C-Level", stage: "Series A",      count: 3 },
-  { role: "Other C-Level", stage: "Series B",      count: 3 },
-  { role: "Other C-Level", stage: "Series C+",     count: 3 },
-  { role: "Other VP", stage: "Pre-Seed/Seed", count: 3 },
-  { role: "Other VP", stage: "Series A",      count: 3 },
-  { role: "Other VP", stage: "Series B",      count: 3 },
-  { role: "Other VP", stage: "Series C+",     count: 3 },
-];
+/**
+ * Look up Radford reference data for a role × stage combination.
+ * Returns null if the combination doesn't exist in the tables.
+ */
+export function getReferenceBenchmark(role: string, stage: string) {
+  const salary = SALARY_RANGES[role]?.[stage];
+  const equity = EQUITY_RANGES[role]?.[stage];
+  if (!salary || !equity) return null;
+
+  const bonusPct = BONUS_TARGET_PCT[role] ?? 0;
+
+  return {
+    equityPercentiles: { p25: equity.p25, p50: equity.p50, p75: equity.p75, avg: equity.p50 },
+    cashPercentiles: {
+      annualSalary: { p25: salary.p25, p50: salary.p50, p75: salary.p75, avg: salary.p50 },
+      totalCash: {
+        p25: Math.round(salary.p25 * (1 + bonusPct)),
+        p50: Math.round(salary.p50 * (1 + bonusPct)),
+        p75: Math.round(salary.p75 * (1 + bonusPct)),
+        avg: Math.round(salary.p50 * (1 + bonusPct)),
+      },
+    },
+    // Radford survey does not provide these breakdowns
+    vestingPercentiles: null,
+    commonCliff: null,
+    instrumentDistribution: {} as Record<string, number>,
+    grantTypeDistribution: {} as Record<string, number>,
+    firstInRolePremium: null,
+  };
+}
