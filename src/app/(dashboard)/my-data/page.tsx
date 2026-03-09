@@ -72,9 +72,9 @@ function formatMoney(value: number | undefined, currency: string = "USD"): strin
 
 function DataItem({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="bg-muted/50 rounded-lg px-3 py-2.5">
-      <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-      <p className="font-medium text-sm">{value || "—"}</p>
+    <div className="rounded-xl bg-foreground/[0.03] px-3.5 py-3">
+      <p className="text-[11px] text-muted-foreground/70 mb-0.5">{label}</p>
+      <p className="font-medium text-[14px]">{value || "—"}</p>
     </div>
   );
 }
@@ -119,48 +119,41 @@ export default function MyDataPage() {
   if (!data) {
     return (
       <div className="max-w-4xl mx-auto">
-        <Card>
-          <CardContent className="py-16 text-center">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>
-            <h3 className="font-semibold text-lg mb-2">Nenhum dado encontrado</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-              Você ainda não enviou sua compensação. Envie seus dados para acessar os benchmarks.
-            </p>
-            <Button asChild>
-              <Link href="/submit">Enviar compensação</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="py-24 text-center">
+          <div className="mx-auto h-16 w-16 rounded-3xl bg-foreground/[0.04] flex items-center justify-center mb-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h3 className="text-lg font-semibold mb-1.5">Nenhum dado encontrado</h3>
+          <p className="text-muted-foreground text-[14px] max-w-sm mx-auto mb-8">
+            Você ainda não enviou sua compensação. Envie seus dados para acessar os benchmarks.
+          </p>
+          <Button asChild className="rounded-full">
+            <Link href="/submit">Enviar compensação</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Meus Dados</h1>
-            <p className="text-muted-foreground text-sm">
-              Visualize e gerencie seus dados de compensação
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Meus Dados</h1>
+          <p className="text-muted-foreground text-[15px] mt-1">
+            Visualize e gerencie seus dados de compensação
+          </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/submit">Editar tudo</Link>
+        <Button asChild variant="outline" className="rounded-full text-[13px]">
+          <Link href="/submit">Editar</Link>
         </Button>
       </div>
 
       {/* Company */}
-      <Card>
+      <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Empresa</CardTitle>
+          <CardTitle className="text-[15px] font-semibold">Empresa</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -175,9 +168,9 @@ export default function MyDataPage() {
       </Card>
 
       {/* Compensation */}
-      <Card>
+      <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Remuneração</CardTitle>
+          <CardTitle className="text-[15px] font-semibold">Remuneração</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -199,10 +192,10 @@ export default function MyDataPage() {
       </Card>
 
       {/* Grants */}
-      <Card>
+      <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">
+            <CardTitle className="text-[15px] font-semibold">
               Grants ({data.grants.length})
             </CardTitle>
             {data.equityPercentage != null && (
@@ -214,7 +207,7 @@ export default function MyDataPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {data.grants.map((grant, i) => (
-            <div key={grant.id} className="rounded-lg border p-4 space-y-3">
+            <div key={grant.id} className="rounded-xl border border-border/50 p-4 space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-medium text-sm">
                   {grant.grantLabel || `Grant ${i + 1}`}

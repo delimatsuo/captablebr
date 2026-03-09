@@ -4,15 +4,25 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { BenchmarkResult, StageComparisonResult } from "@/lib/benchmarks";
 
-// Indigo ramp + single teal accent
-const INDIGO_LIGHT = "oklch(0.80 0.10 260)";
-const INDIGO_MID = "oklch(0.55 0.20 260)";
-const INDIGO_DARK = "oklch(0.40 0.18 260)";
-const TEAL_ACCENT = "oklch(0.65 0.15 175)";
-const INDIGO_MUTED = "oklch(0.70 0.08 260)";
+// Refined palette — desaturated, harmonious
+const C_LIGHT = "oklch(0.82 0.08 260)";
+const C_MID = "oklch(0.55 0.16 260)";
+const C_DARK = "oklch(0.38 0.14 260)";
+const C_ACCENT = "oklch(0.62 0.12 175)";
+const C_MUTED = "oklch(0.72 0.06 260)";
+const GRID_COLOR = "oklch(0.94 0.003 260)";
+const AXIS_COLOR = "oklch(0.54 0.01 260)";
+
+const TOOLTIP_STYLE = {
+  borderRadius: "12px",
+  border: "none",
+  boxShadow: "0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+  padding: "10px 14px",
+  fontSize: "13px",
+};
 
 interface Props {
   data: BenchmarkResult;
@@ -22,6 +32,20 @@ function formatUSD(value: number): string {
   return `$ ${value.toLocaleString("en-US")}`;
 }
 
+function ChartCard({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+  return (
+    <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <CardContent className="pt-6 pb-4 px-6">
+        <div className="mb-5">
+          <h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
+          <p className="text-[13px] text-muted-foreground mt-0.5">{subtitle}</p>
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function EquityPercentileChart({ data }: Props) {
   if (!data.equityPercentiles) return null;
   const { p25, p50, p75, avg } = data.equityPercentiles;
@@ -29,56 +53,32 @@ export function EquityPercentileChart({ data }: Props) {
 
   const chartData = hasPercentiles
     ? [
-        { name: "P25", value: p25, fill: INDIGO_LIGHT },
-        { name: "Mediana", value: p50, fill: INDIGO_MID },
-        { name: "P75", value: p75, fill: INDIGO_DARK },
-        { name: "Média", value: avg, fill: TEAL_ACCENT },
+        { name: "P25", value: p25, fill: C_LIGHT },
+        { name: "Mediana", value: p50, fill: C_MID },
+        { name: "P75", value: p75, fill: C_DARK },
+        { name: "Média", value: avg, fill: C_ACCENT },
       ]
-    : [{ name: "Média", value: avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: avg, fill: C_MID }];
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Equity (%)</CardTitle>
-        <CardDescription>
-          {hasPercentiles
-            ? "Distribuição em percentis do cap table"
-            : "Média do mercado (amostra insuficiente para percentis)"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={chartData} barCategoryGap="25%">
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `${v}%`}
-            />
-            <Tooltip
-              formatter={(value) => [`${value}%`, "Equity"]}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid oklch(0.91 0.01 260)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              }}
-            />
-            <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-              {chartData.map((entry, idx) => (
-                <Cell key={idx} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ChartCard
+      title="Equity (%)"
+      subtitle={hasPercentiles ? "Distribuição em percentis" : "Média do mercado"}
+    >
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={chartData} barCategoryGap="30%">
+          <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+          <XAxis dataKey="name" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={45} />
+          <Tooltip formatter={(value) => [`${value}%`, "Equity"]} contentStyle={TOOLTIP_STYLE} />
+          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+            {chartData.map((entry, idx) => (
+              <Cell key={idx} fill={entry.fill} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }
 
@@ -89,56 +89,32 @@ export function VestingPercentileChart({ data }: Props) {
 
   const chartData = hasPercentiles
     ? [
-        { name: "P25", value: p25, fill: INDIGO_LIGHT },
-        { name: "Mediana", value: p50, fill: INDIGO_MID },
-        { name: "P75", value: p75, fill: INDIGO_DARK },
-        { name: "Média", value: avg, fill: TEAL_ACCENT },
+        { name: "P25", value: p25, fill: C_LIGHT },
+        { name: "Mediana", value: p50, fill: C_MID },
+        { name: "P75", value: p75, fill: C_DARK },
+        { name: "Média", value: avg, fill: C_ACCENT },
       ]
-    : [{ name: "Média", value: avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: avg, fill: C_MID }];
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Vesting (meses)</CardTitle>
-        <CardDescription>
-          {hasPercentiles
-            ? "Período de vesting por percentil"
-            : "Média do mercado"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={chartData} barCategoryGap="25%">
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `${v}m`}
-            />
-            <Tooltip
-              formatter={(value) => [`${value} meses`, "Vesting"]}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid oklch(0.91 0.01 260)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              }}
-            />
-            <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-              {chartData.map((entry, idx) => (
-                <Cell key={idx} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ChartCard
+      title="Vesting (meses)"
+      subtitle={hasPercentiles ? "Período por percentil" : "Média do mercado"}
+    >
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={chartData} barCategoryGap="30%">
+          <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+          <XAxis dataKey="name" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}m`} width={40} />
+          <Tooltip formatter={(value) => [`${value} meses`, "Vesting"]} contentStyle={TOOLTIP_STYLE} />
+          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+            {chartData.map((entry, idx) => (
+              <Cell key={idx} fill={entry.fill} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }
 
@@ -149,109 +125,61 @@ export function CashCompensationChart({ data }: Props) {
 
   const salaryData = hasPercentiles
     ? [
-        { name: "P25", value: annualSalary.p25, fill: INDIGO_LIGHT },
-        { name: "Mediana", value: annualSalary.p50, fill: INDIGO_MID },
-        { name: "P75", value: annualSalary.p75, fill: INDIGO_DARK },
-        { name: "Média", value: annualSalary.avg, fill: TEAL_ACCENT },
+        { name: "P25", value: annualSalary.p25, fill: C_LIGHT },
+        { name: "Mediana", value: annualSalary.p50, fill: C_MID },
+        { name: "P75", value: annualSalary.p75, fill: C_DARK },
+        { name: "Média", value: annualSalary.avg, fill: C_ACCENT },
       ]
-    : [{ name: "Média", value: annualSalary.avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: annualSalary.avg, fill: C_MID }];
 
   const cashData = hasPercentiles
     ? [
-        { name: "P25", value: totalCash.p25, fill: INDIGO_LIGHT },
-        { name: "Mediana", value: totalCash.p50, fill: INDIGO_MID },
-        { name: "P75", value: totalCash.p75, fill: INDIGO_DARK },
-        { name: "Média", value: totalCash.avg, fill: TEAL_ACCENT },
+        { name: "P25", value: totalCash.p25, fill: C_LIGHT },
+        { name: "Mediana", value: totalCash.p50, fill: C_MID },
+        { name: "P75", value: totalCash.p75, fill: C_DARK },
+        { name: "Média", value: totalCash.avg, fill: C_ACCENT },
       ]
-    : [{ name: "Média", value: totalCash.avg, fill: INDIGO_MID }];
+    : [{ name: "Média", value: totalCash.avg, fill: C_MID }];
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Salário Anual (USD)</CardTitle>
-          <CardDescription>
-            {hasPercentiles
-              ? "Distribuição salarial por percentil"
-              : "Média do mercado"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={salaryData} barCategoryGap="25%">
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-              />
-              <Tooltip
-                formatter={(value) => [formatUSD(Number(value)), "Salário"]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid oklch(0.91 0.01 260)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                }}
-              />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {salaryData.map((entry, idx) => (
-                  <Cell key={idx} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <ChartCard
+        title="Salário Anual (USD)"
+        subtitle={hasPercentiles ? "Distribuição salarial" : "Média do mercado"}
+      >
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={salaryData} barCategoryGap="30%">
+            <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={45} />
+            <Tooltip formatter={(value) => [formatUSD(Number(value)), "Salário"]} contentStyle={TOOLTIP_STYLE} />
+            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+              {salaryData.map((entry, idx) => (
+                <Cell key={idx} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Remuneração Total Anual (USD)</CardTitle>
-          <CardDescription>
-            {hasPercentiles
-              ? "Salário anual + bônus por percentil"
-              : "Média do mercado"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={cashData} barCategoryGap="25%">
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-              />
-              <Tooltip
-                formatter={(value) => [formatUSD(Number(value)), "Total anual"]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid oklch(0.91 0.01 260)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                }}
-              />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {cashData.map((entry, idx) => (
-                  <Cell key={idx} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <ChartCard
+        title="Remuneração Total (USD)"
+        subtitle={hasPercentiles ? "Salário + bônus" : "Média do mercado"}
+      >
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={cashData} barCategoryGap="30%">
+            <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={45} />
+            <Tooltip formatter={(value) => [formatUSD(Number(value)), "Total"]} contentStyle={TOOLTIP_STYLE} />
+            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+              {cashData.map((entry, idx) => (
+                <Cell key={idx} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
     </>
   );
 }
@@ -260,7 +188,7 @@ export function InstrumentDistributionChart({ data }: Props) {
   const entries = Object.entries(data.instrumentDistribution);
   if (entries.length === 0) return null;
 
-  const instrumentColors = [INDIGO_MID, INDIGO_DARK, TEAL_ACCENT, INDIGO_LIGHT, INDIGO_MUTED];
+  const instrumentColors = [C_MID, C_DARK, C_ACCENT, C_LIGHT, C_MUTED];
   const total = entries.reduce((sum, [, v]) => sum + v, 0);
 
   const chartData = entries.map(([name, value], idx) => ({
@@ -270,71 +198,60 @@ export function InstrumentDistributionChart({ data }: Props) {
   }));
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Instrumentos de equity</CardTitle>
-        <CardDescription>Distribuição dos tipos de instrumento utilizados</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="45%"
-              innerRadius={55}
-              outerRadius={90}
-              strokeWidth={2}
-              stroke="white"
-            >
-              {chartData.map((entry, idx) => (
-                <Cell key={idx} fill={entry.fill} />
-              ))}
-            </Pie>
-            {/* Center label */}
-            <text
-              x="50%"
-              y="42%"
-              textAnchor="middle"
-              dominantBaseline="central"
-              className="fill-foreground text-2xl font-bold"
-            >
-              {total}
-            </text>
-            <text
-              x="50%"
-              y="52%"
-              textAnchor="middle"
-              dominantBaseline="central"
-              className="fill-muted-foreground text-xs"
-            >
-              registros
-            </text>
-            <Tooltip
-              formatter={(value) => [`${value}%`, ""]}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid oklch(0.91 0.01 260)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              }}
-            />
-            <Legend
-              verticalAlign="bottom"
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ChartCard title="Instrumentos de equity" subtitle="Distribuição por tipo de instrumento">
+      <ResponsiveContainer width="100%" height={280}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="45%"
+            innerRadius={60}
+            outerRadius={95}
+            strokeWidth={3}
+            stroke="white"
+          >
+            {chartData.map((entry, idx) => (
+              <Cell key={idx} fill={entry.fill} />
+            ))}
+          </Pie>
+          <text
+            x="50%"
+            y="42%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            className="fill-foreground text-2xl font-semibold"
+          >
+            {total}
+          </text>
+          <text
+            x="50%"
+            y="52%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            className="fill-muted-foreground text-xs"
+          >
+            registros
+          </text>
+          <Tooltip
+            formatter={(value) => [`${value}%`, ""]}
+            contentStyle={TOOLTIP_STYLE}
+          />
+          <Legend
+            verticalAlign="bottom"
+            iconType="circle"
+            iconSize={8}
+            wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Multi-stage comparison charts (all stages side by side)
+// Multi-stage comparison charts
 // ---------------------------------------------------------------------------
 
 interface ComparisonProps {
@@ -343,9 +260,9 @@ interface ComparisonProps {
 
 const STAGE_SHORT: Record<string, string> = {
   "Pre-Seed/Seed": "Seed",
-  "Series A": "A",
-  "Series B": "B",
-  "Series C+": "C+",
+  "Series A": "Series A",
+  "Series B": "Series B",
+  "Series C+": "Series C+",
 };
 
 export function StageEquityChart({ data }: ComparisonProps) {
@@ -357,43 +274,20 @@ export function StageEquityChart({ data }: ComparisonProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Equity por Estágio (%)</CardTitle>
-        <CardDescription>Evolução do equity ao longo das rodadas</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={chartData} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-            <XAxis
-              dataKey="stage"
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `${v}%`}
-            />
-            <Tooltip
-              formatter={(value) => [`${value}%`, ""]}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid oklch(0.91 0.01 260)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              }}
-            />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
-            <Bar dataKey="P25" fill={INDIGO_LIGHT} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Mediana" fill={INDIGO_MID} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="P75" fill={INDIGO_DARK} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ChartCard title="Equity por Estágio (%)" subtitle="Evolução do equity ao longo das rodadas">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData} barCategoryGap="25%">
+          <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+          <XAxis dataKey="stage" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={45} />
+          <Tooltip formatter={(value) => [`${value}%`, ""]} contentStyle={TOOLTIP_STYLE} />
+          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+          <Bar dataKey="P25" fill={C_LIGHT} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="Mediana" fill={C_MID} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="P75" fill={C_DARK} radius={[8, 8, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }
 
@@ -406,43 +300,20 @@ export function StageSalaryChart({ data }: ComparisonProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Salário Anual por Estágio (USD)</CardTitle>
-        <CardDescription>Evolução salarial ao longo das rodadas</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={chartData} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-            <XAxis
-              dataKey="stage"
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              formatter={(value) => [formatUSD(Number(value)), ""]}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid oklch(0.91 0.01 260)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              }}
-            />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
-            <Bar dataKey="P25" fill={INDIGO_LIGHT} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Mediana" fill={INDIGO_MID} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="P75" fill={INDIGO_DARK} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ChartCard title="Salário Anual por Estágio (USD)" subtitle="Evolução salarial ao longo das rodadas">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData} barCategoryGap="25%">
+          <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+          <XAxis dataKey="stage" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={45} />
+          <Tooltip formatter={(value) => [formatUSD(Number(value)), ""]} contentStyle={TOOLTIP_STYLE} />
+          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+          <Bar dataKey="P25" fill={C_LIGHT} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="Mediana" fill={C_MID} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="P75" fill={C_DARK} radius={[8, 8, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }
 
@@ -455,43 +326,20 @@ export function StageTotalCashChart({ data }: ComparisonProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Remuneração Total por Estágio (USD)</CardTitle>
-        <CardDescription>Salário + bônus ao longo das rodadas</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={chartData} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
-            <XAxis
-              dataKey="stage"
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              formatter={(value) => [formatUSD(Number(value)), ""]}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid oklch(0.91 0.01 260)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              }}
-            />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
-            <Bar dataKey="P25" fill={INDIGO_LIGHT} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Mediana" fill={INDIGO_MID} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="P75" fill={INDIGO_DARK} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ChartCard title="Remuneração Total por Estágio (USD)" subtitle="Salário + bônus ao longo das rodadas">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData} barCategoryGap="25%">
+          <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+          <XAxis dataKey="stage" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={45} />
+          <Tooltip formatter={(value) => [formatUSD(Number(value)), ""]} contentStyle={TOOLTIP_STYLE} />
+          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+          <Bar dataKey="P25" fill={C_LIGHT} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="Mediana" fill={C_MID} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="P75" fill={C_DARK} radius={[8, 8, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }
 
@@ -539,14 +387,14 @@ export function SummaryCards({ data }: Props) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {metrics.map((m) => (
-        <Card key={m.label} className="hover:shadow-md transition-shadow">
+        <Card key={m.label} className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:scale-[1.02]">
           <CardContent className="pt-5 pb-4 px-5">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] font-medium text-muted-foreground tracking-wide">
               {m.label}
             </span>
-            <p className="text-3xl font-bold mt-1">{m.value}</p>
+            <p className="text-2xl font-semibold mt-1.5 tracking-tight">{m.value}</p>
             {m.sub && (
-              <p className="text-xs text-muted-foreground mt-0.5">{m.sub}</p>
+              <p className="text-[12px] text-muted-foreground/70 mt-0.5">{m.sub}</p>
             )}
           </CardContent>
         </Card>
