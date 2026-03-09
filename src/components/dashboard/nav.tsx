@@ -53,9 +53,9 @@ export function DashboardNav() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200",
+                    "px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                     isActive
-                      ? "bg-white text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]"
+                      ? "bg-card text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -67,7 +67,7 @@ export function DashboardNav() {
               <Link
                 href="/admin"
                 className={cn(
-                  "px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200",
+                  "px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                   pathname.startsWith("/admin")
                     ? "bg-white text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]"
                     : "text-muted-foreground hover:text-foreground"
@@ -81,7 +81,7 @@ export function DashboardNav() {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="text-[13px] text-muted-foreground hover:text-foreground transition-colors duration-200 shrink-0"
+            className="text-[13px] text-muted-foreground hover:text-foreground transition-colors duration-200 shrink-0 rounded-full px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           >
             Sair
           </button>

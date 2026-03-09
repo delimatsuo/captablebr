@@ -20,7 +20,7 @@ export function SegmentSelector({
     <div className="flex flex-wrap items-center gap-3">
       <FilterPill label="Mercado">
         <Select value={country} onValueChange={onCountryChange}>
-          <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-medium gap-1 focus:ring-0 [&>svg]:opacity-40">
+          <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-medium gap-1 focus:ring-0 focus-visible:ring-2 focus-visible:ring-ring [&>svg]:opacity-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -34,7 +34,7 @@ export function SegmentSelector({
 
       <FilterPill label="Cargo" active>
         <Select value={role} onValueChange={onRoleChange}>
-          <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-semibold gap-1 focus:ring-0 [&>svg]:opacity-40">
+          <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-semibold gap-1 focus:ring-0 focus-visible:ring-2 focus-visible:ring-ring [&>svg]:opacity-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -47,7 +47,7 @@ export function SegmentSelector({
 
       <FilterPill label="Estágio">
         <Select value={stage} onValueChange={onStageChange}>
-          <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-medium gap-1 focus:ring-0 [&>svg]:opacity-40">
+          <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-medium gap-1 focus:ring-0 focus-visible:ring-2 focus-visible:ring-ring [&>svg]:opacity-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

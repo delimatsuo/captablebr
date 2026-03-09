@@ -210,7 +210,7 @@ export function InstrumentDistributionChart({ data }: Props) {
             innerRadius={60}
             outerRadius={95}
             strokeWidth={3}
-            stroke="white"
+            stroke="var(--card)"
           >
             {chartData.map((entry, idx) => (
               <Cell key={idx} fill={entry.fill} />

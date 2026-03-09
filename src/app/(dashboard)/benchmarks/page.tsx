@@ -147,7 +147,7 @@ export default function BenchmarksPage() {
             <span className="text-[13px] text-muted-foreground">
               Todos os estágios
             </span>
-            <span className="ml-2 inline-flex items-center rounded-full bg-primary/8 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+            <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
               Referência EUA
             </span>
           </div>
@@ -167,7 +167,7 @@ export default function BenchmarksPage() {
               {data.segmentLabel}
             </span>
             {data.dataSource === "market-reference" ? (
-              <span className="ml-2 inline-flex items-center rounded-full bg-primary/8 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+              <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
                 Referência EUA
               </span>
             ) : data.sampleSize > 0 ? (
