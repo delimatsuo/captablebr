@@ -195,7 +195,7 @@ export async function upsertSubmissionWithGrants(
         },
         update: {
           ...submissionFields,
-          notifyEmail: submissionFields.notifyEmail || null,
+          // notifyEmail: preserved on update (field removed from form)
           fxRateUsed,
           fxRateDate,
           confirmedByUser: true,
@@ -251,9 +251,13 @@ export async function upsertSubmissionWithGrants(
     });
   } catch (txErr) {
     console.error("[upsertSubmissionWithGrants] Transaction error:", txErr);
-    throw new Error(
-      txErr instanceof Error ? txErr.message : "Erro ao salvar no banco de dados"
-    );
+    // Map known Prisma error codes to user-friendly messages
+    if (txErr && typeof txErr === "object" && "code" in txErr) {
+      const code = (txErr as { code: string }).code;
+      if (code === "P2002") throw new Error("Submissão duplicada.");
+      if (code === "P2003") throw new Error("Referência inválida no banco de dados.");
+    }
+    throw new Error("Erro ao salvar no banco de dados");
   }
 }
 
@@ -298,7 +302,7 @@ export async function upsertSubmission(formData: unknown) {
         data: {
           ...submissionFields,
           ...grantDenormFields,
-          notifyEmail: submissionFields.notifyEmail || null,
+          // notifyEmail: preserved on update (field removed from form)
           fxRateUsed,
           fxRateDate,
           confirmedByUser: true,
@@ -382,7 +386,7 @@ export async function upsertSubmissionFromAi(
         data: {
           ...submissionFields,
           ...grantDenormFields,
-          notifyEmail: submissionFields.notifyEmail || null,
+          // notifyEmail: preserved on update (field removed from form)
           fxRateUsed,
           fxRateDate,
           sourceDocumentUrl,

@@ -268,9 +268,9 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
 
       if (isAiExtracted && sourceDocumentUrl && grantsToSubmit.length === 1) {
         // AI single-grant path: use upsertSubmissionFromAi to preserve source doc metadata
-        const firstGrant = grantsToSubmit[0] || {};
+        const firstGrant = dataToSubmit.grants[0] || {};
         await upsertSubmissionFromAi({
-          ...formData,
+          ...cleanData,
           ...firstGrant,
         }, sourceDocumentUrl);
       } else {
