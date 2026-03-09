@@ -51,7 +51,6 @@ interface SubmissionFormFields {
   retentionAmount?: number;
   hasSignOn?: boolean;
   signOnAmount?: number;
-  notifyEmail?: string;
   grants: Partial<GrantFormData>[];
 }
 
@@ -254,16 +253,24 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
         return grant;
       });
 
+      // Strip null values (API returns null for unset fields, Zod .optional() expects undefined)
+      const cleanData = Object.fromEntries(
+        Object.entries(formData).map(([k, v]) => [k, v === null ? undefined : v])
+      );
       const dataToSubmit = {
-        ...formData,
-        grants: grantsToSubmit,
+        ...cleanData,
+        grants: grantsToSubmit.map((g) =>
+          Object.fromEntries(
+            Object.entries(g).map(([k, v]) => [k, v === null ? undefined : v])
+          )
+        ),
       };
 
       if (isAiExtracted && sourceDocumentUrl && grantsToSubmit.length === 1) {
         // AI single-grant path: use upsertSubmissionFromAi to preserve source doc metadata
-        const firstGrant = grantsToSubmit[0] || {};
+        const firstGrant = dataToSubmit.grants[0] || {};
         await upsertSubmissionFromAi({
-          ...formData,
+          ...cleanData,
           ...firstGrant,
         }, sourceDocumentUrl);
       } else {
@@ -281,9 +288,13 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
       toast.success("Dados salvos com sucesso!");
       router.push("/benchmarks");
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "errors" in err) {
-        const zodErr = err as { errors: { message: string }[] };
-        toast.error(zodErr.errors[0]?.message || "Dados inválidos");
+      console.error("[SubmissionForm] Save error:", err);
+      if (err && typeof err === "object" && "issues" in err) {
+        // Zod v4 validation error (client-side parse)
+        const zodErr = err as { issues: { message: string }[] };
+        toast.error(zodErr.issues[0]?.message || "Dados inválidos");
+      } else if (err instanceof Error && err.message && err.message !== "NEXT_REDIRECT") {
+        toast.error(err.message);
       } else {
         toast.error("Erro ao salvar");
       }
@@ -727,21 +738,6 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }
               </div>
             </div>
 
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Email para notificações (opcional)</Label>
-              <Input
-                type="email"
-                value={formData.notifyEmail || ""}
-                onChange={(e) => update("notifyEmail", e.target.value || undefined)}
-                placeholder="seu@email.com"
-                className="h-11"
-              />
-              <p className="text-xs text-muted-foreground">
-                Receba um aviso quando os benchmarks do seu segmento estiverem disponíveis
-              </p>
-            </div>
           </CardContent>
         </Card>
       )}
