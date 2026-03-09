@@ -63,7 +63,8 @@ export default function RequestAccessPage() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, linkedinUrl, role, lgpdConsent }),
+        // TODO: persist tosConsent server-side (signupSchema + Prisma migration) for LGPD compliance
+        body: JSON.stringify({ name, email, linkedinUrl, role, lgpdConsent, tosConsent }),
       });
 
       if (!res.ok) {
