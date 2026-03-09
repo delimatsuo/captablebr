@@ -1,6 +1,6 @@
 import { verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getBenchmarks } from "@/lib/benchmarks";
+import { getBenchmarks, getStageComparison } from "@/lib/benchmarks";
 import { COUNTRY_CODES } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -32,6 +32,15 @@ export async function GET(request: NextRequest) {
   }
   const country = countryParam;
 
+  // No stage selected → return multi-stage comparison
+  if (!stage) {
+    const comparison = getStageComparison(role);
+    if (!comparison) {
+      return NextResponse.json({ error: "Dados insuficientes" }, { status: 404 });
+    }
+    return NextResponse.json({ ...comparison, hasSubmission, mode: "comparison" });
+  }
+
   const result = await getBenchmarks(role, stage, businessModel, sector, country);
 
   if (!result) {
@@ -41,5 +50,5 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ...result, hasSubmission });
+  return NextResponse.json({ ...result, hasSubmission, mode: "single" });
 }

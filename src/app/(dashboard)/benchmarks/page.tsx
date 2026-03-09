@@ -8,23 +8,28 @@ import {
   CashCompensationChart,
   InstrumentDistributionChart,
   SummaryCards,
+  StageEquityChart,
+  StageSalaryChart,
+  StageTotalCashChart,
 } from "@/components/dashboard/benchmark-chart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import type { BenchmarkResult } from "@/lib/benchmarks";
+import type { BenchmarkResult, StageComparisonResult } from "@/lib/benchmarks";
 
 export default function BenchmarksPage() {
   const [country, setCountry] = useState("all");
   const [role, setRole] = useState("CTO");
   const [stage, setStage] = useState("all");
-  const [businessModel, setBusinessModel] = useState("all");
-  const [sector, setSector] = useState("all");
-  const [data, setData] = useState<BenchmarkResult | null>(null);
   const [hasSubmission, setHasSubmission] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Single-stage mode
+  const [data, setData] = useState<BenchmarkResult | null>(null);
+  // Multi-stage comparison mode
+  const [comparison, setComparison] = useState<StageComparisonResult | null>(null);
 
   const fetchBenchmarks = useCallback(async () => {
     setLoading(true);
@@ -33,32 +38,38 @@ export default function BenchmarksPage() {
     const params = new URLSearchParams({ role });
     if (country !== "all") params.set("country", country);
     if (stage !== "all") params.set("stage", stage);
-    if (businessModel !== "all") params.set("businessModel", businessModel);
-    if (sector !== "all") params.set("sector", sector);
 
     try {
       const res = await fetch(`/api/benchmarks?${params}`);
       if (res.status === 404) {
         setData(null);
-        setError(stage === "all"
-          ? "Selecione um estágio (ex: Series A) para ver benchmarks de referência do mercado."
-          : "Dados insuficientes para este segmento. Tente filtros mais amplos.");
+        setComparison(null);
+        setError("Dados insuficientes para este segmento. Tente filtros mais amplos.");
         return;
       }
       if (!res.ok) throw new Error();
       const json = await res.json();
       setHasSubmission(json.hasSubmission);
-      setData(json);
+
+      if (json.mode === "comparison") {
+        setComparison(json as StageComparisonResult);
+        setData(null);
+      } else {
+        setData(json as BenchmarkResult);
+        setComparison(null);
+      }
     } catch {
       setError("Erro ao carregar benchmarks");
     } finally {
       setLoading(false);
     }
-  }, [country, role, stage, businessModel, sector]);
+  }, [country, role, stage]);
 
   useEffect(() => {
     fetchBenchmarks();
   }, [fetchBenchmarks]);
+
+  const isReference = data?.dataSource === "market-reference" || comparison?.dataSource === "market-reference";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -80,23 +91,17 @@ export default function BenchmarksPage() {
         country={country}
         role={role}
         stage={stage}
-        businessModel={businessModel}
-        sector={sector}
         onCountryChange={setCountry}
         onRoleChange={setRole}
         onStageChange={setStage}
-        onBusinessModelChange={setBusinessModel}
-        onSectorChange={setSector}
       />
 
-      {data?.dataSource === "market-reference" && (
+      {isReference && (
         <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
           <CardContent className="flex items-center justify-between gap-4 py-4 px-5">
             <p className="text-sm text-amber-800 dark:text-amber-200">
               Benchmarks baseados em dados de referência do mercado norte-americano.
-              {!stage || stage === "all"
-                ? " Selecione um estágio para ver dados de referência."
-                : " Contribua seus dados para gerarmos benchmarks do mercado brasileiro."}
+              Contribua seus dados para gerarmos benchmarks do mercado brasileiro.
             </p>
             {!hasSubmission && (
               <Button asChild size="sm" variant="outline" className="shrink-0">
@@ -143,9 +148,29 @@ export default function BenchmarksPage() {
             </p>
           </CardContent>
         </Card>
-      ) : data ? (
+      ) : comparison ? (
+        /* ── Multi-stage comparison view ── */
         <>
-          {/* Segment badge */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs py-1 px-3 gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+              {comparison.role} / Todos os estágios
+            </Badge>
+            <Badge variant="secondary" className="text-xs py-1 px-3">
+              Referência — Mercado EUA
+            </Badge>
+          </div>
+
+          <StageEquityChart data={comparison} />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StageSalaryChart data={comparison} />
+            <StageTotalCashChart data={comparison} />
+          </div>
+        </>
+      ) : data ? (
+        /* ── Single-stage detail view ── */
+        <>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="text-xs py-1 px-3 gap-1.5">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
@@ -162,16 +187,13 @@ export default function BenchmarksPage() {
             ) : null}
           </div>
 
-          {/* Summary metrics */}
           <SummaryCards data={data} />
 
-          {/* Equity & Vesting Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EquityPercentileChart data={data} />
             <VestingPercentileChart data={data} />
           </div>
 
-          {/* Cash Compensation Charts */}
           {data.cashPercentiles && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <CashCompensationChart data={data} />

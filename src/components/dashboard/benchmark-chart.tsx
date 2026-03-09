@@ -333,6 +333,170 @@ export function InstrumentDistributionChart({ data }: Props) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Multi-stage comparison charts (all stages side by side)
+// ---------------------------------------------------------------------------
+
+import type { StageComparisonResult } from "@/lib/benchmarks";
+
+interface ComparisonProps {
+  data: StageComparisonResult;
+}
+
+const STAGE_SHORT: Record<string, string> = {
+  "Pre-Seed/Seed": "Seed",
+  "Series A": "A",
+  "Series B": "B",
+  "Series C+": "C+",
+};
+
+export function StageEquityChart({ data }: ComparisonProps) {
+  const chartData = data.stages.map((s) => ({
+    stage: STAGE_SHORT[s.stage] ?? s.stage,
+    P25: s.equity.p25,
+    Mediana: s.equity.p50,
+    P75: s.equity.p75,
+  }));
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Equity por Estágio (%)</CardTitle>
+        <CardDescription>Evolução do equity ao longo das rodadas</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={chartData} barCategoryGap="20%">
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
+            <XAxis
+              dataKey="stage"
+              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <Tooltip
+              formatter={(value) => [`${value}%`, ""]}
+              contentStyle={{
+                borderRadius: "8px",
+                border: "1px solid oklch(0.91 0.01 260)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              }}
+            />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+            <Bar dataKey="P25" fill={INDIGO_LIGHT} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Mediana" fill={INDIGO_MID} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="P75" fill={INDIGO_DARK} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function StageSalaryChart({ data }: ComparisonProps) {
+  const chartData = data.stages.map((s) => ({
+    stage: STAGE_SHORT[s.stage] ?? s.stage,
+    P25: s.salary.p25,
+    Mediana: s.salary.p50,
+    P75: s.salary.p75,
+  }));
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Salário Anual por Estágio (USD)</CardTitle>
+        <CardDescription>Evolução salarial ao longo das rodadas</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={chartData} barCategoryGap="20%">
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
+            <XAxis
+              dataKey="stage"
+              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+            />
+            <Tooltip
+              formatter={(value) => [formatUSD(Number(value)), ""]}
+              contentStyle={{
+                borderRadius: "8px",
+                border: "1px solid oklch(0.91 0.01 260)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              }}
+            />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+            <Bar dataKey="P25" fill={INDIGO_LIGHT} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Mediana" fill={INDIGO_MID} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="P75" fill={INDIGO_DARK} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function StageTotalCashChart({ data }: ComparisonProps) {
+  const chartData = data.stages.map((s) => ({
+    stage: STAGE_SHORT[s.stage] ?? s.stage,
+    P25: s.totalCash.p25,
+    Mediana: s.totalCash.p50,
+    P75: s.totalCash.p75,
+  }));
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Remuneração Total por Estágio (USD)</CardTitle>
+        <CardDescription>Salário + bônus ao longo das rodadas</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={chartData} barCategoryGap="20%">
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.01 260)" />
+            <XAxis
+              dataKey="stage"
+              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: "oklch(0.50 0.02 260)" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+            />
+            <Tooltip
+              formatter={(value) => [formatUSD(Number(value)), ""]}
+              contentStyle={{
+                borderRadius: "8px",
+                border: "1px solid oklch(0.91 0.01 260)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              }}
+            />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+            <Bar dataKey="P25" fill={INDIGO_LIGHT} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Mediana" fill={INDIGO_MID} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="P75" fill={INDIGO_DARK} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SummaryCards({ data }: Props) {
   const isReference = data.dataSource === "market-reference";
   const metrics: { label: string; value: string; sub: string }[] = [];
