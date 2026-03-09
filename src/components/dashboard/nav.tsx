@@ -6,12 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase-client";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/benchmarks", label: "Benchmarks" },
-  { href: "/submit", label: "Minha Compensação" },
+  { href: "/submit", label: "Compensação" },
   { href: "/my-data", label: "Meus Dados" },
 ];
 
@@ -34,16 +33,19 @@ export function DashboardNav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/benchmarks" className="flex items-center gap-2.5 py-3">
-            <Image src="/logo-icon.svg" alt="" width={28} height={28} className="rounded-lg" />
-            <span className="text-base font-bold tracking-tight hidden sm:inline">
+    <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-2xl backdrop-saturate-150">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
+          {/* Logo */}
+          <Link href="/benchmarks" className="flex items-center gap-2.5 shrink-0">
+            <Image src="/logo-icon.svg" alt="" width={24} height={24} className="rounded-md" />
+            <span className="text-[15px] font-semibold tracking-tight">
               Captable<span className="text-primary">BR</span>
             </span>
           </Link>
-          <nav className="flex items-center gap-1">
+
+          {/* Center nav — floating pill */}
+          <nav className="flex items-center bg-foreground/[0.04] rounded-full p-0.5 gap-0.5">
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
@@ -51,8 +53,10 @@ export function DashboardNav() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "px-3 pb-[calc(0.75rem+2px)] pt-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent",
-                    isActive && "border-primary text-foreground"
+                    "px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                    isActive
+                      ? "bg-card text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {item.label}
@@ -63,25 +67,28 @@ export function DashboardNav() {
               <Link
                 href="/admin"
                 className={cn(
-                  "px-3 pb-[calc(0.75rem+2px)] pt-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border-b-2 border-transparent",
-                  pathname.startsWith("/admin") && "border-primary text-foreground"
+                  "px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                  pathname.startsWith("/admin")
+                    ? "bg-white text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)]"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 Admin
               </Link>
             )}
           </nav>
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="text-[13px] text-muted-foreground hover:text-foreground transition-colors duration-200 shrink-0 rounded-full px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            Sair
+          </button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogout}
-          className="text-muted-foreground hover:text-foreground gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-          <span className="hidden sm:inline">Sair</span>
-        </Button>
       </div>
+      {/* Subtle separator */}
+      <div className="h-px bg-foreground/[0.06]" />
     </header>
   );
 }

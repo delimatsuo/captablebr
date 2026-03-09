@@ -75,20 +75,15 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {existingData ? "Editar minha compensação" : "Minha compensação"}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {existingData
-              ? "Atualize seus dados de compensação."
-              : "Compartilhe seus dados de compensação para acessar benchmarks do mercado."}
-          </p>
-        </div>
+      <div className="mb-10">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {existingData ? "Editar compensação" : "Minha compensação"}
+        </h1>
+        <p className="text-muted-foreground text-[15px] mt-1">
+          {existingData
+            ? "Atualize seus dados de compensação."
+            : "Compartilhe seus dados para acessar benchmarks do mercado."}
+        </p>
       </div>
 
       <Tabs defaultValue={extractedData ? "manual" : "upload"} className="space-y-6">
