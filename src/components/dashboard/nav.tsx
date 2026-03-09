@@ -63,6 +63,8 @@ export function DashboardNav() {
           email: firebaseUser.email || undefined,
           photoUrl: firebaseUser.photoURL || undefined,
         });
+      } else {
+        setUser(null);
       }
     });
   }, []);

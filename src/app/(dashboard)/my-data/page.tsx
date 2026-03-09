@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,7 +79,6 @@ function DataItem({ label, value }: { label: string; value?: string }) {
 }
 
 export default function MyDataPage() {
-  const router = useRouter();
   const [data, setData] = useState<SubmissionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
