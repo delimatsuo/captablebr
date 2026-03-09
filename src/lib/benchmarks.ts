@@ -118,7 +118,6 @@ function getStaticBenchmarks(
   role: string,
   stage?: string,
 ): BenchmarkResult | null {
-  // Static data is keyed by role × stage. Without a stage, we can't look up.
   if (!stage) return null;
 
   const ref = getReferenceBenchmark(role, stage);
@@ -393,4 +392,40 @@ export async function getBenchmarks(
 
   // Fall back to static reference data (US market, requires stage)
   return getStaticBenchmarks(role, stage);
+}
+
+// ---------------------------------------------------------------------------
+// Multi-stage comparison — all stages side by side for a given role
+// ---------------------------------------------------------------------------
+
+export interface StageComparisonItem {
+  stage: string;
+  equity: { p25: number; p50: number; p75: number };
+  salary: { p25: number; p50: number; p75: number };
+  totalCash: { p25: number; p50: number; p75: number };
+}
+
+export interface StageComparisonResult {
+  role: string;
+  dataSource: "market-reference";
+  stages: StageComparisonItem[];
+}
+
+export function getStageComparison(role: string): StageComparisonResult | null {
+  const stages: StageComparisonItem[] = [];
+
+  for (const stage of STAGES) {
+    const ref = getReferenceBenchmark(role, stage);
+    if (!ref || !ref.equityPercentiles || !ref.cashPercentiles) continue;
+    stages.push({
+      stage,
+      equity: { p25: ref.equityPercentiles.p25, p50: ref.equityPercentiles.p50, p75: ref.equityPercentiles.p75 },
+      salary: { p25: ref.cashPercentiles.annualSalary.p25, p50: ref.cashPercentiles.annualSalary.p50, p75: ref.cashPercentiles.annualSalary.p75 },
+      totalCash: { p25: ref.cashPercentiles.totalCash.p25, p50: ref.cashPercentiles.totalCash.p50, p75: ref.cashPercentiles.totalCash.p75 },
+    });
+  }
+
+  if (stages.length === 0) return null;
+
+  return { role, dataSource: "market-reference", stages };
 }
