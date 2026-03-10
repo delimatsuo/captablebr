@@ -120,7 +120,7 @@ jobs:
             --min-instances 0 \
             --max-instances 3 \
             --cpu-boost \
-            --startup-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=3,periodSeconds=10,timeoutSeconds=5 \
+            --startup-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=10,periodSeconds=10,timeoutSeconds=5 \
             --liveness-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=3,periodSeconds=30,timeoutSeconds=5 \
             --set-cloudsql-instances=${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db \
             --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest \
