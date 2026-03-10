@@ -56,7 +56,7 @@ const trustItems = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col landing-page">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-b border-border/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
@@ -98,13 +98,13 @@ export default function HomePage() {
                   Cadastre-se grátis
                 </Button>
               </Link>
-              <Link
+              <a
                 href="#benchmark-preview"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
               >
                 Ver exemplo de benchmark
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -241,7 +241,7 @@ export default function HomePage() {
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white mb-5">
               Negocie seu próximo pacote com dados reais
             </h2>
-            <p className="text-[oklch(0.55_0.015_260)] text-lg mb-10">
+            <p className="text-[oklch(0.65_0.015_260)] text-lg mb-10">
               Cadastro gratuito em 2 minutos. Verificação automática.
             </p>
             <Link href="/request-access">

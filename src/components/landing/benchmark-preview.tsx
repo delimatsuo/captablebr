@@ -63,7 +63,7 @@ export function BenchmarkPreview() {
                   />
                   <Bar
                     dataKey="value"
-                    fill="hsl(var(--primary))"
+                    fill="var(--primary)"
                     radius={[8, 8, 0, 0]}
                     maxBarSize={48}
                   />
@@ -105,7 +105,7 @@ export function BenchmarkPreview() {
                   />
                   <Bar
                     dataKey="value"
-                    fill="hsl(var(--chart-2))"
+                    fill="var(--chart-2)"
                     radius={[8, 8, 0, 0]}
                     maxBarSize={48}
                   />

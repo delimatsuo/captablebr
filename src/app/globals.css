@@ -120,7 +120,7 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html {
+  html:has(.landing-page) {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
   }
