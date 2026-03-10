@@ -6,17 +6,19 @@ export async function register() {
     );
   }
 
-  // Crash handlers — catch silent deaths on Cloud Run
-  process.on("uncaughtException", (err) => {
-    console.error("[FATAL] Uncaught exception:", err);
-    setTimeout(() => process.exit(1), 500);
-  });
-  process.on("unhandledRejection", (reason) => {
-    console.error("[FATAL] Unhandled rejection:", reason);
-    setTimeout(() => process.exit(1), 500);
-  });
-  process.on("SIGTERM", () => {
-    console.log("[INFO] Received SIGTERM — shutting down gracefully");
-    setTimeout(() => process.exit(0), 500);
-  });
+  // Node.js-only: process.on() is not available in Edge runtime
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    process.on("uncaughtException", (err) => {
+      console.error("[FATAL] Uncaught exception:", err);
+      setTimeout(() => process.exit(1), 500);
+    });
+    process.on("unhandledRejection", (reason) => {
+      console.error("[FATAL] Unhandled rejection:", reason);
+      setTimeout(() => process.exit(1), 500);
+    });
+    process.on("SIGTERM", () => {
+      console.log("[INFO] Received SIGTERM — shutting down gracefully");
+      setTimeout(() => process.exit(0), 500);
+    });
+  }
 }
