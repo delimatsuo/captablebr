@@ -273,7 +273,7 @@ export default function HomePage() {
             </div>
             <div className="text-xs text-muted-foreground text-center sm:text-right">
               <p>
-                {new Date().getFullYear()} CaptableBR. Um produto{" "}
+                © {new Date().getFullYear()} CaptableBR. Um produto{" "}
                 <a
                   href="https://ellaexecutivesearch.com"
                   target="_blank"
