@@ -119,6 +119,8 @@ jobs:
             --cpu 1 \
             --min-instances 1 \
             --max-instances 3 \
+            --no-cpu-throttling \
+            --cpu-boost \
             --set-cloudsql-instances=${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db \
             --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest \
             --set-env-vars=GCP_PROJECT_ID=paynequity,GCP_LOCATION=us-central1,ADMIN_UID=Q5lAKMq2eKXM5VmGNC66NFB7ip32 \
