@@ -93,8 +93,9 @@ export default function HomePage() {
               Benchmarks de compensação para C-levels no Brasil
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-6">
-              Sua remuneração como executivo está no{" "}
-              <span className="text-primary">benchmark?</span>
+              Entenda como sua{" "}
+              <span className="text-primary">remuneração</span>{" "}
+              se compara no mercado
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
               Compare seu equity, salário e vesting com outros executivos C-level de startups brasileiras — de forma 100% anônima e gratuita.
