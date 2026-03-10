@@ -6,16 +6,16 @@ import { BenchmarkPreview } from "@/components/landing/benchmark-preview";
 
 const stats = [
   { value: "100%", label: "Anonimizado" },
-  { value: "p25/p50/p75", label: "Percentis" },
-  { value: "IA", label: "Extração automática" },
+  { value: "p25 · p50 · p75", label: "Percentis detalhados" },
+  { value: "Seed a Series C+", label: "Estágios cobertos" },
 ];
 
 const steps = [
   {
     number: "01",
-    title: "Crie sua conta",
+    title: "Crie sua conta em 2 minutos",
     description:
-      "Cadastre-se com email e LinkedIn. Verificação automática via IA.",
+      "Cadastre-se com email e LinkedIn. Verificação automática para garantir dados de qualidade.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
     ),
@@ -23,9 +23,9 @@ const steps = [
   },
   {
     number: "02",
-    title: "Acesse benchmarks",
+    title: "Explore os benchmarks",
     description:
-      "Visualize percentis de equity, salário e vesting por cargo e estágio.",
+      "Veja percentis de equity, salário e vesting por cargo e estágio de startup.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
     ),
@@ -33,13 +33,13 @@ const steps = [
   },
   {
     number: "03",
-    title: "Contribua seus dados",
+    title: "Contribua e aprofunde",
     description:
-      "Compartilhe sua compensação para melhorar os benchmarks.",
+      "Ao compartilhar sua compensação de forma anônima, você fortalece os benchmarks para toda a comunidade.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
     ),
-    badge: "opcional",
+    badge: null,
   },
 ];
 
@@ -48,8 +48,8 @@ const roles = [
 ];
 
 const trustItems = [
-  { title: "Acesso gratuito", desc: "Sem necessidade de compartilhar dados." },
-  { title: "Verificação via LinkedIn", desc: "Apenas executivos verificados." },
+  { title: "Acesso gratuito", desc: "Visualize benchmarks sem compartilhar dados." },
+  { title: "Apenas executivos verificados", desc: "Validamos perfil e cargo para manter a qualidade dos dados." },
   { title: "100% anonimizado", desc: "Nenhum executivo ou empresa é identificado." },
   { title: "Mínimo de 10 executivos por segmento", desc: "Benchmarks só com dados suficientes." },
   { title: "Documentos efêmeros", desc: "Deletados após extração por IA." },
@@ -90,14 +90,14 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Plataforma para executivos de startups brasileiras
+              Benchmarks de compensação para C-levels no Brasil
             </div>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-6">
-              Sua compensação em equity esta{" "}
-              <span className="text-primary">competitiva?</span>
+              Sua remuneração como executivo está no{" "}
+              <span className="text-primary">benchmark?</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Benchmarks anonimizados de equity e remuneração para executivos C-level de startups brasileiras. Acesso gratuito.
+              Compare seu equity, salário e vesting com outros executivos C-level de startups brasileiras — de forma 100% anônima e gratuita.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/request-access">
@@ -134,6 +134,9 @@ export default function HomePage() {
               </span>
             ))}
           </div>
+          <p className="max-w-2xl mx-auto mt-6 text-center text-sm text-muted-foreground">
+            Dados de executivos de diversos setores de startups brasileiras
+          </p>
         </div>
       </section>
 
@@ -142,7 +145,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-semibold tracking-tight">
-              Veja o que você vai encontrar
+              Como executivos comparam sua compensação
             </h2>
           </div>
           <div className="max-w-2xl mx-auto">
@@ -156,7 +159,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold tracking-tight">
-              Três passos para benchmarks de equity
+              Três passos para seus benchmarks
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -235,10 +238,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center rounded-3xl bg-zinc-900 p-12 sm:p-16 shadow-2xl">
             <h2 className="text-3xl font-semibold tracking-tight text-white mb-4">
-              Pronto para ver como sua compensação se compara?
+              Descubra sua posição no mercado
             </h2>
             <p className="text-zinc-400 text-lg mb-8">
-              Verificação automática via IA. Acesso em minutos.
+              Cadastro gratuito. Verificação automática.
             </p>
             <Link href="/request-access">
               <Button
@@ -268,18 +271,23 @@ export default function HomePage() {
                 Termos
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {new Date().getFullYear()} CaptableBR. Um produto{" "}
-              <a
-                href="https://ellaexecutivesearch.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors"
-              >
-                Ella Executive Search
-              </a>
-              .
-            </p>
+            <div className="text-xs text-muted-foreground text-center sm:text-right">
+              <p>
+                © {new Date().getFullYear()} CaptableBR. Um produto{" "}
+                <a
+                  href="https://ellaexecutivesearch.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors"
+                >
+                  Ella Executive Search
+                </a>
+                .
+              </p>
+              <p className="mt-1 text-muted-foreground/70">
+                Recrutamento executivo para startups.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
