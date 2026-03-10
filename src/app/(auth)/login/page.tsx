@@ -209,9 +209,9 @@ export default function LoginPage() {
             )}
 
             <p className="text-center text-sm text-muted-foreground pt-2">
-              Não tem acesso?{" "}
+              Não tem conta?{" "}
               <Link href="/request-access" className="text-primary font-medium hover:underline">
-                Solicitar convite
+                Cadastre-se grátis
               </Link>
             </p>
           </CardContent>
