@@ -67,7 +67,7 @@ export function BenchmarkPreview() {
         {/* Frosted-glass overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm">
           <p className="text-lg font-semibold mb-4 text-foreground">
-            Cadastre-se para ver dados reais
+            Crie sua conta para acessar os benchmarks completos
           </p>
           <Link href="/request-access">
             <Button size="lg" className="shadow-lg shadow-primary/25">
