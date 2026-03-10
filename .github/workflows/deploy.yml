@@ -117,7 +117,7 @@ jobs:
             --port 8080 \
             --memory 512Mi \
             --cpu 1 \
-            --min-instances 0 \
+            --min-instances 1 \
             --max-instances 3 \
             --set-cloudsql-instances=${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db \
             --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest \
