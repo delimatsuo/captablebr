@@ -89,17 +89,17 @@ export default function RequestAccessPage() {
       {/* Left panel - branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 items-center justify-center p-12">
         <div className="max-w-md text-primary-foreground">
-          <div className="flex items-center gap-3 mb-8">
+          <Link href="/" className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
             <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
               <span className="font-bold text-lg">C</span>
             </div>
             <span className="text-2xl font-bold">CaptableBR</span>
-          </div>
+          </Link>
           <h2 className="text-3xl font-bold mb-4 leading-tight">
             Acesso gratuito para executivos
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed mb-8">
-            CaptableBR oferece benchmarks gratuitos de equity e remuneração para executivos de startups brasileiras.
+            Compare seu equity, salário e vesting com outros executivos C-level de startups brasileiras — 100% anônimo e gratuito.
           </p>
           <div className="space-y-4">
             {[
@@ -122,12 +122,12 @@ export default function RequestAccessPage() {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
         <Card className="w-full max-w-md border-0 shadow-none sm:border sm:shadow-sm">
           <CardHeader className="space-y-1 pb-6">
-            <div className="lg:hidden flex items-center gap-2 mb-4">
+            <Link href="/" className="lg:hidden flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">C</span>
               </div>
               <span className="text-lg font-bold">CaptableBR</span>
-            </div>
+            </Link>
 
             {formState === "approved" && (
               <>
