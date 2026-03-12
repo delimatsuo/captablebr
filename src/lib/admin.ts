@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { verifySession } from "./auth";
 import { DEV_MODE } from "./dev-mode";
 import { redirect } from "next/navigation";
+import { sendInvitationEmail, sendApprovalEmail } from "./email";
 
 // Your Firebase UID — only this user can access admin features.
 function getAdminUid(): string | undefined {
@@ -42,9 +43,18 @@ export async function createInvitation(email: string) {
   });
   if (existing) throw new Error("Email já convidado.");
 
-  return prisma.invitation.create({
+  const invitation = await prisma.invitation.create({
     data: { email: normalized },
   });
+
+  // Send invitation email (best-effort, don't fail if email fails)
+  try {
+    await sendInvitationEmail(normalized);
+  } catch (err) {
+    console.error("[ADMIN] Failed to send invitation email:", err);
+  }
+
+  return invitation;
 }
 
 export async function deleteInvitation(id: string) {
@@ -76,10 +86,19 @@ export async function approveAccessRequest(requestId: string) {
   });
 
   // Mark request as approved
-  return prisma.accessRequest.update({
+  const updated = await prisma.accessRequest.update({
     where: { id: requestId },
     data: { status: "approved" },
   });
+
+  // Send approval email (best-effort)
+  try {
+    await sendApprovalEmail(normalized, request.name);
+  } catch (err) {
+    console.error("[ADMIN] Failed to send approval email:", err);
+  }
+
+  return updated;
 }
 
 export async function rejectAccessRequest(requestId: string) {
