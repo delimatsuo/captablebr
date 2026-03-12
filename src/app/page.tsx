@@ -21,18 +21,18 @@ const steps = [
   },
   {
     number: "02",
-    title: "Acesse seus benchmarks",
+    title: "Explore os benchmarks",
     description:
-      "Veja percentis de equity, salário e vesting filtrados por cargo e estágio. Dados reais do mercado brasileiro.",
+      "Veja percentis de equity, salário e vesting por cargo e estágio de startup. Dados reais do mercado brasileiro.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
     ),
   },
   {
     number: "03",
-    title: "Contribua e fortaleça os dados",
+    title: "Contribua e fortaleça a base",
     description:
-      "Ao compartilhar sua compensação de forma anônima, você ajuda a construir a maior base de remuneração executiva do Brasil.",
+      "Ao compartilhar sua compensação de forma anônima, você fortalece os benchmarks para toda a comunidade de executivos.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
     ),
@@ -87,7 +87,7 @@ export default function HomePage() {
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.08] mb-8">
               Entenda como sua{" "}
               <span className="text-primary">remuneração</span>{" "}
-              se compara no mercado
+              se compara ao mercado
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto mb-12 leading-[1.6]">
               Compare seu equity, salário e vesting com outros executivos C-level de startups brasileiras — de forma 100% anônima e gratuita.
@@ -120,7 +120,7 @@ export default function HomePage() {
 
           {/* Roles */}
           <p className="max-w-2xl mx-auto mt-6 text-center text-[13px] text-muted-foreground hidden sm:block">
-            CTO · CFO · COO · CMO · CPO · VP Engineering · VP Sales · CHRO
+            CEO · CTO · CFO · COO · CMO · CPO · VP Engineering · VP Sales · CHRO
           </p>
         </div>
       </section>
@@ -242,7 +242,7 @@ export default function HomePage() {
               Negocie seu próximo pacote com dados reais
             </h2>
             <p className="text-[oklch(0.65_0.015_260)] text-lg mb-10">
-              Cadastro gratuito em 2 minutos. Verificação automática.
+              Cadastro gratuito. Verificação automática.
             </p>
             <Link href="/request-access">
               <Button
