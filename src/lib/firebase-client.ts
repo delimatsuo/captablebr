@@ -87,11 +87,18 @@ export async function completeEmailSignIn(): Promise<{
   const stored = window.localStorage.getItem(EMAIL_LINK_STORAGE_KEY);
   if (!stored) return null;
 
-  const formData = JSON.parse(stored);
+  let formData;
+  try {
+    formData = JSON.parse(stored);
+  } catch {
+    window.localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
+    return null;
+  }
   const { email } = formData;
 
   const result = await signInWithEmailLink(auth, email, window.location.href);
-  const idToken = await result.user.getIdToken();
+  // Force token refresh to ensure email_verified claim is set
+  const idToken = await result.user.getIdToken(true);
 
   // Clean up localStorage
   window.localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
@@ -107,5 +114,9 @@ export function getStoredSignupData(): {
 } | null {
   const stored = window.localStorage.getItem(EMAIL_LINK_STORAGE_KEY);
   if (!stored) return null;
-  return JSON.parse(stored);
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
 }

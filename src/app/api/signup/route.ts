@@ -60,7 +60,10 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      emailVerified = decoded.email_verified === true;
+      // email_verified may not be set immediately for email-link sign-in;
+      // the act of completing signInWithEmailLink proves ownership
+      emailVerified = decoded.email_verified === true
+        || decoded.firebase?.sign_in_provider === "emailLink";
       firebaseUid = decoded.uid;
     } catch {
       return NextResponse.json(

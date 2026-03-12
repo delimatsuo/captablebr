@@ -125,8 +125,8 @@ export default function RequestAccessPage() {
 
     // Step 1: Send email verification link
     try {
-      setFormState("email_sent");
       await sendEmailVerificationLink(email, { name, linkedinUrl, role, lgpdConsent, tosConsent });
+      setFormState("email_sent");
     } catch (err) {
       console.error("[EMAIL_SEND]", err);
       setErrorMessage(

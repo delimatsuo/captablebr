@@ -173,7 +173,7 @@ export const signupSchema = z.object({
   role: z.enum(ROLES, { message: "Selecione o cargo" }),
   lgpdConsent: z.literal(true, { message: "Consentimento obrigatório" }),
   tosConsent: z.literal(true, { message: "Aceitação dos termos obrigatória" }),
-  firebaseIdToken: z.string().optional(),
+  firebaseIdToken: z.string().max(10000).optional(),
 });
 
 export type SignupFormData = z.infer<typeof signupSchema>;
