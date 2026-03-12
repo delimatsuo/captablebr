@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ROLES } from "@/lib/types";
+import {
+  sendEmailVerificationLink,
+  isEmailSignInLink,
+  completeEmailSignIn,
+  getStoredSignupData,
+} from "@/lib/firebase-client";
 
 const ROLE_LABELS: Record<string, string> = {
   "CEO": "CEO",
@@ -31,7 +37,7 @@ const ROLE_LABELS: Record<string, string> = {
   "Other VP": "Outro VP",
 };
 
-type FormState = "form" | "verifying" | "approved" | "pending" | "error";
+type FormState = "form" | "email_sent" | "completing" | "verifying" | "approved" | "pending" | "error";
 
 export default function RequestAccessPage() {
   const [name, setName] = useState("");
@@ -43,27 +49,46 @@ export default function RequestAccessPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [formState, setFormState] = useState<FormState>("form");
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErrorMessage("");
+  // On mount: check if this is a return from email verification link
+  useEffect(() => {
+    async function handleEmailLink() {
+      try {
+        if (!isEmailSignInLink()) return;
 
-    if (!tosConsent) {
-      setErrorMessage("Você precisa aceitar os Termos de Uso para continuar.");
-      return;
+        // Show completing state
+        setFormState("completing");
+
+        const result = await completeEmailSignIn();
+        if (!result) {
+          setErrorMessage("Dados do formulário não encontrados. Preencha novamente.");
+          setFormState("error");
+          return;
+        }
+
+        // Auto-submit with the verified ID token
+        await submitSignup(result.formData, result.idToken);
+      } catch (err) {
+        console.error("[EMAIL_VERIFY]", err);
+        setErrorMessage(
+          err instanceof Error ? err.message : "Erro ao verificar email. Tente novamente."
+        );
+        setFormState("error");
+      }
     }
+    handleEmailLink();
+  }, []);
 
-    if (!lgpdConsent) {
-      setErrorMessage("Você precisa autorizar o processamento do perfil do LinkedIn.");
-      return;
-    }
-
+  async function submitSignup(
+    formData: { email: string; name: string; linkedinUrl: string; role: string; lgpdConsent: boolean; tosConsent: boolean },
+    firebaseIdToken: string
+  ) {
     setFormState("verifying");
 
     try {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, linkedinUrl, role, lgpdConsent, tosConsent }),
+        body: JSON.stringify({ ...formData, firebaseIdToken }),
       });
 
       if (!res.ok) {
@@ -83,6 +108,46 @@ export default function RequestAccessPage() {
       setFormState("error");
     }
   }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMessage("");
+
+    if (!tosConsent) {
+      setErrorMessage("Você precisa aceitar os Termos de Uso para continuar.");
+      return;
+    }
+
+    if (!lgpdConsent) {
+      setErrorMessage("Você precisa autorizar o processamento do perfil do LinkedIn.");
+      return;
+    }
+
+    // Step 1: Send email verification link
+    try {
+      await sendEmailVerificationLink(email, { name, linkedinUrl, role, lgpdConsent, tosConsent });
+      setFormState("email_sent");
+    } catch (err) {
+      console.error("[EMAIL_SEND]", err);
+      setErrorMessage(
+        err instanceof Error && err.message.includes("auth/")
+          ? "Erro ao enviar email de verificação. Verifique o email informado."
+          : "Erro ao enviar email de verificação. Tente novamente."
+      );
+      setFormState("error");
+    }
+  }
+
+  // Restore form data if user has pending email verification
+  useEffect(() => {
+    const stored = getStoredSignupData();
+    if (stored && formState === "form") {
+      setName(stored.name);
+      setEmail(stored.email);
+      setLinkedinUrl(stored.linkedinUrl);
+      setRole(stored.role);
+    }
+  }, [formState]);
 
   return (
     <div className="min-h-screen flex">
@@ -153,11 +218,27 @@ export default function RequestAccessPage() {
               </>
             )}
 
-            {formState === "verifying" && (
+            {(formState === "verifying" || formState === "completing") && (
               <>
-                <CardTitle className="text-2xl">Verificando...</CardTitle>
+                <CardTitle className="text-2xl">
+                  {formState === "completing" ? "Verificando email..." : "Verificando perfil..."}
+                </CardTitle>
                 <CardDescription>
-                  Verificando seu perfil no LinkedIn...
+                  {formState === "completing"
+                    ? "Confirmando seu email e preparando o cadastro..."
+                    : "Verificando seu perfil no LinkedIn..."}
+                </CardDescription>
+              </>
+            )}
+
+            {formState === "email_sent" && (
+              <>
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </div>
+                <CardTitle className="text-2xl">Verifique seu email</CardTitle>
+                <CardDescription>
+                  Enviamos um link de verificação para <strong>{email}</strong>. Clique no link para continuar o cadastro.
                 </CardDescription>
               </>
             )}
@@ -176,18 +257,38 @@ export default function RequestAccessPage() {
               <>
                 <CardTitle className="text-2xl">Criar conta</CardTitle>
                 <CardDescription>
-                  Preencha o formulário abaixo. Verificaremos seu perfil do LinkedIn automaticamente.
+                  Preencha o formulário abaixo. Enviaremos um link de verificação para seu email.
                 </CardDescription>
               </>
             )}
           </CardHeader>
 
-          {formState === "verifying" && (
+          {(formState === "verifying" || formState === "completing") && (
             <CardContent className="space-y-4">
               <Progress value={undefined} className="w-full" />
               <p className="text-sm text-muted-foreground text-center">
-                Isso pode levar até 60 segundos...
+                {formState === "completing"
+                  ? "Confirmando verificação..."
+                  : "Isso pode levar até 60 segundos..."}
               </p>
+            </CardContent>
+          )}
+
+          {formState === "email_sent" && (
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>Não recebeu? Verifique sua caixa de spam ou lixo eletrônico.</span>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={() => {
+                  setFormState("form");
+                }}
+              >
+                Alterar email e reenviar
+              </Button>
             </CardContent>
           )}
 
@@ -316,7 +417,7 @@ export default function RequestAccessPage() {
                 )}
 
                 <Button type="submit" className="w-full h-11" disabled={!role || !tosConsent || !lgpdConsent}>
-                  Verificar e criar conta
+                  Verificar email e criar conta
                 </Button>
               </form>
 
@@ -324,6 +425,12 @@ export default function RequestAccessPage() {
                 Já tem acesso?{" "}
                 <Link href="/login" className="text-primary font-medium hover:underline">
                   Entrar
+                </Link>
+              </p>
+              <p className="text-center text-sm text-muted-foreground pt-2">
+                <Link href="/" className="hover:text-foreground transition-colors inline-flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                  Voltar ao início
                 </Link>
               </p>
             </CardContent>

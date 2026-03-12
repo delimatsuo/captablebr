@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { signupSchema } from "@/lib/validations";
 import { validateLinkedInUrl, runVerification } from "@/lib/verification";
+import { getFirebaseAdmin } from "@/lib/auth";
 
 // Simple in-memory rate limiter: 5 requests per IP per hour
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -43,8 +44,41 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email, name, linkedinUrl, role, lgpdConsent, tosConsent } = parsed.data;
+  const { email, name, linkedinUrl, role, lgpdConsent, tosConsent, firebaseIdToken } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
+
+  // Verify Firebase ID token if provided (proves email ownership)
+  let emailVerified = false;
+  let firebaseUid: string | null = null;
+  if (firebaseIdToken) {
+    try {
+      const adminAuth = await getFirebaseAdmin();
+      const decoded = await adminAuth.verifyIdToken(firebaseIdToken);
+      if (decoded.email?.toLowerCase() !== normalizedEmail) {
+        return NextResponse.json(
+          { error: "O email verificado não corresponde ao email informado." },
+          { status: 400 }
+        );
+      }
+      // email_verified may not be set immediately for email-link sign-in;
+      // the act of completing signInWithEmailLink proves ownership
+      emailVerified = decoded.email_verified === true
+        || decoded.firebase?.sign_in_provider === "emailLink";
+      firebaseUid = decoded.uid;
+    } catch {
+      return NextResponse.json(
+        { error: "Token de verificação inválido. Tente novamente." },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (!emailVerified) {
+    return NextResponse.json(
+      { error: "Verificação de email obrigatória. Verifique sua caixa de entrada." },
+      { status: 400 }
+    );
+  }
 
   // Validate LinkedIn URL format
   if (!validateLinkedInUrl(linkedinUrl)) {
@@ -103,6 +137,18 @@ export async function POST(request: NextRequest) {
   // Run verification synchronously (up to ~60s)
   const verification = await runVerification(linkedinUrl, name, role);
 
+  // Helper to delete the temporary Firebase email-link user
+  async function cleanupTempFirebaseUser() {
+    if (!firebaseUid) return;
+    try {
+      const adminAuth = await getFirebaseAdmin();
+      await adminAuth.deleteUser(firebaseUid);
+    } catch {
+      // Best-effort: if deletion fails, user can still sign in with Google later
+      console.warn("[SIGNUP] Failed to delete temp Firebase user:", firebaseUid);
+    }
+  }
+
   if (verification.result === "auto_approved") {
     // Transaction: update AccessRequest + create Invitation
     await prisma.$transaction([
@@ -115,6 +161,7 @@ export async function POST(request: NextRequest) {
           detectedTitle: verification.detectedTitle,
           linkedinData: verification.profileSummary ? JSON.parse(JSON.stringify(verification.profileSummary)) : undefined,
           autoVerified: true,
+          emailVerified: true,
         },
       }),
       prisma.invitation.upsert({
@@ -123,6 +170,9 @@ export async function POST(request: NextRequest) {
         update: {},
       }),
     ]);
+
+    // Delete temp Firebase user so Google sign-in works later
+    await cleanupTempFirebaseUser();
 
     return NextResponse.json({
       status: "approved",
@@ -138,8 +188,12 @@ export async function POST(request: NextRequest) {
       verificationReason: verification.reason,
       detectedTitle: verification.detectedTitle,
       linkedinData: verification.profileSummary ? JSON.parse(JSON.stringify(verification.profileSummary)) : undefined,
+      emailVerified: true,
     },
   });
+
+  // Delete temp Firebase user so Google sign-in works later
+  await cleanupTempFirebaseUser();
 
   return NextResponse.json({
     status: verification.result === "scrape_failed" ? "scrape_failed" : "pending_review",
