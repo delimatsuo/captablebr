@@ -286,10 +286,13 @@ export default function RequestAccessPage() {
                     id="tosConsent"
                     checked={tosConsent}
                     onCheckedChange={(checked) => setTosConsent(checked === true)}
-                    className="mt-0.5"
+                    className="mt-1"
                   />
-                  <Label htmlFor="tosConsent" className="text-sm leading-relaxed cursor-pointer">
-                    Li e aceito os <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline whitespace-nowrap">Termos&nbsp;de&nbsp;Uso</Link> e a <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline whitespace-nowrap">Política&nbsp;de&nbsp;Privacidade</Link>
+                  <Label htmlFor="tosConsent" className="inline text-sm cursor-pointer font-normal leading-relaxed">
+                    Aceito os{" "}
+                    <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline">Termos de Uso</Link>
+                    {" "}e a{" "}
+                    <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline">Política de Privacidade</Link>
                   </Label>
                 </div>
 
@@ -298,9 +301,9 @@ export default function RequestAccessPage() {
                     id="lgpdConsent"
                     checked={lgpdConsent}
                     onCheckedChange={(checked) => setLgpdConsent(checked === true)}
-                    className="mt-0.5"
+                    className="mt-1"
                   />
-                  <Label htmlFor="lgpdConsent" className="text-sm leading-normal cursor-pointer">
+                  <Label htmlFor="lgpdConsent" className="inline text-sm leading-relaxed cursor-pointer font-normal">
                     Autorizo o processamento do meu perfil do LinkedIn para verificação
                   </Label>
                 </div>
