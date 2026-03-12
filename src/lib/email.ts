@@ -5,6 +5,10 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 const FROM_EMAIL = "CaptableBR <noreply@from.ellaexecutivesearch.com>";
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://staging.captablebr.com";
 
 /**
@@ -68,7 +72,7 @@ export async function sendApprovalEmail(email: string, name: string) {
           Acesso aprovado!
         </h1>
         <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 24px;">
-          Olá ${name}, seu perfil foi verificado e seu acesso ao CaptableBR foi aprovado.
+          Olá ${escapeHtml(name)}, seu perfil foi verificado e seu acesso ao CaptableBR foi aprovado.
         </p>
         <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 32px;">
           Faça login com sua conta Google para explorar os benchmarks de compensação executiva.
