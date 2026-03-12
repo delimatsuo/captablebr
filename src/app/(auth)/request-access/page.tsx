@@ -288,11 +288,8 @@ export default function RequestAccessPage() {
                     onCheckedChange={(checked) => setTosConsent(checked === true)}
                     className="mt-0.5"
                   />
-                  <Label htmlFor="tosConsent" className="text-sm leading-normal cursor-pointer">
-                    Li e aceito os{" "}
-                    <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline">Termos de Uso</Link>
-                    {" "}e a{" "}
-                    <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline">Política de Privacidade</Link>
+                  <Label htmlFor="tosConsent" className="text-sm leading-relaxed cursor-pointer">
+                    Li e aceito os <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline whitespace-nowrap">Termos&nbsp;de&nbsp;Uso</Link> e a <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline whitespace-nowrap">Política&nbsp;de&nbsp;Privacidade</Link>
                   </Label>
                 </div>
 
