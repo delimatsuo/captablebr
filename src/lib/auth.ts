@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { prisma } from "./db";
 import { DEV_MODE } from "./dev-mode";
 
-async function getFirebaseAdmin() {
+export async function getFirebaseAdmin() {
   if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is required in production");
   }
