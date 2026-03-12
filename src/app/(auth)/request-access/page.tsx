@@ -281,31 +281,29 @@ export default function RequestAccessPage() {
                   </Select>
                 </div>
 
-                <div className="flex items-start space-x-3 pt-2">
+                <div className="flex items-start gap-2 pt-2">
                   <Checkbox
                     id="tosConsent"
                     checked={tosConsent}
                     onCheckedChange={(checked) => setTosConsent(checked === true)}
+                    className="mt-0.5"
                   />
-                  <Label htmlFor="tosConsent" className="text-sm leading-snug cursor-pointer">
+                  <Label htmlFor="tosConsent" className="text-sm leading-normal cursor-pointer">
                     Li e aceito os{" "}
-                    <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline">
-                      Termos de Uso
-                    </Link>
+                    <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline">Termos de Uso</Link>
                     {" "}e a{" "}
-                    <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline">
-                      Política de Privacidade
-                    </Link>
+                    <Link href="/privacy" target="_blank" className="text-primary underline hover:no-underline">Política de Privacidade</Link>
                   </Label>
                 </div>
 
-                <div className="flex items-start space-x-3">
+                <div className="flex items-start gap-2">
                   <Checkbox
                     id="lgpdConsent"
                     checked={lgpdConsent}
                     onCheckedChange={(checked) => setLgpdConsent(checked === true)}
+                    className="mt-0.5"
                   />
-                  <Label htmlFor="lgpdConsent" className="text-sm leading-snug cursor-pointer">
+                  <Label htmlFor="lgpdConsent" className="text-sm leading-normal cursor-pointer">
                     Autorizo o processamento do meu perfil do LinkedIn para verificação
                   </Label>
                 </div>
