@@ -123,6 +123,6 @@ jobs:
             --startup-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=10,periodSeconds=10,timeoutSeconds=5 \
             --liveness-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=3,periodSeconds=30,timeoutSeconds=5 \
             --set-cloudsql-instances=${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db \
-            --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest \
+            --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest,APIFY_API_TOKEN=captablebr-apify-token:latest \
             --set-env-vars=GCP_PROJECT_ID=paynequity,GCP_LOCATION=us-central1,ADMIN_UID=Q5lAKMq2eKXM5VmGNC66NFB7ip32 \
             --quiet
