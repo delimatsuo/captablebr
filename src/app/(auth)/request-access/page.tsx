@@ -76,7 +76,6 @@ export default function RequestAccessPage() {
       }
     }
     handleEmailLink();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function submitSignup(
