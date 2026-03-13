@@ -62,8 +62,8 @@ function ctaButton(href: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0;">
   <tr>
     <td style="background-color: #2563eb; border-radius: 10px;">
-      <a href="${href}" target="_blank" style="display: inline-block; padding: 14px 36px; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em;">
-        ${label}
+      <a href="${escapeHtml(href)}" target="_blank" style="display: inline-block; padding: 14px 36px; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em;">
+        ${escapeHtml(label)}
       </a>
     </td>
   </tr>

@@ -1,4 +1,5 @@
 import { createHmac, createHash, timingSafeEqual } from "crypto";
+import { DEV_MODE } from "./dev-mode";
 
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
@@ -12,7 +13,7 @@ function getSecret(): string {
       .update("email-verification:" + process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
       .digest("hex");
   }
-  if (process.env.NODE_ENV === "development") {
+  if (DEV_MODE) {
     return "dev-secret-captablebr-email-verification";
   }
   throw new Error("EMAIL_VERIFICATION_SECRET or FIREBASE_SERVICE_ACCOUNT_KEY is required");
