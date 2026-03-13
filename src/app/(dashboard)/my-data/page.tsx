@@ -12,26 +12,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteMyData } from "@/lib/actions";
-
-interface GrantData {
-  id: string;
-  instrumentType: string;
-  equityPercentage?: number;
-  vestingTotalMonths: number;
-  cliffMonths: number;
-  vestingSchedule: string;
-  grantType: string;
-  isFirstInRole: boolean;
-  inputMode: string;
-  numberOfShares?: number;
-  totalSharesOutstanding?: number;
-  strikePrice?: number;
-  currentSharePrice?: number;
-  lastValuation?: number;
-  grantDate?: string;
-  grantLabel?: string;
-  vestingStartDate?: string;
-}
+import type { GrantData } from "@/lib/types";
+import { VestingSimulator } from "@/components/simulator/vesting-simulator";
 
 interface SubmissionData {
   id: string;
@@ -243,6 +225,15 @@ export default function MyDataPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Vesting Simulator */}
+      {data.grants.length > 0 && (
+        <VestingSimulator
+          grants={data.grants}
+          currency={data.currency}
+          fxRateUsed={data.fxRateUsed}
+        />
+      )}
 
       {/* LGPD actions */}
       <div className="flex items-center justify-end pt-2">

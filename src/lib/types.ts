@@ -59,3 +59,25 @@ export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 export const VERIFICATION_RESULTS = ["auto_approved", "pending_review", "scrape_failed", "rejected"] as const;
 export type VerificationResult = (typeof VERIFICATION_RESULTS)[number];
+
+export interface GrantData {
+  id: string;
+  instrumentType: string;
+  equityPercentage?: number;
+  vestingTotalMonths: number;
+  cliffMonths: number;
+  vestingSchedule: string;
+  grantType: string;
+  isFirstInRole: boolean;
+  inputMode: string;
+  numberOfShares?: number;
+  totalSharesOutstanding?: number;
+  strikePrice?: number;
+  strikeCurrency?: string;
+  currentSharePrice?: number;
+  lastValuation?: number;
+  grantDate?: string;
+  grantLabel?: string;
+  vestingStartDate?: string;
+  createdAt: string;
+}
