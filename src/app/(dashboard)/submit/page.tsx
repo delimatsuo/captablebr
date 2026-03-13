@@ -66,8 +66,8 @@ export default function SubmitPage() {
 
 function SubmitPageContent() {
   const searchParams = useSearchParams();
-  const stepParam = searchParams.get("step");
-  const initialStep = stepParam ? Number(stepParam) : undefined;
+  const raw = Number(searchParams.get("step"));
+  const initialStep = Number.isInteger(raw) && raw >= 1 && raw <= 4 ? raw : undefined;
 
   const [extractedData, setExtractedData] = useState<Partial<SubmissionFormData> | null>(null);
   const [sourceDocumentUrl, setSourceDocumentUrl] = useState<string | undefined>();

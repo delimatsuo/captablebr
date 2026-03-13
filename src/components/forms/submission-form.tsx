@@ -98,9 +98,9 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, 
     return defaults;
   });
 
-  // Restore draft from localStorage on mount
+  // Restore draft from localStorage on mount (skip when deep-linking to a specific step)
   useEffect(() => {
-    if (initialData) return;
+    if (initialData || initialStep) return;
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
@@ -124,7 +124,7 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, 
     } catch {
       localStorage.removeItem(DRAFT_KEY);
     }
-  }, [initialData]);
+  }, [initialData, initialStep]);
 
   useEffect(() => {
     if (draftRestored) {
