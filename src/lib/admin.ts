@@ -1,8 +1,9 @@
 "use server";
 
 import { prisma } from "./db";
+import { Prisma } from "@prisma/client";
 import { verifySession, getFirebaseAdmin } from "./auth";
-import { DEV_MODE } from "./dev-mode";
+import { DEV_MODE, DEV_USER_UID } from "./dev-mode";
 import { redirect } from "next/navigation";
 import { sendInvitationEmail, sendApprovalEmail } from "./email";
 
@@ -134,6 +135,8 @@ export async function getAdminStats() {
 export async function getActiveUsers(): Promise<
   Map<string, { hasSubmission: boolean; firebaseExists: boolean }>
 > {
+  await requireAdmin();
+
   const invitations = await prisma.invitation.findMany({
     where: { status: "accepted" },
     select: { email: true },
@@ -143,36 +146,55 @@ export async function getActiveUsers(): Promise<
 
   const emails = invitations.map((i) => i.email);
 
-  // Batch Firebase lookup
-  const adminAuth = await getFirebaseAdmin();
-  const result = await adminAuth.getUsers(
-    emails.map((email) => ({ email }))
-  );
-
-  const uidToEmail = new Map<string, string>();
   const emailStatus = new Map<
     string,
     { hasSubmission: boolean; firebaseExists: boolean }
   >();
 
-  // Mark found users
-  for (const user of result.users) {
-    if (user.email) {
-      uidToEmail.set(user.uid, user.email.toLowerCase());
-      emailStatus.set(user.email.toLowerCase(), {
-        hasSubmission: false,
+  // In DEV_MODE, skip Firebase — just check submissions by dev UID
+  if (DEV_MODE) {
+    const submissions = await prisma.submission.findMany({
+      where: { userId: DEV_USER_UID },
+      select: { userId: true },
+    });
+    const hasSubmission = submissions.length > 0;
+    for (const email of emails) {
+      emailStatus.set(email.toLowerCase(), {
+        hasSubmission,
         firebaseExists: true,
       });
     }
+    return emailStatus;
   }
 
-  // Mark not-found users
-  for (const notFound of result.notFound) {
-    if ("email" in notFound && notFound.email) {
-      emailStatus.set(notFound.email.toLowerCase(), {
-        hasSubmission: false,
-        firebaseExists: false,
-      });
+  // Batch Firebase lookup (max 100 per call)
+  const adminAuth = await getFirebaseAdmin();
+  const uidToEmail = new Map<string, string>();
+
+  // Process in batches of 100 (Firebase limit)
+  for (let i = 0; i < emails.length; i += 100) {
+    const batch = emails.slice(i, i + 100);
+    const result = await adminAuth.getUsers(
+      batch.map((email) => ({ email }))
+    );
+
+    for (const user of result.users) {
+      if (user.email) {
+        uidToEmail.set(user.uid, user.email.toLowerCase());
+        emailStatus.set(user.email.toLowerCase(), {
+          hasSubmission: false,
+          firebaseExists: true,
+        });
+      }
+    }
+
+    for (const notFound of result.notFound) {
+      if ("email" in notFound && notFound.email) {
+        emailStatus.set(notFound.email.toLowerCase(), {
+          hasSubmission: false,
+          firebaseExists: false,
+        });
+      }
     }
   }
 
@@ -207,42 +229,41 @@ export async function deleteUser(email: string): Promise<DeleteUserResult> {
   const session = await requireAdmin();
   const normalized = email.toLowerCase().trim();
 
-  // Self-deletion guard (RA-1)
-  const adminAuth = await getFirebaseAdmin();
-  let adminEmail: string | undefined;
-  try {
-    const adminUser = await adminAuth.getUser(session.uid);
-    adminEmail = adminUser.email?.toLowerCase();
-  } catch {
-    // If we can't resolve admin email, proceed cautiously
-  }
-  if (adminEmail && adminEmail === normalized) {
-    throw new Error("Não é possível excluir sua própria conta de administrador.");
-  }
-
-  // Resolve target Firebase UID
   let targetUid: string | undefined;
-  try {
-    const targetUser = await adminAuth.getUserByEmail(normalized);
-    targetUid = targetUser.uid;
-  } catch {
-    // User may not exist in Firebase — proceed with DB cleanup
-  }
-
-  // GCS cleanup (best-effort, before transaction)
+  let deletedFirebase = false;
   let deletedGcs = false;
-  if (targetUid) {
+
+  if (DEV_MODE) {
+    // In DEV_MODE, self-deletion guard uses dev UID convention
+    if (normalized === "dev@captablebr.com") {
+      throw new Error("Não é possível excluir sua própria conta de administrador.");
+    }
+    // No Firebase operations in dev — resolve UID from submissions if possible
+    const submission = await prisma.submission.findFirst({
+      where: { userId: { not: DEV_USER_UID } },
+      select: { userId: true },
+    });
+    targetUid = submission?.userId;
+  } else {
+    // Self-deletion guard (RA-1)
+    const adminAuth = await getFirebaseAdmin();
+    let adminEmail: string | undefined;
     try {
-      const bucketName = process.env.GCS_BUCKET_NAME;
-      if (bucketName) {
-        const prefix = `uploads/${targetUid}/`;
-        const { Storage } = await import("@google-cloud/storage");
-        const storage = new Storage();
-        await storage.bucket(bucketName).deleteFiles({ prefix });
-        deletedGcs = true;
-      }
-    } catch (err) {
-      console.error("[ADMIN] GCS cleanup failed:", err);
+      const adminUser = await adminAuth.getUser(session.uid);
+      adminEmail = adminUser.email?.toLowerCase();
+    } catch {
+      // If we can't resolve admin email, proceed cautiously
+    }
+    if (adminEmail && adminEmail === normalized) {
+      throw new Error("Não é possível excluir sua própria conta de administrador.");
+    }
+
+    // Resolve target Firebase UID
+    try {
+      const targetUser = await adminAuth.getUserByEmail(normalized);
+      targetUid = targetUser.uid;
+    } catch {
+      // User may not exist in Firebase — proceed with DB cleanup
     }
   }
 
@@ -260,8 +281,16 @@ export async function deleteUser(email: string): Promise<DeleteUserResult> {
     try {
       await tx.invitation.delete({ where: { email: normalized } });
       deletedInvitation = true;
-    } catch {
-      // Invitation may not exist
+    } catch (err) {
+      // Only swallow "record not found" — re-throw unexpected errors
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2025"
+      ) {
+        // Invitation doesn't exist — ok
+      } else {
+        throw err;
+      }
     }
 
     const { count: deletedRequests } = await tx.accessRequest.deleteMany({
@@ -271,9 +300,25 @@ export async function deleteUser(email: string): Promise<DeleteUserResult> {
     return { deletedSubmission, deletedInvitation, deletedRequests };
   });
 
-  // Firebase cleanup: revoke tokens + disable + delete (RA-4, RA-9)
-  let deletedFirebase = false;
-  if (targetUid) {
+  // Post-transaction cleanup (best-effort)
+  if (!DEV_MODE && targetUid) {
+    const adminAuth = await getFirebaseAdmin();
+
+    // GCS cleanup (moved after transaction — RA review)
+    try {
+      const bucketName = process.env.GCS_BUCKET_NAME;
+      if (bucketName) {
+        const prefix = `uploads/${targetUid}/`;
+        const { Storage } = await import("@google-cloud/storage");
+        const storage = new Storage();
+        await storage.bucket(bucketName).deleteFiles({ prefix });
+        deletedGcs = true;
+      }
+    } catch (err) {
+      console.error("[ADMIN] GCS cleanup failed:", err);
+    }
+
+    // Firebase cleanup: revoke tokens + disable + delete (RA-4, RA-9)
     try {
       await adminAuth.revokeRefreshTokens(targetUid);
       await adminAuth.updateUser(targetUid, { disabled: true });

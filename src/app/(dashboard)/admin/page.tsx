@@ -72,7 +72,7 @@ export default async function AdminPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Submissions</CardDescription>
+            <CardDescription>Dados enviados</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{stats.totalSubmissions}</p>

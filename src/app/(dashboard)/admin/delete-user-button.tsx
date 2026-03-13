@@ -75,7 +75,10 @@ export function DeleteUserButton({ email }: Props) {
           <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
             disabled={loading}
           >
             {loading ? "Excluindo..." : "Sim, excluir tudo"}
