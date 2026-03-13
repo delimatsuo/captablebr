@@ -54,7 +54,7 @@ export function EquityPercentileChart({ data }: Props) {
   const chartData = hasPercentiles
     ? [
         { name: "P25", value: p25, fill: C_LIGHT },
-        { name: "Mediana", value: p50, fill: C_MID },
+        { name: "P50", value: p50, fill: C_MID },
         { name: "P75", value: p75, fill: C_DARK },
         { name: "Média", value: avg, fill: C_ACCENT },
       ]
@@ -90,7 +90,7 @@ export function VestingPercentileChart({ data }: Props) {
   const chartData = hasPercentiles
     ? [
         { name: "P25", value: p25, fill: C_LIGHT },
-        { name: "Mediana", value: p50, fill: C_MID },
+        { name: "P50", value: p50, fill: C_MID },
         { name: "P75", value: p75, fill: C_DARK },
         { name: "Média", value: avg, fill: C_ACCENT },
       ]
@@ -126,7 +126,7 @@ export function CashCompensationChart({ data }: Props) {
   const salaryData = hasPercentiles
     ? [
         { name: "P25", value: annualSalary.p25, fill: C_LIGHT },
-        { name: "Mediana", value: annualSalary.p50, fill: C_MID },
+        { name: "P50", value: annualSalary.p50, fill: C_MID },
         { name: "P75", value: annualSalary.p75, fill: C_DARK },
         { name: "Média", value: annualSalary.avg, fill: C_ACCENT },
       ]
@@ -135,7 +135,7 @@ export function CashCompensationChart({ data }: Props) {
   const cashData = hasPercentiles
     ? [
         { name: "P25", value: totalCash.p25, fill: C_LIGHT },
-        { name: "Mediana", value: totalCash.p50, fill: C_MID },
+        { name: "P50", value: totalCash.p50, fill: C_MID },
         { name: "P75", value: totalCash.p75, fill: C_DARK },
         { name: "Média", value: totalCash.avg, fill: C_ACCENT },
       ]
@@ -269,7 +269,7 @@ export function StageEquityChart({ data }: ComparisonProps) {
   const chartData = data.stages.map((s) => ({
     stage: STAGE_SHORT[s.stage] ?? s.stage,
     P25: s.equity.p25,
-    Mediana: s.equity.p50,
+    P50: s.equity.p50,
     P75: s.equity.p75,
   }));
 
@@ -280,10 +280,10 @@ export function StageEquityChart({ data }: ComparisonProps) {
           <CartesianGrid vertical={false} stroke={GRID_COLOR} />
           <XAxis dataKey="stage" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={45} />
-          <Tooltip formatter={(value) => [`${value}%`, ""]} contentStyle={TOOLTIP_STYLE} />
+          <Tooltip formatter={(value, name) => [`${value}%`, `${name}:`]} itemSorter={(item) => -(item.value as number)} contentStyle={TOOLTIP_STYLE} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
           <Bar dataKey="P25" fill={C_LIGHT} radius={[8, 8, 0, 0]} />
-          <Bar dataKey="Mediana" fill={C_MID} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="P50" fill={C_MID} radius={[8, 8, 0, 0]} />
           <Bar dataKey="P75" fill={C_DARK} radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
@@ -295,7 +295,7 @@ export function StageSalaryChart({ data }: ComparisonProps) {
   const chartData = data.stages.map((s) => ({
     stage: STAGE_SHORT[s.stage] ?? s.stage,
     P25: s.salary.p25,
-    Mediana: s.salary.p50,
+    P50: s.salary.p50,
     P75: s.salary.p75,
   }));
 
@@ -306,10 +306,10 @@ export function StageSalaryChart({ data }: ComparisonProps) {
           <CartesianGrid vertical={false} stroke={GRID_COLOR} />
           <XAxis dataKey="stage" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={45} />
-          <Tooltip formatter={(value) => [formatUSD(Number(value)), ""]} contentStyle={TOOLTIP_STYLE} />
+          <Tooltip formatter={(value, name) => [formatUSD(Number(value)), `${name}:`]} itemSorter={(item) => -(item.value as number)} contentStyle={TOOLTIP_STYLE} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
           <Bar dataKey="P25" fill={C_LIGHT} radius={[8, 8, 0, 0]} />
-          <Bar dataKey="Mediana" fill={C_MID} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="P50" fill={C_MID} radius={[8, 8, 0, 0]} />
           <Bar dataKey="P75" fill={C_DARK} radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
@@ -321,7 +321,7 @@ export function StageTotalCashChart({ data }: ComparisonProps) {
   const chartData = data.stages.map((s) => ({
     stage: STAGE_SHORT[s.stage] ?? s.stage,
     P25: s.totalCash.p25,
-    Mediana: s.totalCash.p50,
+    P50: s.totalCash.p50,
     P75: s.totalCash.p75,
   }));
 
@@ -332,10 +332,10 @@ export function StageTotalCashChart({ data }: ComparisonProps) {
           <CartesianGrid vertical={false} stroke={GRID_COLOR} />
           <XAxis dataKey="stage" tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: AXIS_COLOR }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={45} />
-          <Tooltip formatter={(value) => [formatUSD(Number(value)), ""]} contentStyle={TOOLTIP_STYLE} />
+          <Tooltip formatter={(value, name) => [formatUSD(Number(value)), `${name}:`]} itemSorter={(item) => -(item.value as number)} contentStyle={TOOLTIP_STYLE} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
           <Bar dataKey="P25" fill={C_LIGHT} radius={[8, 8, 0, 0]} />
-          <Bar dataKey="Mediana" fill={C_MID} radius={[8, 8, 0, 0]} />
+          <Bar dataKey="P50" fill={C_MID} radius={[8, 8, 0, 0]} />
           <Bar dataKey="P75" fill={C_DARK} radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
