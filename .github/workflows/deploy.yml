@@ -117,7 +117,7 @@ jobs:
             --port 8080 \
             --memory 512Mi \
             --cpu 1 \
-            --min-instances 0 \
+            --min-instances 1 \
             --max-instances 3 \
             --cpu-boost \
             --startup-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=10,periodSeconds=10,timeoutSeconds=5 \

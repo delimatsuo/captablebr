@@ -16,7 +16,7 @@ environments:
     health_check: "/api/health"
   production:
     branch: "main"
-    url: "https://app.captablebr.com"
+    url: "https://captablebr.com"
     gcp_project_id: "paynequity"
     health_check: "/api/health"
 
