@@ -63,6 +63,7 @@ export async function GET() {
       grantDate: g.grantDate,
       grantLabel: g.grantLabel,
       vestingStartDate: g.vestingStartDate,
+      createdAt: g.createdAt,
     })),
   });
 }

@@ -7,22 +7,10 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import type { BenchmarkResult, StageComparisonResult } from "@/lib/benchmarks";
 
-// Refined palette — desaturated, harmonious
-const C_LIGHT = "oklch(0.82 0.08 260)";
-const C_MID = "oklch(0.55 0.16 260)";
-const C_DARK = "oklch(0.38 0.14 260)";
-const C_ACCENT = "oklch(0.62 0.12 175)";
-const C_MUTED = "oklch(0.72 0.06 260)";
-const GRID_COLOR = "oklch(0.94 0.003 260)";
-const AXIS_COLOR = "oklch(0.54 0.01 260)";
-
-const TOOLTIP_STYLE = {
-  borderRadius: "12px",
-  border: "none",
-  boxShadow: "0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-  padding: "10px 14px",
-  fontSize: "13px",
-};
+import {
+  C_LIGHT, C_MID, C_DARK, C_ACCENT, C_MUTED,
+  GRID_COLOR, AXIS_COLOR, TOOLTIP_STYLE,
+} from "@/lib/chart-constants";
 
 interface Props {
   data: BenchmarkResult;
