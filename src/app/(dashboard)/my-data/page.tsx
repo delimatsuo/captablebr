@@ -239,7 +239,7 @@ export default function MyDataPage() {
           ))}
 
           <Button asChild variant="outline" className="w-full">
-            <Link href="/submit">Adicionar ou editar grants</Link>
+            <Link href="/submit?step=3">Adicionar ou editar grants</Link>
           </Button>
         </CardContent>
       </Card>

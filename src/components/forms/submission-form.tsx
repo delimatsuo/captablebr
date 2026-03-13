@@ -58,6 +58,7 @@ interface Props {
   initialData?: Partial<SubmissionFormFields> | null;
   sourceDocumentUrl?: string;
   isAiExtracted?: boolean;
+  initialStep?: number;
 }
 
 const STEPS = [
@@ -74,11 +75,11 @@ function formatCurrency(value: number | undefined, currency: string = "USD"): st
   return `${symbol} ${value.toLocaleString(locale)}`;
 }
 
-export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted }: Props) {
+export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, initialStep }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialStep && initialStep >= 1 && initialStep <= 4 ? initialStep : 1);
   const [draftRestored, setDraftRestored] = useState(false);
   const [fxRate, setFxRate] = useState<number | null>(null);
   const [formData, setFormData] = useState<SubmissionFormFields>(() => {

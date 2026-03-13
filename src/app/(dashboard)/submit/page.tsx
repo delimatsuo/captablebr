@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubmissionForm } from "@/components/forms/submission-form";
 import { DocumentUpload } from "@/components/forms/document-upload";
@@ -56,6 +57,18 @@ function normalizeApiData(data: SubmissionApiData) {
 }
 
 export default function SubmitPage() {
+  return (
+    <Suspense>
+      <SubmitPageContent />
+    </Suspense>
+  );
+}
+
+function SubmitPageContent() {
+  const searchParams = useSearchParams();
+  const stepParam = searchParams.get("step");
+  const initialStep = stepParam ? Number(stepParam) : undefined;
+
   const [extractedData, setExtractedData] = useState<Partial<SubmissionFormData> | null>(null);
   const [sourceDocumentUrl, setSourceDocumentUrl] = useState<string | undefined>();
   const [existingData, setExistingData] = useState<ReturnType<typeof normalizeApiData> | null>(null);
@@ -98,7 +111,7 @@ export default function SubmitPage() {
         </p>
       </div>
 
-      <Tabs defaultValue={extractedData ? "manual" : "upload"} className="space-y-6">
+      <Tabs defaultValue={extractedData || initialStep ? "manual" : "upload"} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 h-11">
           <TabsTrigger value="upload" className="gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
@@ -122,7 +135,7 @@ export default function SubmitPage() {
         </TabsContent>
 
         <TabsContent value="manual">
-          <SubmissionForm initialData={existingData} />
+          <SubmissionForm initialData={existingData} initialStep={initialStep} />
         </TabsContent>
       </Tabs>
     </div>
