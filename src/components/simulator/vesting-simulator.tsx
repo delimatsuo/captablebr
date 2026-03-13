@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useDeferredValue } from "react";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import type { GrantData } from "@/lib/types";
 import {
   prepareGrants,
@@ -98,30 +98,36 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
   // Track which grants used createdAt fallback (W1)
   const fallbackGrants = simulatable.filter((g) => g.startDateSource === "created");
 
+  // Projected prices: immediate (raw values) for inputs, deferred for summary (W1)
+  const projectedPriceImmediate = sharePrice * Math.pow(1 + growthRate, horizonYears);
+  const projectedPriceDeferred = sharePrice * Math.pow(1 + deferredGrowthRate, deferredHorizonYears);
+
   if (simulatable.length === 0 && skipped.length === 0) return null;
 
   return (
     <div className="space-y-6">
-      {/* Section header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between group text-left"
-        data-state={expanded ? "open" : "closed"}
-      >
-        <div>
-          <h2 className="text-[15px] font-semibold text-foreground">
-            Simulador de Vesting
-          </h2>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
-            Projete o valor dos seus grants ao longo do tempo
-          </p>
-        </div>
-        <ChevronDown
-          className={`h-4 w-4 text-muted-foreground/60 transition-transform duration-200 ${
-            expanded ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+      {/* Section header — wrapped in Card for visibility */}
+      <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between text-left px-6 py-5"
+          data-state={expanded ? "open" : "closed"}
+        >
+          <div>
+            <h2 className="text-[15px] font-semibold text-foreground">
+              Simulador de Vesting
+            </h2>
+            <p className="text-[13px] text-muted-foreground mt-0.5">
+              Projete o valor dos seus grants ao longo do tempo
+            </p>
+          </div>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground/60 transition-transform duration-200 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </Card>
 
       {/* Expandable content */}
       {expanded && (
@@ -140,32 +146,6 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
                 {skipped.map((s) => s.reason).filter((v, i, a) => a.indexOf(v) === i).join(". ")}.
               </p>
             </div>
-          ) : needsSharePrice ? (
-            // Onboarding: need share price
-            <div className="rounded-2xl border border-border/50 bg-foreground/[0.02] px-6 py-8 text-center">
-              <div className="mx-auto h-16 w-16 rounded-xl bg-foreground/[0.04] flex items-center justify-center mb-5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60">
-                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-              </div>
-              <p className="text-[14px] text-muted-foreground max-w-sm mx-auto mb-5">
-                Informe o valor atual por ação para simular o vesting dos seus grants
-              </p>
-              <div className="max-w-[200px] mx-auto">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={sharePrice || ""}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    setSharePrice(Number.isFinite(v) && v >= 0 ? v : 0);
-                  }}
-                  placeholder={`${currencySymbol} 0.00`}
-                  className="text-center tabular-nums"
-                />
-              </div>
-            </div>
           ) : (
             <>
               <SimulatorInputs
@@ -176,7 +156,15 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
                 horizonYears={horizonYears}
                 onHorizonYearsChange={setHorizonYears}
                 currencySymbol={currencySymbol}
+                projectedPrice={projectedPriceImmediate}
               />
+
+              {/* Hint when share price is missing */}
+              {needsSharePrice && (
+                <p className="text-[13px] text-muted-foreground text-center">
+                  Informe o preço atual da ação para ver a projeção
+                </p>
+              )}
 
               {/* Skipped grants warning */}
               {skipped.length > 0 && (
@@ -196,18 +184,23 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
                 </p>
               )}
 
-              <SimulatorSummary
-                summary={summary}
-                horizonYears={deferredHorizonYears}
-                growthRate={deferredGrowthRate}
-                currencySymbol={currencySymbol}
-              />
+              {!needsSharePrice && (
+                <>
+                  <SimulatorSummary
+                    summary={summary}
+                    horizonYears={deferredHorizonYears}
+                    growthRate={deferredGrowthRate}
+                    currencySymbol={currencySymbol}
+                    projectedPrice={projectedPriceDeferred}
+                  />
 
-              <SimulatorChart
-                grants={simulatable}
-                timeline={timeline}
-                currencySymbol={currencySymbol}
-              />
+                  <SimulatorChart
+                    grants={simulatable}
+                    timeline={timeline}
+                    currencySymbol={currencySymbol}
+                  />
+                </>
+              )}
             </>
           )}
         </div>

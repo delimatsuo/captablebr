@@ -12,6 +12,7 @@ interface SimulatorInputsProps {
   horizonYears: number;
   onHorizonYearsChange: (v: number) => void;
   currencySymbol: string;
+  projectedPrice: number;
 }
 
 export function SimulatorInputs({
@@ -22,6 +23,7 @@ export function SimulatorInputs({
   horizonYears,
   onHorizonYearsChange,
   currencySymbol,
+  projectedPrice,
 }: SimulatorInputsProps) {
   return (
     <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
@@ -30,7 +32,7 @@ export function SimulatorInputs({
           {/* Share price */}
           <div>
             <label className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wide block mb-2">
-              Valor por ação ({currencySymbol})
+              Valor atual da ação ({currencySymbol})
             </label>
             <Input
               type="number"
@@ -64,6 +66,11 @@ export function SimulatorInputs({
                 {growthRate >= 0 ? "+" : ""}{Math.round(growthRate * 100)}%
               </span>
             </div>
+            {projectedPrice > 0 && (
+              <p className="text-[12px] text-muted-foreground mt-1.5">
+                Preço projetado em {horizonYears} {horizonYears === 1 ? "ano" : "anos"}: {currencySymbol} {projectedPrice.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
+              </p>
+            )}
           </div>
 
           {/* Horizon slider */}
