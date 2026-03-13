@@ -174,6 +174,9 @@ export const signupSchema = z.object({
   lgpdConsent: z.literal(true, { message: "Consentimento obrigatório" }),
   tosConsent: z.literal(true, { message: "Aceitação dos termos obrigatória" }),
   firebaseIdToken: z.string().max(10000).optional(),
+  // HMAC-based email verification (replaces Firebase email link)
+  verificationTs: z.number().optional(),
+  verificationToken: z.string().max(128).optional(),
 });
 
 export type SignupFormData = z.infer<typeof signupSchema>;
