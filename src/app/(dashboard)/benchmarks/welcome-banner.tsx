@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 const DISMISS_KEY = "captablebr_welcome_dismissed";
 
+function getIsDismissed() {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(DISMISS_KEY) === "1";
+}
+
+const subscribe = () => () => {};
+
 export function WelcomeBanner() {
-  const [visible, setVisible] = useState(false);
+  const dismissed = useSyncExternalStore(subscribe, getIsDismissed, () => true);
+  const [hidden, setHidden] = useState(false);
 
-  useEffect(() => {
-    if (!localStorage.getItem(DISMISS_KEY)) {
-      setVisible(true);
-    }
-  }, []);
-
-  if (!visible) return null;
+  if (dismissed || hidden) return null;
 
   function dismiss() {
     localStorage.setItem(DISMISS_KEY, "1");
-    setVisible(false);
+    setHidden(true);
   }
 
   return (
