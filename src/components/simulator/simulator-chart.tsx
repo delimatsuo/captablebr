@@ -36,7 +36,7 @@ function CustomTooltip({ active, payload, grants, currencySymbol }: any) {
   const point = payload[0]?.payload as MonthDataPoint | undefined;
   if (!point) return null;
 
-  const dateStr = point.date.toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+  const dateStr = new Date(point.date).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
 
   // Sort grants by value descending for tooltip
   const grantValues = grants
@@ -90,6 +90,8 @@ export function SimulatorChart({ grants, timeline, currencySymbol }: SimulatorCh
       month: point.month,
       date: point.date,
       dateLabel: point.date.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
+      byGrant: point.byGrant,
+      totalValue: point.totalValue,
     };
     for (const grant of grants) {
       entry[grant.id] = point.byGrant[grant.id] || 0;

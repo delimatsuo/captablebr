@@ -8,6 +8,7 @@ interface SimulatorSummaryProps {
   horizonYears: number;
   growthRate: number;
   currencySymbol: string;
+  projectedPrice: number;
 }
 
 function formatCompact(value: number, symbol: string): string {
@@ -24,12 +25,13 @@ export function SimulatorSummary({
   horizonYears,
   growthRate,
   currencySymbol,
+  projectedPrice,
 }: SimulatorSummaryProps) {
   const metrics = [
     {
       label: `VALOR EM ${horizonYears} ${horizonYears === 1 ? "ANO" : "ANOS"}`,
       value: formatCompact(summary.totalAtHorizon, currencySymbol),
-      sub: `crescimento de ${growthRate >= 0 ? "+" : ""}${Math.round(growthRate * 100)}% a.a.`,
+      sub: `a ${currencySymbol} ${projectedPrice.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}/ação (${growthRate >= 0 ? "+" : ""}${Math.round(growthRate * 100)}% a.a.)`,
     },
     {
       label: "VESTED HOJE",
