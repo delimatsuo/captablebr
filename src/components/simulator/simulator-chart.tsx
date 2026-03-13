@@ -30,7 +30,7 @@ function formatCurrency(value: number, symbol: string): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label, grants, currencySymbol }: any) {
+function CustomTooltip({ active, payload, grants, currencySymbol }: any) {
   if (!active || !payload?.length) return null;
 
   const point = payload[0]?.payload as MonthDataPoint | undefined;
