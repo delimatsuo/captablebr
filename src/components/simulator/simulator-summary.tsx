@@ -41,7 +41,7 @@ export function SimulatorSummary({
     {
       label: "PRÓXIMO VESTING",
       value: summary.nextVesting
-        ? summary.nextVesting.date.toLocaleDateString("pt-BR", {
+        ? new Date(summary.nextVesting.date).toLocaleDateString("pt-BR", {
             month: "short",
             year: "numeric",
           })
