@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +17,6 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ROLES } from "@/lib/types";
-import {
-  sendEmailVerificationLink,
-  isEmailSignInLink,
-  completeEmailSignIn,
-  getStoredSignupData,
-} from "@/lib/firebase-client";
 
 const ROLE_LABELS: Record<string, string> = {
   "CEO": "CEO",
@@ -37,9 +32,20 @@ const ROLE_LABELS: Record<string, string> = {
   "Other VP": "Outro VP",
 };
 
-type FormState = "form" | "email_sent" | "completing" | "verifying" | "approved" | "pending" | "error";
+const FORM_STORAGE_KEY = "captablebr_signup_form";
+
+type FormState = "form" | "email_sent" | "verifying" | "approved" | "pending" | "error";
 
 export default function RequestAccessPage() {
+  return (
+    <Suspense>
+      <RequestAccessContent />
+    </Suspense>
+  );
+}
+
+function RequestAccessContent() {
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -48,39 +54,57 @@ export default function RequestAccessPage() {
   const [tosConsent, setTosConsent] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [formState, setFormState] = useState<FormState>("form");
+  const [sending, setSending] = useState(false);
 
   // On mount: check if this is a return from email verification link
   useEffect(() => {
-    async function handleEmailLink() {
-      try {
-        if (!isEmailSignInLink()) return;
+    async function handleVerificationLink() {
+      const isVerify = searchParams.get("verify");
+      const verifyEmail = searchParams.get("email");
+      const ts = searchParams.get("ts");
+      const token = searchParams.get("token");
 
-        // Show completing state
-        setFormState("completing");
+      if (!isVerify || !verifyEmail || !ts || !token) return;
 
-        const result = await completeEmailSignIn();
-        if (!result) {
-          setErrorMessage("Dados do formulário não encontrados. Preencha novamente.");
-          setFormState("error");
-          return;
-        }
-
-        // Auto-submit with the verified ID token
-        await submitSignup(result.formData, result.idToken);
-      } catch (err) {
-        console.error("[EMAIL_VERIFY]", err);
-        setErrorMessage(
-          err instanceof Error ? err.message : "Erro ao verificar email. Tente novamente."
-        );
+      // Recover form data from localStorage
+      const stored = localStorage.getItem(FORM_STORAGE_KEY);
+      if (!stored) {
+        setErrorMessage("Dados do formulário não encontrados. Preencha novamente.");
         setFormState("error");
+        return;
       }
+
+      let formData;
+      try {
+        formData = JSON.parse(stored);
+      } catch {
+        localStorage.removeItem(FORM_STORAGE_KEY);
+        setErrorMessage("Dados do formulário corrompidos. Preencha novamente.");
+        setFormState("error");
+        return;
+      }
+
+      // Verify the email matches
+      if (formData.email?.toLowerCase() !== verifyEmail.toLowerCase()) {
+        setErrorMessage("O email verificado não corresponde ao cadastro. Preencha novamente.");
+        setFormState("error");
+        return;
+      }
+
+      // Submit signup with HMAC verification token
+      await submitSignup(formData, {
+        verificationTs: Number(ts),
+        verificationToken: token,
+      });
     }
-    handleEmailLink();
+
+    handleVerificationLink();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function submitSignup(
     formData: { email: string; name: string; linkedinUrl: string; role: string; lgpdConsent: boolean; tosConsent: boolean },
-    firebaseIdToken: string
+    verification: { verificationTs: number; verificationToken: string }
   ) {
     setFormState("verifying");
 
@@ -88,7 +112,7 @@ export default function RequestAccessPage() {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, firebaseIdToken }),
+        body: JSON.stringify({ ...formData, ...verification }),
       });
 
       if (!res.ok) {
@@ -97,6 +121,7 @@ export default function RequestAccessPage() {
       }
 
       const data = await res.json();
+      localStorage.removeItem(FORM_STORAGE_KEY);
 
       if (data.status === "approved") {
         setFormState("approved");
@@ -123,29 +148,49 @@ export default function RequestAccessPage() {
       return;
     }
 
-    // Step 1: Send email verification link
+    // Save form data to localStorage for recovery after email click
+    localStorage.setItem(
+      FORM_STORAGE_KEY,
+      JSON.stringify({ email, name, linkedinUrl, role, lgpdConsent, tosConsent })
+    );
+
+    // Send verification email via our API (Resend, branded)
+    setSending(true);
     try {
-      await sendEmailVerificationLink(email, { name, linkedinUrl, role, lgpdConsent, tosConsent });
+      const res = await fetch("/api/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao enviar email");
+      }
+
       setFormState("email_sent");
     } catch (err) {
-      console.error("[EMAIL_SEND]", err);
       setErrorMessage(
-        err instanceof Error && err.message.includes("auth/")
-          ? "Erro ao enviar email de verificação. Verifique o email informado."
-          : "Erro ao enviar email de verificação. Tente novamente."
+        err instanceof Error ? err.message : "Erro ao enviar email de verificação. Tente novamente."
       );
-      setFormState("error");
+    } finally {
+      setSending(false);
     }
   }
 
   // Restore form data if user has pending email verification
   useEffect(() => {
-    const stored = getStoredSignupData();
+    const stored = localStorage.getItem(FORM_STORAGE_KEY);
     if (stored && formState === "form") {
-      setName(stored.name);
-      setEmail(stored.email);
-      setLinkedinUrl(stored.linkedinUrl);
-      setRole(stored.role);
+      try {
+        const data = JSON.parse(stored);
+        if (data.name) setName(data.name);
+        if (data.email) setEmail(data.email);
+        if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl);
+        if (data.role) setRole(data.role);
+      } catch {
+        // ignore
+      }
     }
   }, [formState]);
 
@@ -218,15 +263,11 @@ export default function RequestAccessPage() {
               </>
             )}
 
-            {(formState === "verifying" || formState === "completing") && (
+            {formState === "verifying" && (
               <>
-                <CardTitle className="text-2xl">
-                  {formState === "completing" ? "Verificando email..." : "Verificando perfil..."}
-                </CardTitle>
+                <CardTitle className="text-2xl">Verificando perfil...</CardTitle>
                 <CardDescription>
-                  {formState === "completing"
-                    ? "Confirmando seu email e preparando o cadastro..."
-                    : "Verificando seu perfil no LinkedIn..."}
+                  Verificando seu perfil no LinkedIn...
                 </CardDescription>
               </>
             )}
@@ -263,13 +304,11 @@ export default function RequestAccessPage() {
             )}
           </CardHeader>
 
-          {(formState === "verifying" || formState === "completing") && (
+          {formState === "verifying" && (
             <CardContent className="space-y-4">
               <Progress value={undefined} className="w-full" />
               <p className="text-sm text-muted-foreground text-center">
-                {formState === "completing"
-                  ? "Confirmando verificação..."
-                  : "Isso pode levar até 60 segundos..."}
+                Isso pode levar até 60 segundos...
               </p>
             </CardContent>
           )}
@@ -416,8 +455,8 @@ export default function RequestAccessPage() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full h-11" disabled={!role || !tosConsent || !lgpdConsent}>
-                  Verificar email e criar conta
+                <Button type="submit" className="w-full h-11" disabled={!role || !tosConsent || !lgpdConsent || sending}>
+                  {sending ? "Enviando..." : "Verificar email e criar conta"}
                 </Button>
               </form>
 

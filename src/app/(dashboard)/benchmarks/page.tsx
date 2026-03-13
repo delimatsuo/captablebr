@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { BenchmarkResult, StageComparisonResult } from "@/lib/benchmarks";
+import { WelcomeBanner } from "./welcome-banner";
 
 export default function BenchmarksPage() {
   const [country, setCountry] = useState("all");
@@ -77,6 +78,8 @@ export default function BenchmarksPage() {
           Dados anonimizados e agregados
         </p>
       </div>
+
+      <WelcomeBanner />
 
       {/* Filters */}
       <SegmentSelector

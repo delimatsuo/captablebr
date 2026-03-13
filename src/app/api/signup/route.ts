@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { signupSchema } from "@/lib/validations";
 import { validateLinkedInUrl, runVerification } from "@/lib/verification";
 import { getFirebaseAdmin } from "@/lib/auth";
+import { verifyEmailToken } from "@/lib/email-verification";
 
 // Simple in-memory rate limiter: 5 requests per IP per hour
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -44,13 +45,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email, name, linkedinUrl, role, lgpdConsent, tosConsent, firebaseIdToken } = parsed.data;
+  const { email, name, linkedinUrl, role, lgpdConsent, tosConsent, firebaseIdToken, verificationTs, verificationToken } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Verify Firebase ID token if provided (proves email ownership)
+  // Email verification: accept either HMAC token (new) or Firebase ID token (legacy)
   let emailVerified = false;
   let firebaseUid: string | null = null;
-  if (firebaseIdToken) {
+
+  if (verificationTs && verificationToken) {
+    // New: HMAC-based verification (branded email via Resend)
+    const result = verifyEmailToken(normalizedEmail, verificationTs, verificationToken);
+    if (!result.valid) {
+      return NextResponse.json(
+        { error: result.error || "Token de verificação inválido." },
+        { status: 400 }
+      );
+    }
+    emailVerified = true;
+  } else if (firebaseIdToken) {
+    // Legacy: Firebase email link verification
     try {
       const adminAuth = await getFirebaseAdmin();
       const decoded = await adminAuth.verifyIdToken(firebaseIdToken);
@@ -60,8 +73,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      // email_verified may not be set immediately for email-link sign-in;
-      // the act of completing signInWithEmailLink proves ownership
       emailVerified = decoded.email_verified === true
         || decoded.firebase?.sign_in_provider === "emailLink";
       firebaseUid = decoded.uid;
