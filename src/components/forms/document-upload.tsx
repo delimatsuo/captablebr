@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import type { GrantFormData } from "@/lib/validations";
+import type { SubmissionFormData } from "@/lib/validations";
 
 interface Props {
-  onExtracted: (data: Partial<GrantFormData>, objectName: string) => void;
+  onExtracted: (data: Partial<SubmissionFormData>, objectName: string) => void;
 }
 
 export function DocumentUpload({ onExtracted }: Props) {
@@ -26,11 +26,11 @@ export function DocumentUpload({ onExtracted }: Props) {
 
     const allowed = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
     if (!allowed.includes(f.type)) {
-      toast.error("Tipo de arquivo nao permitido. Use PDF, PNG, JPEG ou WebP.");
+      toast.error("Tipo de arquivo não permitido. Use PDF, PNG, JPEG ou WebP.");
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Maximo de 10MB.");
+      toast.error("Arquivo muito grande. Máximo de 10MB.");
       return;
     }
     setFile(f);
@@ -69,22 +69,35 @@ export function DocumentUpload({ onExtracted }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ objectName, contentType: file.type }),
       });
-      if (!extractRes.ok) throw new Error("Falha na extracao");
+      if (!extractRes.ok) throw new Error("Falha na extração");
       const extracted = await extractRes.json();
       setProgress(100);
 
       // Map API response to form data
-      const mapped: Partial<GrantFormData> = {};
-      if (extracted.role) mapped.role = extracted.role as GrantFormData["role"];
-      if (extracted.instrument_type) mapped.instrumentType = extracted.instrument_type as GrantFormData["instrumentType"];
+      const mapped: Partial<SubmissionFormData> = {};
+      if (extracted.role) mapped.role = extracted.role as SubmissionFormData["role"];
+      if (extracted.instrument_type) mapped.instrumentType = extracted.instrument_type as SubmissionFormData["instrumentType"];
       if (extracted.equity_percentage) mapped.equityPercentage = extracted.equity_percentage;
       if (extracted.vesting_total_months) mapped.vestingTotalMonths = extracted.vesting_total_months;
       if (extracted.cliff_months != null) mapped.cliffMonths = extracted.cliff_months;
-      if (extracted.vesting_schedule) mapped.vestingSchedule = extracted.vesting_schedule as GrantFormData["vestingSchedule"];
-      if (extracted.grant_type) mapped.grantType = extracted.grant_type as GrantFormData["grantType"];
+      if (extracted.vesting_schedule) mapped.vestingSchedule = extracted.vesting_schedule as SubmissionFormData["vestingSchedule"];
+      if (extracted.grant_type) mapped.grantType = extracted.grant_type as SubmissionFormData["grantType"];
+      if (extracted.stage) mapped.stage = extracted.stage as SubmissionFormData["stage"];
+      if (extracted.sector) mapped.sector = extracted.sector as SubmissionFormData["sector"];
+      if (extracted.number_of_shares) {
+        mapped.numberOfShares = extracted.number_of_shares;
+        mapped.inputMode = "shares";
+      }
+      if (extracted.total_shares_outstanding) mapped.totalSharesOutstanding = extracted.total_shares_outstanding;
+      if (extracted.strike_price) mapped.strikePrice = extracted.strike_price;
+      if (extracted.current_share_price) mapped.currentSharePrice = extracted.current_share_price;
+      if (extracted.last_valuation) mapped.lastValuation = extracted.last_valuation;
+      if (extracted.grant_date) mapped.grantDate = extracted.grant_date;
+      if (extracted.contract_type) mapped.contractType = extracted.contract_type as SubmissionFormData["contractType"];
+      if (extracted.annual_salary) mapped.annualSalary = extracted.annual_salary;
 
       onExtracted(mapped, objectName);
-      toast.success(`Dados extraidos com confianca de ${Math.round((extracted.confidence || 0) * 100)}%`);
+      toast.success(`Dados extraídos com confiança de ${Math.round((extracted.confidence || 0) * 100)}%`);
     } catch {
       toast.error("Erro no processamento do documento");
     } finally {
@@ -98,7 +111,7 @@ export function DocumentUpload({ onExtracted }: Props) {
       <CardHeader>
         <CardTitle className="text-lg">Upload de Contrato</CardTitle>
         <CardDescription>
-          Envie o contrato ou politica de equity para extracao automatica via IA
+          Envie o contrato ou política de equity para extração automática via IA
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -128,7 +141,7 @@ export function DocumentUpload({ onExtracted }: Props) {
               <div className="text-center">
                 <p className="text-sm font-medium">Clique para selecionar um arquivo</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  PDF, PNG, JPEG ou WebP — Maximo 10MB
+                  PDF, PNG, JPEG ou WebP — Máximo 10MB
                 </p>
               </div>
             )}
@@ -149,8 +162,8 @@ export function DocumentUpload({ onExtracted }: Props) {
                   Consentimento para processamento
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Seu documento sera processado por IA para extrair dados de equity.
-                  O arquivo sera deletado apos a extracao.
+                  Seu documento será processado por IA para extrair dados de equity.
+                  O arquivo será deletado após a extração.
                 </p>
               </div>
             </div>

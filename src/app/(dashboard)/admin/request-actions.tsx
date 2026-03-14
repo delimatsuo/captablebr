@@ -31,7 +31,7 @@ export function RequestActions({ requestId }: Props) {
     setLoading(true);
     try {
       await rejectAccessRequest(requestId);
-      toast.success("Solicitacao rejeitada");
+      toast.success("Solicitação rejeitada");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao rejeitar");

@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
     if (!idToken || typeof idToken !== "string") {
-      return NextResponse.json({ error: "Token invalido" }, { status: 400 });
+      return NextResponse.json({ error: "Token inválido" }, { status: 400 });
     }
 
     // Verify token AND check invitation
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       if (error.message === "NOT_INVITED") {
         return NextResponse.json(
-          { error: "Acesso nao autorizado. Voce precisa de um convite para usar a plataforma." },
+          { error: "Acesso não autorizado. Você precisa de um convite para usar a plataforma." },
           { status: 403 }
         );
       }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       }
     }
     console.error("Session creation error:", error);
-    return NextResponse.json({ error: "Falha na autenticacao" }, { status: 401 });
+    return NextResponse.json({ error: "Falha na autenticação" }, { status: 401 });
   }
 }
 

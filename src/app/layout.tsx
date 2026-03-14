@@ -16,7 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CaptableBR - Benchmarks de Equity para Startups Brasileiras",
   description:
-    "Dados de benchmarking de equity para compensacao executiva em startups brasileiras. Descubra o percentual de equity padrao para cada cargo no seu estagio.",
+    "Dados de benchmarking de equity para compensação executiva em startups brasileiras. Descubra o percentual de equity padrão para cada cargo no seu estágio.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

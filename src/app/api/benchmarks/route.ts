@@ -1,38 +1,50 @@
 import { verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getBenchmarks } from "@/lib/benchmarks";
+import { getBenchmarks, getStageComparison } from "@/lib/benchmarks";
+import { COUNTRY_CODES, ROLES } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const session = await verifySession();
   if (!session) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  // Check give-to-get gate
-  const company = await prisma.company.findUnique({
+  const submission = await prisma.submission.findUnique({
     where: { userId: session.uid },
-    include: { _count: { select: { grants: true } } },
+    select: { confirmedByUser: true },
   });
-
-  if (!company || company._count.grants === 0) {
-    return NextResponse.json(
-      { error: "Submeta pelo menos 1 grant para acessar os benchmarks" },
-      { status: 403 }
-    );
-  }
+  const hasSubmission = !!submission?.confirmedByUser;
 
   const { searchParams } = request.nextUrl;
   const role = searchParams.get("role");
   if (!role) {
-    return NextResponse.json({ error: "Parametro 'role' obrigatorio" }, { status: 400 });
+    return NextResponse.json({ error: "Parâmetro 'role' obrigatório" }, { status: 400 });
+  }
+  if (!(ROLES as readonly string[]).includes(role)) {
+    return NextResponse.json({ error: "Cargo inválido" }, { status: 400 });
   }
 
-  const stage = searchParams.get("stage") || company.stage;
-  const businessModel = searchParams.get("businessModel") || company.businessModel;
-  const sector = searchParams.get("sector") || company.sector;
+  const stage = searchParams.get("stage") || undefined;
+  const businessModel = searchParams.get("businessModel") || undefined;
+  const sector = searchParams.get("sector") || undefined;
 
-  const result = await getBenchmarks(role, stage, businessModel, sector);
+  const countryParam = searchParams.get("country") || undefined;
+  if (countryParam && !(COUNTRY_CODES as readonly string[]).includes(countryParam)) {
+    return NextResponse.json({ error: "Código de país inválido" }, { status: 400 });
+  }
+  const country = countryParam;
+
+  // No stage selected → return multi-stage comparison
+  if (!stage) {
+    const comparison = getStageComparison(role);
+    if (!comparison) {
+      return NextResponse.json({ error: "Dados insuficientes" }, { status: 404 });
+    }
+    return NextResponse.json({ ...comparison, hasSubmission, mode: "comparison" });
+  }
+
+  const result = await getBenchmarks(role, stage, businessModel, sector, country);
 
   if (!result) {
     return NextResponse.json(
@@ -41,5 +53,5 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, hasSubmission, mode: "single" });
 }

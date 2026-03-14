@@ -11,12 +11,12 @@ project:
 environments:
   staging:
     branch: "staging"
-    url: "pending"
+    url: "https://staging.captablebr.com"
     gcp_project_id: "paynequity"
     health_check: "/api/health"
   production:
     branch: "main"
-    url: "pending"
+    url: "https://captablebr.com"
     gcp_project_id: "paynequity"
     health_check: "/api/health"
 

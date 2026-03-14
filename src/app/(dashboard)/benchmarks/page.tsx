@@ -1,134 +1,197 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { SegmentSelector } from "@/components/dashboard/segment-selector";
 import {
   EquityPercentileChart,
   VestingPercentileChart,
+  CashCompensationChart,
   InstrumentDistributionChart,
   SummaryCards,
+  StageEquityChart,
+  StageSalaryChart,
+  StageTotalCashChart,
 } from "@/components/dashboard/benchmark-chart";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { BenchmarkResult } from "@/lib/benchmarks";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import type { BenchmarkResult, StageComparisonResult } from "@/lib/benchmarks";
+import { WelcomeBanner } from "./welcome-banner";
 
 export default function BenchmarksPage() {
-  const router = useRouter();
+  const [country, setCountry] = useState("all");
   const [role, setRole] = useState("CTO");
   const [stage, setStage] = useState("all");
-  const [businessModel, setBusinessModel] = useState("all");
-  const [sector, setSector] = useState("all");
-  const [data, setData] = useState<BenchmarkResult | null>(null);
+  const [hasSubmission, setHasSubmission] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [data, setData] = useState<BenchmarkResult | null>(null);
+  const [comparison, setComparison] = useState<StageComparisonResult | null>(null);
 
   const fetchBenchmarks = useCallback(async () => {
     setLoading(true);
     setError("");
 
     const params = new URLSearchParams({ role });
+    if (country !== "all") params.set("country", country);
     if (stage !== "all") params.set("stage", stage);
-    if (businessModel !== "all") params.set("businessModel", businessModel);
-    if (sector !== "all") params.set("sector", sector);
 
     try {
       const res = await fetch(`/api/benchmarks?${params}`);
-      if (res.status === 403) {
-        router.push("/grants");
-        return;
-      }
       if (res.status === 404) {
         setData(null);
+        setComparison(null);
         setError("Dados insuficientes para este segmento. Tente filtros mais amplos.");
         return;
       }
       if (!res.ok) throw new Error();
-      setData(await res.json());
+      const { hasSubmission: hs, mode, ...rest } = await res.json();
+      setHasSubmission(hs);
+
+      if (mode === "comparison") {
+        setComparison(rest as StageComparisonResult);
+        setData(null);
+      } else {
+        setData(rest as BenchmarkResult);
+        setComparison(null);
+      }
     } catch {
       setError("Erro ao carregar benchmarks");
     } finally {
       setLoading(false);
     }
-  }, [role, stage, businessModel, sector, router]);
+  }, [country, role, stage]);
 
   useEffect(() => {
     fetchBenchmarks();
   }, [fetchBenchmarks]);
 
+  const isReference = data?.dataSource === "market-reference" || comparison?.dataSource === "market-reference";
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Benchmarks de Equity</h1>
-          <p className="text-muted-foreground text-sm">
-            Dados anonimizados e agregados do mercado brasileiro
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">Benchmarks</h1>
+        <p className="text-muted-foreground text-[15px] mt-1">
+          Dados anonimizados e agregados
+        </p>
       </div>
+
+      <WelcomeBanner />
 
       {/* Filters */}
       <SegmentSelector
+        country={country}
         role={role}
         stage={stage}
-        businessModel={businessModel}
-        sector={sector}
+        onCountryChange={setCountry}
         onRoleChange={setRole}
         onStageChange={setStage}
-        onBusinessModelChange={setBusinessModel}
-        onSectorChange={setSector}
       />
 
+      {/* Reference data notice */}
+      {isReference && (
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-foreground/[0.03] px-6 py-4">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
+            Benchmarks baseados em dados de referência do mercado norte-americano.
+            Contribua seus dados para gerarmos benchmarks do mercado brasileiro.
+          </p>
+          {!hasSubmission && (
+            <Button asChild size="sm" variant="outline" className="shrink-0 rounded-full text-[13px]">
+              <Link href="/submit">Contribuir</Link>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {data?.dataSource === "user-collected" && !hasSubmission && (
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-foreground/[0.03] px-6 py-4">
+          <p className="text-[13px] text-muted-foreground">
+            Baseado em {data.sampleSize} executivos. Contribua seus dados para aumentar a precisão.
+          </p>
+          <Button asChild size="sm" variant="outline" className="shrink-0 rounded-full text-[13px]">
+            <Link href="/submit">Contribuir</Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Content */}
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i}>
+            <Card key={i} className="border-border/50">
               <CardContent className="pt-5 pb-4 px-5">
-                <div className="h-4 w-20 bg-muted rounded animate-pulse mb-3" />
-                <div className="h-8 w-16 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-16 bg-muted rounded-full animate-pulse mb-4" />
+                <div className="h-7 w-12 bg-muted rounded-lg animate-pulse" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : error ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-            </div>
-            <h3 className="font-semibold text-lg mb-2">Dados insuficientes</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
-              {error}
-            </p>
-          </CardContent>
-        </Card>
-      ) : data ? (
+        <div className="py-24 text-center">
+          <div className="mx-auto h-16 w-16 rounded-3xl bg-foreground/[0.04] flex items-center justify-center mb-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/60"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <h3 className="text-lg font-semibold mb-1.5">Dados insuficientes</h3>
+          <p className="text-muted-foreground text-[14px] max-w-sm mx-auto">
+            {error}
+          </p>
+        </div>
+      ) : comparison ? (
         <>
-          {/* Segment badge */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className="text-xs py-1 px-3 gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-              {data.segmentLabel}
-            </Badge>
-            {data.sampleSize > 0 && (
-              <Badge variant="secondary" className="text-xs py-1 px-3">
-                Baseado em {data.sampleSize} empresas
-              </Badge>
-            )}
+          {/* Segment indicator */}
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-muted-foreground">
+              {comparison.role}
+            </span>
+            <span className="text-muted-foreground/40">/</span>
+            <span className="text-[13px] text-muted-foreground">
+              Todos os estágios
+            </span>
+            <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+              Referência EUA
+            </span>
           </div>
 
-          {/* Summary metrics */}
+          <StageEquityChart data={comparison} />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StageSalaryChart data={comparison} />
+            <StageTotalCashChart data={comparison} />
+          </div>
+        </>
+      ) : data ? (
+        <>
+          {/* Segment indicator */}
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-muted-foreground">
+              {data.segmentLabel}
+            </span>
+            {data.dataSource === "market-reference" ? (
+              <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+                Referência EUA
+              </span>
+            ) : data.sampleSize > 0 ? (
+              <span className="ml-2 inline-flex items-center rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {data.sampleSize} executivos
+              </span>
+            ) : null}
+          </div>
+
           <SummaryCards data={data} />
 
-          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EquityPercentileChart data={data} />
             <VestingPercentileChart data={data} />
           </div>
+
+          {data.cashPercentiles && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CashCompensationChart data={data} />
+            </div>
+          )}
 
           <InstrumentDistributionChart data={data} />
         </>

@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -17,47 +18,43 @@ model Invitation {
 }
 
 model AccessRequest {
-  id        String   @id @default(uuid())
-  email     String
-  name      String
-  message   String
-  status    String   @default("pending") // pending, approved, rejected
-  createdAt DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(uuid())
+  email              String
+  name               String
+  message            String?
+  status             String   @default("pending") // pending, approved, rejected
+  linkedinUrl        String?  @map("linkedin_url")
+  linkedinData       Json?    @map("linkedin_data")
+  role               String?
+  detectedTitle      String?  @map("detected_title")
+  verificationResult String?  @map("verification_result")
+  verificationReason String?  @map("verification_reason")
+  autoVerified       Boolean  @default(false) @map("auto_verified")
+  emailVerified      Boolean  @default(false) @map("email_verified")
+  requestToken       String   @unique @default(uuid()) @map("request_token")
+  lgpdConsent        Boolean  @default(false) @map("lgpd_consent")
+  tosConsent         Boolean  @default(false) @map("tos_consent")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("access_requests")
 }
 
-model Company {
-  id                     String   @id @default(uuid())
-  userId                 String   @unique @map("user_id")
-  companyHash            String   @unique @map("company_hash")
-  stage                  String
-  businessModel          String   @map("business_model")
-  sector                 String
-  subSector              String?  @map("sub_sector")
-  headcountRange         String   @map("headcount_range")
-  lastValuationRange     String?  @map("last_valuation_range")
-  totalFundingRange      String?  @map("total_funding_range")
-  totalSharesOutstanding Int?     @map("total_shares_outstanding")
-  city                   String?
-  yearFounded            Int?     @map("year_founded")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
-
-  grants Grant[]
-
-  @@map("companies")
-}
-
-model Grant {
+model Submission {
   id                 String   @id @default(uuid())
-  companyId          String   @map("company_id")
-  executiveLabel     String?  @map("executive_label")
+  userId             String   @unique @map("user_id")
+
+  // Company context (for segmentation, NOT identifying)
+  stage              String
+  businessModel      String   @map("business_model")
+  sector             String
+  subSector          String?  @map("sub_sector")
+  headcountRange     String   @map("headcount_range")
+
+  // Role & equity (denormalized from primary Grant for benchmark queries)
   role               String
   instrumentType     String   @map("instrument_type")
-  equityUnit         String   @default("percentage") @map("equity_unit")
   equityPercentage   Decimal? @map("equity_percentage") @db.Decimal(10, 6)
-  sharesGranted      Int?     @map("shares_granted")
   vestingTotalMonths Int      @map("vesting_total_months")
   cliffMonths        Int      @map("cliff_months")
   vestingSchedule    String   @map("vesting_schedule")
@@ -65,22 +62,78 @@ model Grant {
   isFirstInRole      Boolean  @map("is_first_in_role")
   hireYear           Int?     @map("hire_year")
   yearsExperience    String?  @map("years_experience")
-  cashCompRange      String?  @map("cash_comp_range")
+
+  // Country & currency (for multi-market benchmarks)
+  country            String?  @map("country")              // ISO 3166-1 alpha-2 ("US", "BR")
+  currency           String?  @default("USD") @map("currency") // ISO 4217 ("USD", "BRL")
+
+  // FX rate at submission time — BRL per 1 USD (e.g., 5.25). Divide BRL amount by this to get USD.
+  fxRateUsed         Decimal? @map("fx_rate_used") @db.Decimal(10, 4)
+  fxRateDate         DateTime? @map("fx_rate_date")
+
+  // Cash comp & incentives (annual amounts, currency per `currency` field)
+  contractType       String?  @map("contract_type")
+  annualSalary       Decimal? @map("annual_salary") @db.Decimal(12, 2)
   hasAnnualBonus     Boolean? @map("has_annual_bonus")
-  annualBonusRange   String?  @map("annual_bonus_range")
+  annualBonus        Decimal? @map("annual_bonus") @db.Decimal(12, 2)
   hasCommission      Boolean? @map("has_commission")
-  commissionRange    String?  @map("commission_range")
+  commission         Decimal? @map("commission") @db.Decimal(12, 2)
   hasRetentionPlan   Boolean? @map("has_retention_plan")
-  retentionRange     String?  @map("retention_range")
+  retentionAmount    Decimal? @map("retention_amount") @db.Decimal(12, 2)
   hasSignOn          Boolean? @map("has_sign_on")
-  signOnRange        String?  @map("sign_on_range")
+  signOnAmount       Decimal? @map("sign_on_amount") @db.Decimal(12, 2)
+
+  // AI extraction
   sourceDocumentUrl  String?  @map("source_document_url")
   extractedByAi      Boolean  @default(false) @map("extracted_by_ai")
   confirmedByUser    Boolean  @default(false) @map("confirmed_by_user")
+
+  // Notification
+  notifyEmail        String?  @map("notify_email")
+
+  // Grant relation (1:many)
+  grants             Grant[]
+
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  @@index([role, stage])
+  @@map("submissions")
+}
 
+model Grant {
+  id                     String   @id @default(uuid())
+  submissionId           String   @map("submission_id")
+  submission             Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Grant identity
+  grantType              String   @map("grant_type")
+  grantDate              DateTime? @map("grant_date")
+  grantLabel             String?  @map("grant_label")
+  isFirstInRole          Boolean  @default(false) @map("is_first_in_role")
+
+  // Equity (percentage is computed when possible)
+  equityPercentage       Decimal? @map("equity_percentage") @db.Decimal(10, 6)
+  inputMode              String   @default("percentage") @map("input_mode")
+  numberOfShares         BigInt?  @map("number_of_shares")
+  totalSharesOutstanding BigInt?  @map("total_shares_outstanding")
+
+  // Pricing & valuation context
+  instrumentType         String   @map("instrument_type")
+  strikePrice            Decimal? @map("strike_price") @db.Decimal(14, 2)
+  strikeCurrency         String   @default("BRL") @map("strike_currency")
+  currentSharePrice      Decimal? @map("current_share_price") @db.Decimal(14, 2)
+  lastValuation          Decimal? @map("last_valuation") @db.Decimal(16, 2)
+
+  // Vesting
+  vestingTotalMonths     Int      @map("vesting_total_months")
+  cliffMonths            Int      @map("cliff_months")
+  vestingSchedule        String   @map("vesting_schedule")
+  vestingStartDate       DateTime? @map("vesting_start_date")
+
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@index([submissionId])
   @@map("grants")
 }

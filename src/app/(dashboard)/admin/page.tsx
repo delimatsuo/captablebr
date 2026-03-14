@@ -3,23 +3,32 @@ import {
   isAdmin,
   getInvitations,
   getAccessRequests,
+  getAdminStats,
+  getActiveUsers,
 } from "@/lib/admin";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { InviteForm } from "./invite-form";
-import { RequestActions } from "./request-actions";
+import { AdminSearch } from "./admin-search";
 
 export default async function AdminPage() {
   const admin = await isAdmin();
   if (!admin) redirect("/benchmarks");
 
-  const [invitations, requests] = await Promise.all([
+  const [invitations, requests, stats, activeUsersMap] = await Promise.all([
     getInvitations(),
     getAccessRequests(),
+    getAdminStats(),
+    getActiveUsers(),
   ]);
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const processedRequests = requests.filter((r) => r.status !== "pending");
+
+  // Convert Map to plain object for client component serialization
+  const userStatusMap: Record<string, { hasSubmission: boolean; firebaseExists: boolean }> = {};
+  for (const [email, status] of activeUsersMap) {
+    userStatusMap[email] = status;
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -30,105 +39,65 @@ export default async function AdminPage() {
         <div>
           <h1 className="text-2xl font-bold">Administracao</h1>
           <p className="text-muted-foreground text-sm">
-            Gerencie convites e solicitacoes de acesso
+            Gerencie convites, usuarios e solicitacoes de acesso
           </p>
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Convidados</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{stats.totalInvited}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Convites aceitos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{stats.accepted}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Pendentes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{stats.pendingRequests}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Dados enviados</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{stats.totalSubmissions}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Invite new user */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Convidar founder</CardTitle>
-          <CardDescription>Adicione o email do founder para liberar acesso a plataforma</CardDescription>
+          <CardTitle className="text-lg">Convidar executivo</CardTitle>
+          <CardDescription>Adicione o email do executivo para liberar acesso a plataforma</CardDescription>
         </CardHeader>
         <CardContent>
           <InviteForm />
         </CardContent>
       </Card>
 
-      {/* Pending access requests */}
-      {pendingRequests.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              Solicitacoes pendentes
-              <Badge className="text-xs">{pendingRequests.length}</Badge>
-            </CardTitle>
-            <CardDescription>Founders que solicitaram acesso a plataforma</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingRequests.map((req) => (
-              <div key={req.id} className="flex items-start justify-between gap-4 rounded-lg border p-4">
-                <div className="min-w-0">
-                  <p className="font-medium">{req.name}</p>
-                  <p className="text-sm text-muted-foreground">{req.email}</p>
-                  <p className="text-sm mt-1 text-muted-foreground italic">&ldquo;{req.message}&rdquo;</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(req.createdAt).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <RequestActions requestId={req.id} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Current invitations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Convites ({invitations.length})</CardTitle>
-          <CardDescription>Lista de todos os emails convidados</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {invitations.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Nenhum convite criado ainda</p>
-          ) : (
-            <div className="space-y-2">
-              {invitations.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">{inv.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(inv.createdAt).toLocaleDateString("pt-BR")}
-                    </p>
-                  </div>
-                  <Badge variant={inv.status === "accepted" ? "default" : "secondary"} className="text-xs">
-                    {inv.status === "accepted" ? "Ativo" : "Pendente"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Processed requests */}
-      {processedRequests.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Historico de solicitacoes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {processedRequests.map((req) => (
-              <div key={req.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium">{req.name} ({req.email})</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(req.createdAt).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <Badge
-                  variant={req.status === "approved" ? "default" : "destructive"}
-                  className="text-xs"
-                >
-                  {req.status === "approved" ? "Aprovado" : "Rejeitado"}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* Search + filtered lists (client component) */}
+      <AdminSearch
+        invitations={invitations}
+        pendingRequests={pendingRequests}
+        processedRequests={processedRequests}
+        userStatusMap={userStatusMap}
+      />
     </div>
   );
 }

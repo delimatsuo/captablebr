@@ -60,10 +60,48 @@ jobs:
       - name: Authenticate Docker to Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
+      - name: Setup Node.js for migrations
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies for migrations
+        run: npm ci
+
+      - name: Generate Prisma client for migrations
+        run: npx prisma generate
+
+      - name: Install Cloud SQL Auth Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.1/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+      - name: Run database migrations
+        run: |
+          ./cloud-sql-proxy "${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db" --port 5432 &
+          PROXY_PID=$!
+          sleep 5
+          # Fetch the Cloud Run DATABASE_URL and convert Unix socket to TCP for proxy
+          CLOUD_URL=$(gcloud secrets versions access latest --secret=captablebr-database-url --project=${{ env.GCP_PROJECT_ID }})
+          export DATABASE_URL=$(echo "$CLOUD_URL" | sed 's|?host=/cloudsql/.*||' | sed 's|@localhost/|@127.0.0.1:5432/|')
+          # Baseline: create _prisma_migrations table and mark prior migration as applied
+          # (idempotent — resolve is a no-op if already tracked)
+          npx prisma migrate resolve --applied 20260307000000_add_grant_model || true
+          npx prisma migrate deploy
+          kill $PROXY_PID || true
+
       - name: Build and push container image
         run: |
           IMAGE="${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker build -t "$IMAGE" .
+          docker build -t "$IMAGE" \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBDbUe9xtltpldgpzWgRkcEW8BrEwWeTh4 \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=paynequity.firebaseapp.com \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=paynequity \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=paynequity.firebasestorage.app \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=777685600587 \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=1:777685600587:web:146209024cbaec5dd9c0ce \
+            .
           docker push "$IMAGE"
 
       - name: Deploy to Cloud Run
@@ -79,10 +117,12 @@ jobs:
             --port 8080 \
             --memory 512Mi \
             --cpu 1 \
-            --min-instances 0 \
+            --min-instances 1 \
             --max-instances 3 \
+            --cpu-boost \
+            --startup-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=10,periodSeconds=10,timeoutSeconds=5 \
+            --liveness-probe=httpGet.path=/api/health,httpGet.port=8080,failureThreshold=3,periodSeconds=30,timeoutSeconds=5 \
             --set-cloudsql-instances=${{ env.GCP_PROJECT_ID }}:${{ env.REGION }}:captablebr-db \
-            --set-secrets=DATABASE_URL=captablebr-database-url:latest \
-            --set-secrets=FIREBASE_ADMIN_KEY=captablebr-firebase-admin-key:latest \
-            --set-secrets=NEXT_PUBLIC_FIREBASE_CONFIG=captablebr-firebase-client-config:latest \
+            --set-secrets=DATABASE_URL=captablebr-database-url:latest,FIREBASE_SERVICE_ACCOUNT_KEY=captablebr-firebase-admin-key:latest,APIFY_API_TOKEN=captablebr-apify-token:latest,RESEND_API_KEY=captablebr-resend-key:latest \
+            --set-env-vars=GCP_PROJECT_ID=paynequity,GCP_LOCATION=us-central1,ADMIN_UID=Q5lAKMq2eKXM5VmGNC66NFB7ip32 \
             --quiet

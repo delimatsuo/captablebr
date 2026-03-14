@@ -127,6 +127,40 @@ function SelectItem({
   )
 }
 
+function SelectItemWithDescription({
+  className,
+  label,
+  description,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Item> & {
+  label: string
+  description: string
+}) {
+  return (
+    <SelectPrimitive.Item
+      data-slot="select-item"
+      className={cn(
+        "relative flex w-full cursor-default rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      <span
+        data-slot="select-item-indicator"
+        className="absolute right-2 top-2 flex size-3.5 items-center justify-center"
+      >
+        <SelectPrimitive.ItemIndicator>
+          <CheckIcon className="size-4" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <div>
+        <SelectPrimitive.ItemText>{label}</SelectPrimitive.ItemText>
+        <p className="text-xs text-muted-foreground mt-0.5 font-normal">{description}</p>
+      </div>
+    </SelectPrimitive.Item>
+  )
+}
+
 function SelectSeparator({
   className,
   ...props
@@ -181,6 +215,7 @@ export {
   SelectContent,
   SelectGroup,
   SelectItem,
+  SelectItemWithDescription,
   SelectLabel,
   SelectScrollDownButton,
   SelectScrollUpButton,

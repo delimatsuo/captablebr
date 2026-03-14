@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { prisma } from "./db";
+import { DEV_MODE } from "./dev-mode";
 
-const DEV_MODE = process.env.NODE_ENV === "development" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-const DEV_USER_UID = "dev-user-001";
+export async function getFirebaseAdmin() {
+  if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is required in production");
+  }
 
-async function getFirebaseAdmin() {
-  // Dynamic import to avoid crashes when Firebase isn't configured
   const { initializeApp, getApps, cert } = await import("firebase-admin/app");
   const { getAuth } = await import("firebase-admin/auth");
 
@@ -91,4 +92,4 @@ export async function createSessionCookie(idToken: string): Promise<string> {
   return adminAuth.createSessionCookie(idToken, { expiresIn });
 }
 
-export { DEV_MODE, DEV_USER_UID };
+export { DEV_MODE, DEV_USER_UID } from "./dev-mode";

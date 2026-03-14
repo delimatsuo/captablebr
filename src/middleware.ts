@@ -10,13 +10,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow access request API
-  if (pathname === "/api/access-request") {
+  // Allow access request and signup APIs
+  if (pathname === "/api/access-request" || pathname.startsWith("/api/signup")) {
     return NextResponse.next();
   }
 
-  // Allow static files
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
+  // Allow static files and public assets
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|webp|woff2?)$/)) {
     return NextResponse.next();
   }
 

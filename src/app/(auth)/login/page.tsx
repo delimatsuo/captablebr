@@ -16,12 +16,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const isDevMode = !process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const isDevMode = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";
 
   async function handleDevLogin() {
     setLoading(true);
     await fetch("/api/auth/dev-login", { method: "POST" });
-    router.push("/onboarding");
+    router.push("/benchmarks");
   }
 
   async function createSession(idToken: string): Promise<boolean> {
@@ -32,11 +32,11 @@ export default function LoginPage() {
     });
     if (res.status === 403) {
       const data = await res.json();
-      setError(data.error || "Acesso nao autorizado. Solicite um convite.");
+      setError(data.error || "Acesso não autorizado. Cadastre-se primeiro.");
       return false;
     }
     if (!res.ok) {
-      setError("Falha na autenticacao.");
+      setError("Falha na autenticação.");
       return false;
     }
     return true;
@@ -50,7 +50,7 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       const idToken = await result.user.getIdToken();
       const ok = await createSession(idToken);
-      if (ok) router.push("/onboarding");
+      if (ok) router.push("/benchmarks");
     } catch {
       setError("Email ou senha incorretos.");
     } finally {
@@ -65,7 +65,7 @@ export default function LoginPage() {
       const result = await signInWithPopup(getFirebaseAuth(), getGoogleProvider());
       const idToken = await result.user.getIdToken();
       const ok = await createSession(idToken);
-      if (ok) router.push("/onboarding");
+      if (ok) router.push("/benchmarks");
     } catch {
       setError("Falha no login com Google.");
     } finally {
@@ -78,24 +78,23 @@ export default function LoginPage() {
       {/* Left panel - branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 items-center justify-center p-12">
         <div className="max-w-md text-primary-foreground">
-          <div className="flex items-center gap-3 mb-8">
+          <Link href="/" className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
             <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
               <span className="font-bold text-lg">C</span>
             </div>
             <span className="text-2xl font-bold">CaptableBR</span>
-          </div>
+          </Link>
           <h2 className="text-3xl font-bold mb-4 leading-tight">
-            Benchmarks de equity para startups brasileiras
+            Benchmarks de compensação para executivos de startups
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed">
-            Descubra o percentual de equity padrao para cada cargo executivo no
-            seu estagio. Dados anonimizados de founders como voce.
+            Compare seu equity, salário e vesting com outros executivos C-level de startups brasileiras. Dados 100% anonimizados.
           </p>
           <div className="mt-12 grid grid-cols-3 gap-6">
             {[
-              { value: "11+", label: "Cargos" },
-              { value: "5+", label: "Setores" },
-              { value: "p25-p75", label: "Percentis" },
+              { value: "174+", label: "Executivos" },
+              { value: "11", label: "Cargos C-level" },
+              { value: "p25·p50·p75", label: "Percentis" },
             ].map((s) => (
               <div key={s.label}>
                 <p className="text-2xl font-bold">{s.value}</p>
@@ -110,12 +109,12 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
         <Card className="w-full max-w-md border-0 shadow-none sm:border sm:shadow-sm">
           <CardHeader className="space-y-1 pb-6">
-            <div className="lg:hidden flex items-center gap-2 mb-4">
+            <Link href="/" className="lg:hidden flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">C</span>
               </div>
               <span className="text-lg font-bold">CaptableBR</span>
-            </div>
+            </Link>
             <CardTitle className="text-2xl">Bem-vindo de volta</CardTitle>
             <CardDescription>
               Entre na sua conta para acessar os benchmarks
@@ -138,7 +137,7 @@ export default function LoginPage() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-card px-2 text-muted-foreground">
-                      Firebase nao configurado
+                      Firebase não configurado
                     </span>
                   </div>
                 </div>
@@ -209,9 +208,14 @@ export default function LoginPage() {
             )}
 
             <p className="text-center text-sm text-muted-foreground pt-2">
-              Nao tem acesso?{" "}
+              Não tem conta?{" "}
               <Link href="/request-access" className="text-primary font-medium hover:underline">
-                Solicitar convite
+                Cadastre-se grátis
+              </Link>
+            </p>
+            <p className="text-center text-sm text-muted-foreground">
+              <Link href="/" className="hover:text-foreground transition-colors">
+                ← Voltar ao início
               </Link>
             </p>
           </CardContent>
