@@ -107,7 +107,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           IMAGE="${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          SUFFIX="${{ github.ref_name == 'main' && '' || '-staging' }}"
+          SUFFIX="${{ github.ref_name != 'main' && '-staging' || '' }}"
           gcloud run deploy "${{ env.SERVICE_NAME }}${SUFFIX}" \
             --image "$IMAGE" \
             --region ${{ env.REGION }} \
