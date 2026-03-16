@@ -218,17 +218,6 @@ export function GrantForm({ data: initialData, onSave, onCancel, defaultCurrency
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-4">
-          <div className="space-y-2">
-            <Label>Início do vesting</Label>
-            <Input
-              type="date"
-              value={data.vestingStartDate instanceof Date ? data.vestingStartDate.toISOString().split("T")[0] : String(data.vestingStartDate || "").split("T")[0]}
-              onChange={(e) => update("vestingStartDate", e.target.value || undefined)}
-              className="h-11"
-            />
-          </div>
-        </div>
       </div>
 
       <Separator />

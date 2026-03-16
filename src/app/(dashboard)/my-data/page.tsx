@@ -14,7 +14,6 @@ import {
 import { deleteMyData } from "@/lib/actions";
 import type { GrantData } from "@/lib/types";
 import { ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS, type RoleLevel, type RoleFunction } from "@/lib/types";
-import { VestingSimulator } from "@/components/simulator/vesting-simulator";
 
 interface SubmissionData {
   id: string;
@@ -230,13 +229,21 @@ export default function MyDataPage() {
         </CardContent>
       </Card>
 
-      {/* Vesting Simulator */}
+      {/* Simulator link */}
       {data.grants.length > 0 && (
-        <VestingSimulator
-          grants={data.grants}
-          currency={data.currency}
-          fxRateUsed={data.fxRateUsed}
-        />
+        <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <CardContent className="pt-5 pb-4 px-5 flex items-center justify-between">
+            <div>
+              <p className="font-medium text-[14px]">Simulador de Vesting</p>
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                Projete o valor dos seus grants ao longo do tempo
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="rounded-full text-[13px]">
+              <Link href="/simulator">Abrir simulador</Link>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* LGPD actions */}

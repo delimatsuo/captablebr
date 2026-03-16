@@ -35,8 +35,18 @@ export function SimulatorSummary({
     },
     {
       label: "VESTED HOJE",
-      value: formatCompact(summary.vestedTodayValue, currencySymbol),
-      sub: "valor atual estimado",
+      value:
+        summary.vestedTodayShares > 0 && summary.vestedTodayValue > 0
+          ? formatCompact(summary.vestedTodayValue, currencySymbol)
+          : summary.vestedTodayShares > 0
+            ? `${summary.vestedTodayShares.toLocaleString("pt-BR")} ações vestidas`
+            : "0 ações",
+      sub:
+        summary.vestedTodayShares > 0 && summary.vestedTodayValue > 0
+          ? "valor atual estimado"
+          : summary.vestedTodayShares > 0
+            ? "opções underwater — preço atual < strike"
+            : "antes do cliff",
     },
     {
       label: "PRÓXIMO VESTING",

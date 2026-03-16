@@ -71,11 +71,15 @@ export async function verifyAndAuthorize(idToken: string): Promise<{ uid: string
     throw new Error("NOT_INVITED");
   }
 
-  // Mark as accepted if still pending
-  if (invitation.status === "pending") {
+  // Mark as accepted + capture name from Firebase on first login
+  const displayName = decoded.name as string | undefined;
+  if (invitation.status === "pending" || (!invitation.name && displayName)) {
     await prisma.invitation.update({
       where: { email: email.toLowerCase() },
-      data: { status: "accepted" },
+      data: {
+        status: "accepted",
+        ...(displayName && !invitation.name ? { name: displayName } : {}),
+      },
     });
   }
 
