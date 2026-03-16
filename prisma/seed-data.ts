@@ -234,6 +234,21 @@ export const BONUS_TARGET_PCT: Record<string, number> = {
   "Other VP":       0.25,
 };
 
+// Role level/function mapping for seed data
+export const SEED_ROLE_MAP: Record<string, { level: string; function: string | null }> = {
+  CEO:             { level: "CEO",     function: null },
+  CTO:             { level: "C-Level", function: "Engineering" },
+  CFO:             { level: "C-Level", function: "Finance" },
+  COO:             { level: "C-Level", function: "Operations" },
+  CMO:             { level: "C-Level", function: "Marketing" },
+  "CRO/VP Sales":  { level: "C-Level", function: "Sales/Revenue" },
+  "CPO/VP Product": { level: "C-Level", function: "Product" },
+  "CHRO/VP People": { level: "C-Level", function: "People/HR" },
+  "VP Engineering": { level: "VP",     function: "Engineering" },
+  "Other C-Level":  { level: "C-Level", function: "Other" },
+  "Other VP":       { level: "VP",     function: "Other" },
+};
+
 // Allocation matrix: how many submissions per role × stage
 export const ALLOCATION_MATRIX: Array<{ role: string; stage: string; count: number }> = [
   { role: "CEO", stage: "Pre-Seed/Seed", count: 5 },
@@ -280,4 +295,28 @@ export const ALLOCATION_MATRIX: Array<{ role: string; stage: string; count: numb
   { role: "Other VP", stage: "Series A",      count: 3 },
   { role: "Other VP", stage: "Series B",      count: 3 },
   { role: "Other VP", stage: "Series C+",     count: 3 },
+  // New VP combinations (use VP Engineering data for salary/equity lookup)
+  { role: "VP Finance", stage: "Series A",      count: 2 },
+  { role: "VP Finance", stage: "Series B",      count: 2 },
+  // New Director combinations (use VP data × 0.85 salary, × 0.60 equity)
+  { role: "Director Engineering", stage: "Series A",  count: 2 },
+  { role: "Director Engineering", stage: "Series B",  count: 2 },
+  { role: "Director Finance", stage: "Series A",      count: 2 },
+  { role: "Director Product", stage: "Series A",      count: 2 },
 ];
+
+// Map new allocation entries to their seed data lookup key (for salary/equity ranges)
+export const SEED_DATA_LOOKUP_KEY: Record<string, string> = {
+  "VP Finance": "Other VP",
+  "Director Engineering": "VP Engineering",
+  "Director Finance": "Other VP",
+  "Director Product": "CPO/VP Product",
+};
+
+// Map new allocation entries to their level/function for seed
+export const SEED_NEW_ROLE_MAP: Record<string, { level: string; function: string }> = {
+  "VP Finance":            { level: "VP",       function: "Finance" },
+  "Director Engineering":  { level: "Director", function: "Engineering" },
+  "Director Finance":      { level: "Director", function: "Finance" },
+  "Director Product":      { level: "Director", function: "Product" },
+};

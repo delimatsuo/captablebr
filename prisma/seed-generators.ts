@@ -7,6 +7,9 @@ import {
   SALARY_RANGES,
   NEW_HIRE_EQUITY_RANGES,
   BONUS_TARGET_PCT,
+  SEED_ROLE_MAP,
+  SEED_DATA_LOOKUP_KEY,
+  SEED_NEW_ROLE_MAP,
 } from "./seed-data.ts";
 
 // ---------- PRNG ----------
@@ -225,6 +228,8 @@ export interface GeneratedSubmission {
   sector: string;
   headcountRange: string;
   role: string;
+  roleLevel: string;
+  roleFunction: string | null;
   country: string;
   currency: string;
   fxRateUsed: number;
@@ -261,8 +266,10 @@ export function generateSubmission(
   index: number,
   rng: () => number
 ): { submission: GeneratedSubmission; grants: GeneratedGrant[] } {
-  const salaryRanges = SALARY_RANGES[role]?.[stage];
-  if (!salaryRanges) throw new Error(`No salary ranges for ${role} / ${stage}`);
+  // For new role entries (VP Finance, Director Engineering, etc.), use a lookup key
+  const lookupKey = SEED_DATA_LOOKUP_KEY[role] || role;
+  const salaryRanges = SALARY_RANGES[lookupKey]?.[stage];
+  if (!salaryRanges) throw new Error(`No salary ranges for ${role} (lookup: ${lookupKey}) / ${stage}`);
 
   // Salary — clamp to [p25*0.7, p75*1.4] to prevent extreme outliers
   const rawSalary = gaussianFromPercentiles(salaryRanges.p25, salaryRanges.p50, salaryRanges.p75, rng);
@@ -271,13 +278,13 @@ export function generateSubmission(
 
   // Bonus (72% chance)
   const hasAnnualBonus = rng() < 0.72;
-  const bonusTargetPct = BONUS_TARGET_PCT[role] || 0.35;
+  const bonusTargetPct = BONUS_TARGET_PCT[lookupKey] || 0.35;
   const annualBonus = hasAnnualBonus
     ? roundSalary(annualSalary * bonusTargetPct * (0.7 + rng() * 0.6))
     : null;
 
   // Commission (60% for CRO/VP Sales, 10% for others)
-  const commissionChance = role === "CRO/VP Sales" ? 0.6 : 0.1;
+  const commissionChance = lookupKey === "CRO/VP Sales" ? 0.6 : 0.1;
   const hasCommission = rng() < commissionChance;
   const commission = hasCommission
     ? roundSalary(annualSalary * (0.15 + rng() * 0.35))
@@ -304,11 +311,11 @@ export function generateSubmission(
   const yearsExperience = EXPERIENCE_RANGES[Math.floor(rng() * EXPERIENCE_RANGES.length)];
   const hireYear = 2020 + Math.floor(rng() * 6); // 2020–2025
 
-  // Grants
+  // Grants (use lookupKey for salary/equity data)
   const grantCount = weightedPick(GRANT_COUNT_OPTIONS, rng);
   const grants: GeneratedGrant[] = [];
   for (let i = 0; i < grantCount; i++) {
-    grants.push(generateGrant(role, stage, i, rng));
+    grants.push(generateGrant(lookupKey, stage, i, rng));
   }
 
   // Aggregate equity = sum of all grants
@@ -319,13 +326,21 @@ export function generateSubmission(
   const primaryGrant = grants[0];
   const userId = `seed-${slugify(role)}-${slugify(stage)}-${String(index).padStart(3, "0")}`;
 
+  // Determine roleLevel and roleFunction
+  const newRoleInfo = SEED_NEW_ROLE_MAP[role];
+  const legacyRoleInfo = SEED_ROLE_MAP[role];
+  const roleLevel = newRoleInfo?.level || legacyRoleInfo?.level || "C-Level";
+  const roleFunction = newRoleInfo?.function ?? legacyRoleInfo?.function ?? null;
+
   const submission: GeneratedSubmission = {
     userId,
     stage,
     businessModel,
     sector,
     headcountRange,
-    role,
+    role: lookupKey, // legacy role column uses the lookup key
+    roleLevel,
+    roleFunction,
     country: "US",
     currency: "USD",
     fxRateUsed: 1.0,

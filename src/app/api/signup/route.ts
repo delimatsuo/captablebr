@@ -4,6 +4,7 @@ import { signupSchema } from "@/lib/validations";
 import { validateLinkedInUrl, runVerification } from "@/lib/verification";
 import { getFirebaseAdmin } from "@/lib/auth";
 import { verifyEmailToken } from "@/lib/email-verification";
+import { computeLegacyRole, type RoleLevel, type RoleFunction } from "@/lib/types";
 
 // Simple in-memory rate limiter: 5 requests per IP per hour
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email, name, linkedinUrl, role, lgpdConsent, tosConsent, firebaseIdToken, verificationTs, verificationToken } = parsed.data;
+  const { email, name, linkedinUrl, roleLevel, roleFunction, lgpdConsent, tosConsent, firebaseIdToken, verificationTs, verificationToken } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
   // Email verification: accept either HMAC token (new) or Firebase ID token (legacy)
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
         throw new Error("DUPLICATE_REQUEST");
       }
 
+      const role = computeLegacyRole(roleLevel as RoleLevel, (roleFunction || null) as RoleFunction | null);
       return tx.accessRequest.create({
         data: {
           email: normalizedEmail,
@@ -146,7 +148,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Run verification synchronously (up to ~60s)
-  const verification = await runVerification(linkedinUrl, name, role);
+  const declaredRole = computeLegacyRole(roleLevel as RoleLevel, (roleFunction || null) as RoleFunction | null);
+  const verification = await runVerification(linkedinUrl, name, declaredRole);
 
   // Helper to delete the temporary Firebase email-link user
   async function cleanupTempFirebaseUser() {

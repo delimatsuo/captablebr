@@ -166,11 +166,65 @@ export const BONUS_TARGET_PCT: Record<string, number> = {
   "Other VP":       0.25,
 };
 
+import { computeLegacyRole, type RoleLevel, type RoleFunction } from "./types";
+
+/**
+ * Translate roleLevel + roleFunction to the legacy role key used in benchmark tables.
+ * Returns null for combinations with no reference data (e.g., Legal, Data/AI at C-level).
+ */
+export function roleLevelFunctionToLegacyKey(
+  level: RoleLevel,
+  func: RoleFunction | null
+): string | null {
+  const legacyRole = computeLegacyRole(level, func);
+  // Check if this legacy key exists in our data tables
+  if (SALARY_RANGES[legacyRole]) return legacyRole;
+  // For new functions at C-Level (Legal, Data/AI), try "Other C-Level"
+  if (level === "C-Level") return "Other C-Level";
+  if (level === "VP") return "Other VP";
+  return null;
+}
+
 /**
  * Look up reference data for a role × stage combination.
+ * Accepts either legacy role string or (roleLevel, roleFunction) pair.
  * Returns null if the combination doesn't exist in the tables.
  */
-export function getReferenceBenchmark(role: string, stage: string) {
+export function getReferenceBenchmark(role: string, stage: string): ReturnType<typeof _lookupBenchmark>;
+export function getReferenceBenchmark(roleLevel: RoleLevel, roleFunction: RoleFunction | null, stage: string): ReturnType<typeof _lookupBenchmark>;
+export function getReferenceBenchmark(
+  roleLevelOrRole: string,
+  roleFunctionOrStage: string | RoleFunction | null,
+  maybeStage?: string
+) {
+  let legacyKey: string;
+  let stage: string;
+  let level: string | undefined;
+
+  if (maybeStage !== undefined) {
+    // Called as (roleLevel, roleFunction, stage)
+    level = roleLevelOrRole;
+    const func = roleFunctionOrStage as RoleFunction | null;
+    stage = maybeStage;
+
+    // Director derivation must come BEFORE legacyKey lookup (Director has no legacy key)
+    if (level === "Director") {
+      return _deriveDirectorBenchmark(func, stage);
+    }
+
+    const key = roleLevelFunctionToLegacyKey(level as RoleLevel, func);
+    if (!key) return null;
+    legacyKey = key;
+  } else {
+    // Called as (role, stage) — legacy path
+    legacyKey = roleLevelOrRole;
+    stage = roleFunctionOrStage as string;
+  }
+
+  return _lookupBenchmark(legacyKey, stage);
+}
+
+function _lookupBenchmark(role: string, stage: string) {
   const salary = SALARY_RANGES[role]?.[stage];
   const equity = EQUITY_RANGES[role]?.[stage];
   if (!salary || !equity) return null;
@@ -189,6 +243,57 @@ export function getReferenceBenchmark(role: string, stage: string) {
       },
     },
     // Reference survey does not provide these breakdowns
+    vestingPercentiles: null,
+    commonCliff: null,
+    instrumentDistribution: {} as Record<string, number>,
+    grantTypeDistribution: {} as Record<string, number>,
+    firstInRolePremium: null,
+  };
+}
+
+/**
+ * Director benchmark derivation: find matching function at VP level,
+ * apply salary × 0.85 and equity × 0.60 multipliers. Bonus same.
+ */
+function _deriveDirectorBenchmark(func: RoleFunction | null, stage: string) {
+  // Find the VP-equivalent key for this function
+  const vpKey = roleLevelFunctionToLegacyKey("VP", func);
+  // Fallback to C-Level equivalent if no VP data
+  const cKey = roleLevelFunctionToLegacyKey("C-Level", func);
+  const baseKey = (vpKey && SALARY_RANGES[vpKey]?.[stage]) ? vpKey
+    : (cKey && SALARY_RANGES[cKey]?.[stage]) ? cKey
+    : null;
+  if (!baseKey) return null;
+
+  const salary = SALARY_RANGES[baseKey]?.[stage];
+  const equity = EQUITY_RANGES[baseKey]?.[stage];
+  if (!salary || !equity) return null;
+
+  const SALARY_MULT = 0.85;
+  const EQUITY_MULT = 0.60;
+  const bonusPct = BONUS_TARGET_PCT[baseKey] ?? 0;
+
+  return {
+    equityPercentiles: {
+      p25: Math.round(equity.p25 * EQUITY_MULT * 1000) / 1000,
+      p50: Math.round(equity.p50 * EQUITY_MULT * 1000) / 1000,
+      p75: Math.round(equity.p75 * EQUITY_MULT * 1000) / 1000,
+      avg: Math.round(equity.p50 * EQUITY_MULT * 1000) / 1000,
+    },
+    cashPercentiles: {
+      annualSalary: {
+        p25: Math.round(salary.p25 * SALARY_MULT),
+        p50: Math.round(salary.p50 * SALARY_MULT),
+        p75: Math.round(salary.p75 * SALARY_MULT),
+        avg: Math.round(salary.p50 * SALARY_MULT),
+      },
+      totalCash: {
+        p25: Math.round(salary.p25 * SALARY_MULT * (1 + bonusPct)),
+        p50: Math.round(salary.p50 * SALARY_MULT * (1 + bonusPct)),
+        p75: Math.round(salary.p75 * SALARY_MULT * (1 + bonusPct)),
+        avg: Math.round(salary.p50 * SALARY_MULT * (1 + bonusPct)),
+      },
+    },
     vestingPercentiles: null,
     commonCliff: null,
     instrumentDistribution: {} as Record<string, number>,

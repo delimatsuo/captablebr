@@ -1,6 +1,6 @@
 import { VertexAI } from "@google-cloud/vertexai";
 import { z } from "zod";
-import { ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES, STAGES, SECTORS, CONTRACT_TYPES } from "./types";
+import { ROLE_LEVELS, ROLE_FUNCTIONS, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES, STAGES, SECTORS, CONTRACT_TYPES } from "./types";
 
 const PROJECT_ID = process.env.GCP_PROJECT_ID || "paynequity";
 const LOCATION = process.env.GCP_LOCATION || "us-central1";
@@ -8,7 +8,8 @@ const LOCATION = process.env.GCP_LOCATION || "us-central1";
 const EXTRACTION_PROMPT = `Você é um especialista em contratos de equity de startups brasileiras.
 
 Extraia os seguintes campos deste documento:
-- Cargo/título do beneficiário (${ROLES.join(", ")})
+- Nível do cargo (${ROLE_LEVELS.join(", ")})
+- Função/área (${ROLE_FUNCTIONS.join(", ")}) — se CEO, deixe null
 - Tipo de instrumento de equity (${INSTRUMENT_TYPES.join(", ")})
 - Percentual de equity (% do cap table fully diluted) — se mencionado
 - Número de ações/cotas recebidas (se mencionado)
@@ -32,7 +33,8 @@ IMPORTANTE: NÃO inclua nomes de pessoas, CPFs, endereços ou qualquer dado pess
 
 Retorne APENAS o JSON abaixo, sem markdown ou texto adicional:
 {
-  "role": "...",
+  "role_level": "...",
+  "role_function": null,
   "instrument_type": "...",
   "equity_percentage": null,
   "number_of_shares": null,
@@ -59,7 +61,8 @@ Para grant_date, use formato ISO (YYYY-MM-DD).
 Inclua um score de confiança (0-1) para a extração geral.`;
 
 const extractionResultSchema = z.object({
-  role: z.string().nullable(),
+  role_level: z.string().nullable(),
+  role_function: z.string().nullable().optional(),
   instrument_type: z.string().nullable(),
   equity_percentage: z.number().positive().nullable().optional(),
   number_of_shares: z.number().int().positive().nullable().optional(),

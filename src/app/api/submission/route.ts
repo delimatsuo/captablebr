@@ -28,6 +28,8 @@ export async function GET() {
     currency: submission.currency,
     fxRateUsed: submission.fxRateUsed ? Number(submission.fxRateUsed) : undefined,
     role: submission.role,
+    roleLevel: submission.roleLevel,
+    roleFunction: submission.roleFunction,
     equityPercentage: submission.equityPercentage ? Number(submission.equityPercentage) : undefined,
     isFirstInRole: submission.isFirstInRole,
     hireYear: submission.hireYear,

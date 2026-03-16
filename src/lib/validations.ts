@@ -1,7 +1,8 @@
 import { z } from "zod";
 import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
-  ROLES, INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
+  ROLES, ROLE_LEVELS, ROLE_FUNCTIONS,
+  INSTRUMENT_TYPES, VESTING_SCHEDULES, GRANT_TYPES,
   EXPERIENCE_RANGES, CONTRACT_TYPES, INPUT_MODES,
   COUNTRY_CODES, CURRENCY_CODES,
 } from "./types";
@@ -74,8 +75,11 @@ export const submissionBaseSchema = z.object({
   country: z.enum(COUNTRY_CODES, { message: "Selecione o país" }).optional(),
   currency: z.enum(CURRENCY_CODES).default("USD"),
 
-  // Role
-  role: z.enum(ROLES, { message: "Selecione o cargo" }),
+  // Role (level × function taxonomy)
+  roleLevel: z.enum(ROLE_LEVELS, { message: "Selecione o nível" }),
+  roleFunction: z.enum(ROLE_FUNCTIONS, { message: "Selecione a função" }).nullable().default(null),
+  // Legacy role field — kept for backward compat during transition
+  role: z.enum(ROLES, { message: "Selecione o cargo" }).optional(),
   hireYear: z.coerce.number().int().min(2000).max(new Date().getFullYear()).optional(),
   yearsExperience: z.enum(EXPERIENCE_RANGES).optional(),
 
@@ -95,11 +99,26 @@ export const submissionBaseSchema = z.object({
   notifyEmail: z.string().email("Email inválido").optional().or(z.literal("")),
 });
 
+/** CEO → function must be null; non-CEO → function required */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function refineRoleLevelFunction<T extends z.ZodType<any, any, any>>(schema: T) {
+  return schema.refine(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (data: any) => {
+      if (data.roleLevel === "CEO") return data.roleFunction === null || data.roleFunction === undefined;
+      return data.roleFunction != null;
+    },
+    { message: "Função é obrigatória para cargos não-CEO", path: ["roleFunction"] }
+  );
+}
+
 // --- Full submission with grants array ---
 
-export const submissionWithGrantsSchema = submissionBaseSchema.extend({
-  grants: z.array(grantSchema).min(1, "Adicione pelo menos um grant"),
-});
+export const submissionWithGrantsSchema = refineRoleLevelFunction(
+  submissionBaseSchema.extend({
+    grants: z.array(grantSchema).min(1, "Adicione pelo menos um grant"),
+  })
+);
 
 export type SubmissionWithGrantsFormData = z.infer<typeof submissionWithGrantsSchema>;
 
@@ -154,6 +173,12 @@ export const submissionSchema = submissionBaseSchema.extend({
 ).refine(
   (data) => !["Stock Options", "SAR"].includes(data.instrumentType) || data.strikePrice !== undefined,
   { message: "Preço de exercício é obrigatório para opções", path: ["strikePrice"] }
+).refine(
+  (data) => {
+    if (data.roleLevel === "CEO") return data.roleFunction === null || data.roleFunction === undefined;
+    return data.roleFunction != null;
+  },
+  { message: "Função é obrigatória para cargos não-CEO", path: ["roleFunction"] }
 );
 
 export type SubmissionFormData = z.infer<typeof submissionSchema>;
@@ -170,7 +195,8 @@ export const signupSchema = z.object({
   email: z.string().email("Email inválido"),
   name: z.string().min(2, "Nome é obrigatório"),
   linkedinUrl: z.string().min(1, "LinkedIn é obrigatório"),
-  role: z.enum(ROLES, { message: "Selecione o cargo" }),
+  roleLevel: z.enum(ROLE_LEVELS, { message: "Selecione o nível" }),
+  roleFunction: z.enum(ROLE_FUNCTIONS, { message: "Selecione a função" }).nullable().default(null),
   lgpdConsent: z.literal(true, { message: "Consentimento obrigatório" }),
   tosConsent: z.literal(true, { message: "Aceitação dos termos obrigatória" }),
   firebaseIdToken: z.string().max(10000).optional(),

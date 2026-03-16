@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteMyData } from "@/lib/actions";
 import type { GrantData } from "@/lib/types";
+import { ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS, type RoleLevel, type RoleFunction } from "@/lib/types";
 import { VestingSimulator } from "@/components/simulator/vesting-simulator";
 
 interface SubmissionData {
@@ -26,6 +27,8 @@ interface SubmissionData {
   currency?: string;
   fxRateUsed?: number;
   role: string;
+  roleLevel?: string;
+  roleFunction?: string | null;
   equityPercentage?: number;
   hireYear?: number;
   yearsExperience?: string;
@@ -154,7 +157,8 @@ export default function MyDataPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <DataItem label="Cargo" value={data.role} />
+            <DataItem label="Nível" value={data.roleLevel ? ROLE_LEVEL_LABELS[data.roleLevel as RoleLevel] : data.role} />
+            {data.roleFunction && <DataItem label="Função" value={ROLE_FUNCTION_LABELS[data.roleFunction as RoleFunction] || data.roleFunction} />}
             {data.contractType && <DataItem label="Contrato" value={data.contractType} />}
             {data.currency && <DataItem label="Moeda" value={data.currency} />}
             <DataItem label="Salário anual" value={formatMoney(data.annualSalary, data.currency)} />
