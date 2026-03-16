@@ -20,7 +20,8 @@ import { WelcomeBanner } from "./welcome-banner";
 
 export default function BenchmarksPage() {
   const [country, setCountry] = useState("all");
-  const [role, setRole] = useState("CTO");
+  const [roleLevel, setRoleLevel] = useState("C-Level");
+  const [roleFunction, setRoleFunction] = useState("Engineering");
   const [stage, setStage] = useState("all");
   const [hasSubmission, setHasSubmission] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,10 @@ export default function BenchmarksPage() {
     setLoading(true);
     setError("");
 
-    const params = new URLSearchParams({ role });
+    const params = new URLSearchParams({ roleLevel });
+    if (roleLevel !== "CEO" && roleFunction !== "all") {
+      params.set("roleFunction", roleFunction);
+    }
     if (country !== "all") params.set("country", country);
     if (stage !== "all") params.set("stage", stage);
 
@@ -61,7 +65,7 @@ export default function BenchmarksPage() {
     } finally {
       setLoading(false);
     }
-  }, [country, role, stage]);
+  }, [country, roleLevel, roleFunction, stage]);
 
   useEffect(() => {
     fetchBenchmarks();
@@ -84,10 +88,12 @@ export default function BenchmarksPage() {
       {/* Filters */}
       <SegmentSelector
         country={country}
-        role={role}
+        roleLevel={roleLevel}
+        roleFunction={roleFunction}
         stage={stage}
         onCountryChange={setCountry}
-        onRoleChange={setRole}
+        onRoleLevelChange={setRoleLevel}
+        onRoleFunctionChange={setRoleFunction}
         onStageChange={setStage}
       />
 

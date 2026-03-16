@@ -18,8 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 import {
   STAGES, BUSINESS_MODELS, SECTORS, HEADCOUNT_RANGES,
-  ROLES, EXPERIENCE_RANGES, CONTRACT_TYPES,
+  ROLE_LEVELS, ROLE_FUNCTIONS, ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS,
+  EXPERIENCE_RANGES, CONTRACT_TYPES,
   COUNTRIES, CURRENCIES,
+  type RoleLevel, type RoleFunction,
 } from "@/lib/types";
 import { submissionWithGrantsSchema } from "@/lib/validations";
 import type { GrantFormData } from "@/lib/validations";
@@ -27,7 +29,7 @@ import { upsertSubmissionWithGrants, upsertSubmissionFromAi, deleteMyData } from
 import { GrantList } from "./grant-list";
 
 const DRAFT_KEY = "captablebr-draft";
-const DRAFT_VERSION = 4;
+const DRAFT_VERSION = 5;
 const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 interface SubmissionFormFields {
@@ -38,7 +40,8 @@ interface SubmissionFormFields {
   headcountRange?: string;
   country?: string;
   currency?: string;
-  role?: string;
+  roleLevel?: string;
+  roleFunction?: string | null;
   hireYear?: number;
   yearsExperience?: string;
   contractType?: string;
@@ -109,12 +112,8 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, 
         localStorage.removeItem(DRAFT_KEY);
         return;
       }
-      // Migrate v3 drafts: add currency default
-      if (draft.version === 3) {
-        draft.formData.currency = draft.formData.currency || "USD";
-        draft.version = DRAFT_VERSION;
-      }
-      if (draft.version !== DRAFT_VERSION) {
+      // Invalidate all pre-v5 drafts (role → roleLevel+roleFunction migration)
+      if (draft.version < DRAFT_VERSION) {
         localStorage.removeItem(DRAFT_KEY);
         return;
       }
@@ -167,7 +166,9 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, 
   }
 
   function canAdvanceStep2() {
-    return formData.role;
+    if (!formData.roleLevel) return false;
+    if (formData.roleLevel === "CEO") return true;
+    return !!formData.roleFunction;
   }
 
   function canAdvanceStep3() {
@@ -460,14 +461,35 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, 
               <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">Cargo e perfil</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label>Cargo *</Label>
-                  <Select value={formData.role} onValueChange={(v) => update("role", v)}>
+                  <Label>Nível *</Label>
+                  <Select
+                    value={formData.roleLevel}
+                    onValueChange={(v) => {
+                      update("roleLevel", v);
+                      if (v === "CEO") update("roleFunction", null);
+                    }}
+                  >
                     <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {ROLE_LEVELS.map((l) => <SelectItem key={l} value={l}>{ROLE_LEVEL_LABELS[l]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.roleLevel && formData.roleLevel !== "CEO" && (
+                  <div className="space-y-2">
+                    <Label>Função *</Label>
+                    <Select
+                      value={formData.roleFunction || ""}
+                      onValueChange={(v) => update("roleFunction", v || null)}
+                    >
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {ROLE_FUNCTIONS.map((f) => <SelectItem key={f} value={f}>{ROLE_FUNCTION_LABELS[f]}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Tipo de contrato</Label>
@@ -696,7 +718,8 @@ export function SubmissionForm({ initialData, sourceDocumentUrl, isAiExtracted, 
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3">Remuneração</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <SummaryItem label="Cargo" value={formData.role} />
+                  <SummaryItem label="Nível" value={formData.roleLevel ? ROLE_LEVEL_LABELS[formData.roleLevel as RoleLevel] : undefined} />
+                  {formData.roleFunction && <SummaryItem label="Função" value={ROLE_FUNCTION_LABELS[formData.roleFunction as RoleFunction]} />}
                   {formData.contractType && <SummaryItem label="Contrato" value={formData.contractType} />}
                   <SummaryItem label="Moeda" value={formData.currency || "USD"} />
                   <SummaryItem label="Salário anual" value={formatCurrency(formData.annualSalary, formData.currency)} />

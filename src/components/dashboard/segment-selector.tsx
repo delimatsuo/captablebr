@@ -1,20 +1,26 @@
 "use client";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ROLES, STAGES, COUNTRIES } from "@/lib/types";
+import {
+  ROLE_LEVELS, ROLE_FUNCTIONS, ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS,
+  STAGES, COUNTRIES,
+  type RoleLevel, type RoleFunction,
+} from "@/lib/types";
 
 interface Props {
   country: string;
-  role: string;
+  roleLevel: string;
+  roleFunction: string;
   stage: string;
   onCountryChange: (v: string) => void;
-  onRoleChange: (v: string) => void;
+  onRoleLevelChange: (v: string) => void;
+  onRoleFunctionChange: (v: string) => void;
   onStageChange: (v: string) => void;
 }
 
 export function SegmentSelector({
-  country, role, stage,
-  onCountryChange, onRoleChange, onStageChange,
+  country, roleLevel, roleFunction, stage,
+  onCountryChange, onRoleLevelChange, onRoleFunctionChange, onStageChange,
 }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -32,18 +38,40 @@ export function SegmentSelector({
         </Select>
       </FilterPill>
 
-      <FilterPill label="Cargo" active>
-        <Select value={role} onValueChange={onRoleChange}>
+      <FilterPill label="Nível" active>
+        <Select
+          value={roleLevel}
+          onValueChange={(v) => {
+            onRoleLevelChange(v);
+            // Reset function when switching to CEO
+            if (v === "CEO") onRoleFunctionChange("all");
+          }}
+        >
           <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-semibold gap-1 focus:ring-0 focus-visible:ring-2 focus-visible:ring-ring [&>svg]:opacity-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ROLES.map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
+            {ROLE_LEVELS.map((l) => (
+              <SelectItem key={l} value={l}>{ROLE_LEVEL_LABELS[l]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </FilterPill>
+
+      {roleLevel !== "CEO" && (
+        <FilterPill label="Função" active>
+          <Select value={roleFunction} onValueChange={onRoleFunctionChange}>
+            <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-semibold gap-1 focus:ring-0 focus-visible:ring-2 focus-visible:ring-ring [&>svg]:opacity-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLE_FUNCTIONS.map((f) => (
+                <SelectItem key={f} value={f}>{ROLE_FUNCTION_LABELS[f]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterPill>
+      )}
 
       <FilterPill label="Estágio">
         <Select value={stage} onValueChange={onStageChange}>

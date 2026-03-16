@@ -8,6 +8,7 @@ import {
   grantSchema,
   accessRequestSchema,
 } from "./validations";
+import { computeLegacyRole, type RoleLevel, type RoleFunction } from "./types";
 import { getUsdBrlRate } from "./fx";
 import { redirect } from "next/navigation";
 
@@ -89,6 +90,16 @@ function splitFlatFormData(data: ReturnType<typeof submissionSchema.parse>) {
     grantDate, grantLabel, vestingStartDate, ...submissionFields
   } = data;
 
+  // Dual-write: compute legacy role from roleLevel + roleFunction
+  const legacyRole = computeLegacyRole(
+    (submissionFields.roleLevel || "C-Level") as RoleLevel,
+    (submissionFields.roleFunction || null) as RoleFunction | null
+  );
+  const enrichedSubmissionFields = {
+    ...submissionFields,
+    role: legacyRole,
+  };
+
   const grantFields = {
     instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, isFirstInRole,
@@ -103,7 +114,7 @@ function splitFlatFormData(data: ReturnType<typeof submissionSchema.parse>) {
     vestingSchedule, grantType, isFirstInRole,
   };
 
-  return { submissionFields, grantFields, grantDenormFields };
+  return { submissionFields: enrichedSubmissionFields, grantFields, grantDenormFields };
 }
 
 // --- Submissions ---
@@ -166,7 +177,14 @@ export async function upsertSubmissionWithGrants(
   const aggregateEquity = computeAggregateEquity(data.grants);
   const primaryGrant = data.grants[0];
 
-  const { grants: grantsData, ...submissionFields } = data;
+  const { grants: grantsData, ...rawSubmissionFields } = data;
+
+  // Dual-write: compute legacy role from roleLevel + roleFunction
+  const legacyRole = computeLegacyRole(
+    (rawSubmissionFields.roleLevel || "C-Level") as RoleLevel,
+    (rawSubmissionFields.roleFunction || null) as RoleFunction | null
+  );
+  const submissionFields = { ...rawSubmissionFields, role: legacyRole };
 
   // Fetch FX rate BEFORE transaction (never inside it)
   const { fxRateUsed, fxRateDate } = await getFxDataForSubmission(submissionFields.currency);
