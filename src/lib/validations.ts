@@ -173,6 +173,12 @@ export const submissionSchema = submissionBaseSchema.extend({
 ).refine(
   (data) => !["Stock Options", "SAR"].includes(data.instrumentType) || data.strikePrice !== undefined,
   { message: "Preço de exercício é obrigatório para opções", path: ["strikePrice"] }
+).refine(
+  (data) => {
+    if (data.roleLevel === "CEO") return data.roleFunction === null || data.roleFunction === undefined;
+    return data.roleFunction != null;
+  },
+  { message: "Função é obrigatória para cargos não-CEO", path: ["roleFunction"] }
 );
 
 export type SubmissionFormData = z.infer<typeof submissionSchema>;

@@ -43,8 +43,12 @@ export function SegmentSelector({
           value={roleLevel}
           onValueChange={(v) => {
             onRoleLevelChange(v);
-            // Reset function when switching to CEO
-            if (v === "CEO") onRoleFunctionChange("all");
+            if (v === "CEO") {
+              onRoleFunctionChange("all");
+            } else if (roleLevel === "CEO") {
+              // Switching away from CEO — set a valid default function
+              onRoleFunctionChange("Engineering");
+            }
           }}
         >
           <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-[13px] font-semibold gap-1 focus:ring-0 focus-visible:ring-2 focus-visible:ring-ring [&>svg]:opacity-40">

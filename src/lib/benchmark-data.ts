@@ -166,7 +166,7 @@ export const BONUS_TARGET_PCT: Record<string, number> = {
   "Other VP":       0.25,
 };
 
-import { ROLE_MIGRATION_MAP, computeLegacyRole, type RoleLevel, type RoleFunction } from "./types";
+import { computeLegacyRole, type RoleLevel, type RoleFunction } from "./types";
 
 /**
  * Translate roleLevel + roleFunction to the legacy role key used in benchmark tables.
@@ -206,14 +206,15 @@ export function getReferenceBenchmark(
     level = roleLevelOrRole;
     const func = roleFunctionOrStage as RoleFunction | null;
     stage = maybeStage;
-    const key = roleLevelFunctionToLegacyKey(level as RoleLevel, func);
-    if (!key) return null;
-    legacyKey = key;
 
-    // Director derivation: use VP/C-Level data × multipliers
+    // Director derivation must come BEFORE legacyKey lookup (Director has no legacy key)
     if (level === "Director") {
       return _deriveDirectorBenchmark(func, stage);
     }
+
+    const key = roleLevelFunctionToLegacyKey(level as RoleLevel, func);
+    if (!key) return null;
+    legacyKey = key;
   } else {
     // Called as (role, stage) — legacy path
     legacyKey = roleLevelOrRole;
