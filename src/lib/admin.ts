@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { verifySession, getFirebaseAdmin } from "./auth";
 import { DEV_MODE, DEV_USER_UID } from "./dev-mode";
 import { redirect } from "next/navigation";
-import { sendInvitationEmail, sendApprovalEmail } from "./email";
+import { sendInvitationEmail, sendApprovalEmail, sendPasswordSetupEmail } from "./email";
 
 // Your Firebase UID — only this user can access admin features.
 function getAdminUid(): string | undefined {
@@ -57,10 +57,12 @@ export async function createInvitation(email: string, name?: string) {
       try {
         await adminAuth.getUserByEmail(normalized);
         // Already exists — just send password reset so they can set a password
-      } catch {
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        if (code !== "auth/user-not-found") throw err;
         // User doesn't exist — create with a random password
-        const crypto = await import("crypto");
-        const tempPassword = crypto.randomBytes(32).toString("base64url");
+        const { randomBytes } = await import("crypto");
+        const tempPassword = randomBytes(32).toString("base64url");
         await adminAuth.createUser({
           email: normalized,
           password: tempPassword,
@@ -69,7 +71,6 @@ export async function createInvitation(email: string, name?: string) {
       }
       // Send password reset email so user sets their own password
       const resetLink = await adminAuth.generatePasswordResetLink(normalized);
-      const { sendPasswordSetupEmail } = await import("./email");
       await sendPasswordSetupEmail(normalized, resetLink, name);
     } catch (err) {
       console.error("[ADMIN] Firebase account setup failed (non-blocking):", err);
