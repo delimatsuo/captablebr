@@ -11,6 +11,7 @@ datasource db {
 model Invitation {
   id        String   @id @default(uuid())
   email     String   @unique
+  name      String?
   status    String   @default("pending") // pending, accepted
   createdAt DateTime @default(now()) @map("created_at")
 

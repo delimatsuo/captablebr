@@ -84,7 +84,7 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
 
   const summary = useMemo(() => {
     if (timeline.length === 0 || simulatable.length === 0) {
-      return { totalAtHorizon: 0, vestedTodayValue: 0, nextVesting: null };
+      return { totalAtHorizon: 0, vestedTodayValue: 0, vestedTodayShares: 0, nextVesting: null };
     }
     return computeSummary(simulatable, {
       currentSharePrice: sharePrice,

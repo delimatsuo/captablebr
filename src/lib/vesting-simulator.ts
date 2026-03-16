@@ -36,6 +36,7 @@ export interface MonthDataPoint {
 export interface SimSummary {
   totalAtHorizon: number;
   vestedTodayValue: number;
+  vestedTodayShares: number;
   nextVesting: {
     date: Date;
     grantLabel: string;
@@ -47,6 +48,16 @@ export interface SimSummary {
 export interface PrepareResult {
   simulatable: SimGrant[];
   skipped: { grant: GrantData; reason: string }[];
+}
+
+// ---------------------------------------------------------------------------
+// utcToLocal — convert UTC-parsed date to local calendar date
+// ---------------------------------------------------------------------------
+// ISO date strings like "2025-01-15" are parsed as UTC midnight by new Date().
+// Timeline dates use local-timezone via new Date(year, month, 1). This mismatch
+// causes a 1-month offset in timezones behind UTC (e.g. Brazil UTC-3).
+function utcToLocal(d: Date): Date {
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
 // ---------------------------------------------------------------------------
@@ -65,12 +76,13 @@ export function prepareGrants(grants: GrantData[]): PrepareResult {
     let startDateSource: SimGrant["startDateSource"] = "created";
 
     if (g.vestingStartDate) {
-      startDate = new Date(g.vestingStartDate);
+      startDate = utcToLocal(new Date(g.vestingStartDate));
       startDateSource = "vesting";
     } else if (g.grantDate) {
-      startDate = new Date(g.grantDate);
+      startDate = utcToLocal(new Date(g.grantDate));
       startDateSource = "grant";
     } else if (g.createdAt) {
+      // createdAt is a full ISO timestamp with TZ info — no conversion needed
       startDate = new Date(g.createdAt);
       startDateSource = "created";
     }
@@ -261,8 +273,17 @@ export function computeSummary(
   // Vested today value — month 0
   const vestedTodayValue = timeline.length > 0 ? timeline[0].totalValue : 0;
 
-  // Next vesting event: find the next month where any grant's vested shares increase
+  // Vested today shares — sum across all grants at current month
   const now = new Date();
+  let vestedTodayShares = 0;
+  for (const grant of grants) {
+    const monthsSinceStart =
+      (now.getFullYear() - grant.startDate.getFullYear()) * 12 +
+      (now.getMonth() - grant.startDate.getMonth());
+    vestedTodayShares += Math.round(computeVestedShares(grant, monthsSinceStart));
+  }
+
+  // Next vesting event: find the next month where any grant's vested shares increase
   let nextVesting: SimSummary["nextVesting"] = null;
 
   for (const grant of grants) {
@@ -305,5 +326,5 @@ export function computeSummary(
     }
   }
 
-  return { totalAtHorizon, vestedTodayValue, nextVesting };
+  return { totalAtHorizon, vestedTodayValue, vestedTodayShares, nextVesting };
 }

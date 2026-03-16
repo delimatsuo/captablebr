@@ -18,6 +18,7 @@ import {
 const navItems = [
   { href: "/benchmarks", label: "Benchmarks" },
   { href: "/my-data", label: "Meus Dados" },
+  { href: "/simulator", label: "Simulador" },
 ];
 
 function UserAvatar({ name, photoUrl }: { name?: string; photoUrl?: string }) {

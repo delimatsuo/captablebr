@@ -45,7 +45,7 @@ export async function createInvitation(email: string, name?: string) {
   if (existing) throw new Error("Email já convidado.");
 
   const invitation = await prisma.invitation.create({
-    data: { email: normalized },
+    data: { email: normalized, name: name || null },
   });
 
   // Pre-create Firebase account so user can login with email+password.
