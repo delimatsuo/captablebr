@@ -9,6 +9,14 @@ const FROM_EMAIL = "CaptableBR <noreply@from.ellaexecutivesearch.com>";
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+
+/** Resend SDK returns { data, error } instead of throwing. Unwrap and throw on error. */
+function unwrapResend(result: { data: unknown; error: unknown }): void {
+  if (result.error) {
+    const err = result.error as { message?: string; statusCode?: number };
+    throw new Error(`Resend error ${err.statusCode || ""}: ${err.message || JSON.stringify(result.error)}`);
+  }
+}
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://staging.captablebr.com";
 
 /**
@@ -81,7 +89,7 @@ export async function sendInvitationEmail(email: string, name?: string) {
 
   const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: "Deli Matsuo — Ella Executive Search <noreply@from.ellaexecutivesearch.com>",
     replyTo: "deli@ellaexecutivesearch.com",
     to: email,
@@ -162,7 +170,7 @@ export async function sendInvitationEmail(email: string, name?: string) {
         <span style="color: #6b7280;">Sócio — <a href="https://www.ellaexecutivesearch.com" style="color: #6b7280; text-decoration: underline;">Ella Executive Search</a></span>
       </p>
     `),
-  });
+  }));
 }
 
 /**
@@ -175,7 +183,7 @@ export async function sendVerificationEmail(email: string, verificationUrl: stri
     return;
   }
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: "CaptableBR — Verifique seu email",
@@ -203,7 +211,7 @@ export async function sendVerificationEmail(email: string, verificationUrl: stri
         </tr>
       </table>
     `),
-  });
+  }));
 }
 
 /**
@@ -215,7 +223,7 @@ export async function sendApprovalEmail(email: string, name: string) {
     return;
   }
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: "Seu acesso ao CaptableBR foi aprovado!",
@@ -231,7 +239,7 @@ export async function sendApprovalEmail(email: string, name: string) {
       </p>
       ${ctaButton(`${APP_URL}/login`, "Acessar CaptableBR")}
     `),
-  });
+  }));
 }
 
 /**
@@ -246,7 +254,7 @@ export async function sendPasswordSetupEmail(email: string, resetLink: string, n
 
   const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: FROM_EMAIL,
     replyTo: "deli@ellaexecutivesearch.com",
     to: email,
@@ -272,5 +280,5 @@ export async function sendPasswordSetupEmail(email: string, resetLink: string, n
         Se você usa Gmail, ignore este email — basta fazer login com Google.
       </p>
     `),
-  });
+  }));
 }
