@@ -16,21 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ROLES } from "@/lib/types";
-
-const ROLE_LABELS: Record<string, string> = {
-  "CEO": "CEO",
-  "COO": "COO",
-  "CFO": "CFO",
-  "CTO": "CTO",
-  "CMO": "CMO",
-  "CRO/VP Sales": "CRO/VP Vendas",
-  "CPO/VP Product": "CPO/VP Produto",
-  "CHRO/VP People": "CHRO/VP Pessoas",
-  "VP Engineering": "VP Engenharia",
-  "Other C-Level": "Outro C-Level",
-  "Other VP": "Outro VP",
-};
+import {
+  ROLE_LEVELS, ROLE_FUNCTIONS, ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS,
+} from "@/lib/types";
 
 const FORM_STORAGE_KEY = "captablebr_signup_form";
 
@@ -49,7 +37,8 @@ function RequestAccessContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [role, setRole] = useState("");
+  const [roleLevel, setRoleLevel] = useState("");
+  const [roleFunction, setRoleFunction] = useState<string | null>(null);
   const [lgpdConsent, setLgpdConsent] = useState(false);
   const [tosConsent, setTosConsent] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -103,7 +92,7 @@ function RequestAccessContent() {
   }, []);
 
   async function submitSignup(
-    formData: { email: string; name: string; linkedinUrl: string; role: string; lgpdConsent: boolean; tosConsent: boolean },
+    formData: { email: string; name: string; linkedinUrl: string; roleLevel: string; roleFunction: string | null; lgpdConsent: boolean; tosConsent: boolean },
     verification: { verificationTs: number; verificationToken: string }
   ) {
     setFormState("verifying");
@@ -151,7 +140,7 @@ function RequestAccessContent() {
     // Save form data to localStorage for recovery after email click
     localStorage.setItem(
       FORM_STORAGE_KEY,
-      JSON.stringify({ email, name, linkedinUrl, role, lgpdConsent, tosConsent })
+      JSON.stringify({ email, name, linkedinUrl, roleLevel, roleFunction, lgpdConsent, tosConsent })
     );
 
     // Send verification email via our API (Resend, branded)
@@ -187,7 +176,8 @@ function RequestAccessContent() {
         if (data.name) setName(data.name);
         if (data.email) setEmail(data.email);
         if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl);
-        if (data.role) setRole(data.role);
+        if (data.roleLevel) setRoleLevel(data.roleLevel);
+        if (data.roleFunction !== undefined) setRoleFunction(data.roleFunction);
       } catch {
         // ignore
       }
@@ -406,20 +396,48 @@ function RequestAccessContent() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Cargo</Label>
-                  <Select value={role} onValueChange={setRole} required>
+                  <Label htmlFor="roleLevel">Nível</Label>
+                  <Select
+                    value={roleLevel}
+                    onValueChange={(v) => {
+                      setRoleLevel(v);
+                      if (v === "CEO") setRoleFunction(null);
+                    }}
+                    required
+                  >
                     <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Selecione seu cargo" />
+                      <SelectValue placeholder="Selecione seu nível" />
                     </SelectTrigger>
                     <SelectContent>
-                      {ROLES.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {ROLE_LABELS[r] || r}
+                      {ROLE_LEVELS.map((l) => (
+                        <SelectItem key={l} value={l}>
+                          {ROLE_LEVEL_LABELS[l]}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                {roleLevel && roleLevel !== "CEO" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="roleFunction">Função</Label>
+                    <Select
+                      value={roleFunction || ""}
+                      onValueChange={(v) => setRoleFunction(v || null)}
+                      required
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Selecione sua função" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_FUNCTIONS.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {ROLE_FUNCTION_LABELS[f]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="flex items-start gap-2 pt-2">
                   <Checkbox
@@ -455,7 +473,7 @@ function RequestAccessContent() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full h-11" disabled={!role || !tosConsent || !lgpdConsent || sending}>
+                <Button type="submit" className="w-full h-11" disabled={!roleLevel || (roleLevel !== "CEO" && !roleFunction) || !tosConsent || !lgpdConsent || sending}>
                   {sending ? "Enviando..." : "Verificar email e criar conta"}
                 </Button>
               </form>

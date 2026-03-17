@@ -84,7 +84,7 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
 
   const summary = useMemo(() => {
     if (timeline.length === 0 || simulatable.length === 0) {
-      return { totalAtHorizon: 0, vestedTodayValue: 0, nextVesting: null };
+      return { totalAtHorizon: 0, vestedTodayValue: 0, vestedTodayShares: 0, nextVesting: null };
     }
     return computeSummary(simulatable, {
       currentSharePrice: sharePrice,
@@ -176,12 +176,17 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
 
               {/* Fallback date note (W1) */}
               {fallbackGrants.length > 0 && (
-                <p className="text-[13px] text-muted-foreground">
-                  {fallbackGrants.length === 1
-                    ? `"${fallbackGrants[0].label}" usa`
-                    : `${fallbackGrants.length} grants usam`}{" "}
-                  data de criação como início do vesting.
-                </p>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 px-4 py-3 space-y-1">
+                  <p className="text-[13px] font-medium text-amber-800 dark:text-amber-200">
+                    {fallbackGrants.length === 1
+                      ? `"${fallbackGrants[0].label}" não tem data do grant`
+                      : `${fallbackGrants.length} grants não têm data do grant`}
+                    {" — "}usando data de criação ({fallbackGrants[0].startDate.toLocaleDateString("pt-BR")}) como início do vesting.
+                  </p>
+                  <p className="text-[12px] text-amber-700 dark:text-amber-300">
+                    Edite seus grants para corrigir a data de início do vesting.
+                  </p>
+                </div>
               )}
 
               {!needsSharePrice && (

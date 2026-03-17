@@ -26,6 +26,7 @@ function normalizeApiData(data: SubmissionApiData) {
   const { grants: apiGrants, instrumentType, equityPercentage, vestingTotalMonths, cliffMonths,
     vestingSchedule, grantType, isFirstInRole, inputMode, numberOfShares, totalSharesOutstanding,
     strikePrice, currentSharePrice, lastValuation, grantDate, grantLabel, vestingStartDate,
+    role: _legacyRole, // strip computed legacy role — recomputed server-side on save
     ...submissionFields } = data;
 
   // If API returns grants array, use it directly

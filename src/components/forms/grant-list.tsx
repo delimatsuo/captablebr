@@ -57,7 +57,12 @@ export function GrantList({ grants, onChange, currency }: Props) {
   }
 
   function handleAdd(data: Partial<GrantFormData>) {
-    onChange([...grants, data]);
+    // If the only existing grant is the empty placeholder, replace it
+    if (grants.length === 1 && !grants[0].instrumentType && grants[0].equityPercentage == null && grants[0].numberOfShares == null) {
+      onChange([data]);
+    } else {
+      onChange([...grants, data]);
+    }
     setIsAdding(false);
   }
 

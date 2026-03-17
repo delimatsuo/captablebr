@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteMyData } from "@/lib/actions";
 import type { GrantData } from "@/lib/types";
-import { VestingSimulator } from "@/components/simulator/vesting-simulator";
+import { ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS, type RoleLevel, type RoleFunction } from "@/lib/types";
 
 interface SubmissionData {
   id: string;
@@ -26,6 +26,8 @@ interface SubmissionData {
   currency?: string;
   fxRateUsed?: number;
   role: string;
+  roleLevel?: string;
+  roleFunction?: string | null;
   equityPercentage?: number;
   hireYear?: number;
   yearsExperience?: string;
@@ -154,7 +156,8 @@ export default function MyDataPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <DataItem label="Cargo" value={data.role} />
+            <DataItem label="Nível" value={data.roleLevel ? ROLE_LEVEL_LABELS[data.roleLevel as RoleLevel] : data.role} />
+            {data.roleFunction && <DataItem label="Função" value={ROLE_FUNCTION_LABELS[data.roleFunction as RoleFunction] || data.roleFunction} />}
             {data.contractType && <DataItem label="Contrato" value={data.contractType} />}
             {data.currency && <DataItem label="Moeda" value={data.currency} />}
             <DataItem label="Salário anual" value={formatMoney(data.annualSalary, data.currency)} />
@@ -226,13 +229,21 @@ export default function MyDataPage() {
         </CardContent>
       </Card>
 
-      {/* Vesting Simulator */}
+      {/* Simulator link */}
       {data.grants.length > 0 && (
-        <VestingSimulator
-          grants={data.grants}
-          currency={data.currency}
-          fxRateUsed={data.fxRateUsed}
-        />
+        <Card className="border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <CardContent className="pt-5 pb-4 px-5 flex items-center justify-between">
+            <div>
+              <p className="font-medium text-[14px]">Simulador de Vesting</p>
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                Projete o valor dos seus grants ao longo do tempo
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="rounded-full text-[13px]">
+              <Link href="/simulator">Abrir simulador</Link>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* LGPD actions */}

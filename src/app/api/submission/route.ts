@@ -28,6 +28,8 @@ export async function GET() {
     currency: submission.currency,
     fxRateUsed: submission.fxRateUsed ? Number(submission.fxRateUsed) : undefined,
     role: submission.role,
+    roleLevel: submission.roleLevel,
+    roleFunction: submission.roleFunction,
     equityPercentage: submission.equityPercentage ? Number(submission.equityPercentage) : undefined,
     isFirstInRole: submission.isFirstInRole,
     hireYear: submission.hireYear,
@@ -60,10 +62,10 @@ export async function GET() {
       strikeCurrency: g.strikeCurrency,
       currentSharePrice: g.currentSharePrice ? Number(g.currentSharePrice) : undefined,
       lastValuation: g.lastValuation ? Number(g.lastValuation) : undefined,
-      grantDate: g.grantDate,
+      grantDate: g.grantDate?.toISOString() ?? null,
       grantLabel: g.grantLabel,
-      vestingStartDate: g.vestingStartDate,
-      createdAt: g.createdAt,
+      vestingStartDate: g.vestingStartDate?.toISOString() ?? null,
+      createdAt: g.createdAt.toISOString(),
     })),
   });
 }

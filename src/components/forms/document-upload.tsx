@@ -75,7 +75,8 @@ export function DocumentUpload({ onExtracted }: Props) {
 
       // Map API response to form data
       const mapped: Partial<SubmissionFormData> = {};
-      if (extracted.role) mapped.role = extracted.role as SubmissionFormData["role"];
+      if (extracted.role_level) mapped.roleLevel = extracted.role_level as SubmissionFormData["roleLevel"];
+      if (extracted.role_function) mapped.roleFunction = extracted.role_function as SubmissionFormData["roleFunction"];
       if (extracted.instrument_type) mapped.instrumentType = extracted.instrument_type as SubmissionFormData["instrumentType"];
       if (extracted.equity_percentage) mapped.equityPercentage = extracted.equity_percentage;
       if (extracted.vesting_total_months) mapped.vestingTotalMonths = extracted.vesting_total_months;

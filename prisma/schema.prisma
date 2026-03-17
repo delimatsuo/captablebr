@@ -11,6 +11,7 @@ datasource db {
 model Invitation {
   id        String   @id @default(uuid())
   email     String   @unique
+  name      String?
   status    String   @default("pending") // pending, accepted
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -53,6 +54,8 @@ model Submission {
 
   // Role & equity (denormalized from primary Grant for benchmark queries)
   role               String
+  roleLevel          String?  @map("role_level")
+  roleFunction       String?  @map("role_function")
   instrumentType     String   @map("instrument_type")
   equityPercentage   Decimal? @map("equity_percentage") @db.Decimal(10, 6)
   vestingTotalMonths Int      @map("vesting_total_months")
@@ -98,6 +101,7 @@ model Submission {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@index([role, stage])
+  @@index([roleLevel, roleFunction, stage])
   @@map("submissions")
 }
 

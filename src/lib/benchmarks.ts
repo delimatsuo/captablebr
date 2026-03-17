@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
-import { ROLES, STAGES, BUSINESS_MODELS, SECTORS, COUNTRIES, COUNTRY_CODES } from "./types";
+import {
+  ROLE_LEVELS, ROLE_FUNCTIONS, STAGES, BUSINESS_MODELS, SECTORS, COUNTRIES, COUNTRY_CODES,
+  ROLE_LEVEL_LABELS, ROLE_FUNCTION_LABELS,
+  type RoleLevel, type RoleFunction,
+} from "./types";
 import { getReferenceBenchmark } from "./benchmark-data";
 
 export interface BenchmarkResult {
@@ -20,7 +24,8 @@ export interface BenchmarkResult {
 }
 
 interface SegmentFilter {
-  role: string;
+  roleLevel: string;
+  roleFunction: string | null;
   stage?: string;
   businessModel?: string;
   sector?: string;
@@ -32,14 +37,20 @@ const MIN_SUBMISSIONS_PERCENTILES = 10;
 const MIN_SUBMISSIONS_AVERAGES = 7;
 const MIN_SUBMISSIONS_DISPLAY = 5;
 
-const VALID_ROLES = ROLES as readonly string[];
+const VALID_ROLE_LEVELS = ROLE_LEVELS as readonly string[];
+const VALID_ROLE_FUNCTIONS = ROLE_FUNCTIONS as readonly string[];
 const VALID_STAGES = STAGES as readonly string[];
 const VALID_BUSINESS_MODELS = BUSINESS_MODELS as readonly string[];
 const VALID_SECTORS = SECTORS as readonly string[];
 const VALID_COUNTRIES = COUNTRY_CODES as readonly string[];
 
 function validateFilter(filter: SegmentFilter): void {
-  if (!VALID_ROLES.includes(filter.role)) throw new Error("Invalid role");
+  if (!VALID_ROLE_LEVELS.includes(filter.roleLevel)) throw new Error("Invalid roleLevel");
+  if (filter.roleLevel !== "CEO") {
+    if (!filter.roleFunction || !VALID_ROLE_FUNCTIONS.includes(filter.roleFunction)) throw new Error("Invalid roleFunction");
+  } else {
+    if (filter.roleFunction != null) throw new Error("CEO must have null roleFunction");
+  }
   if (filter.stage && !VALID_STAGES.includes(filter.stage)) throw new Error("Invalid stage");
   if (filter.businessModel && !VALID_BUSINESS_MODELS.includes(filter.businessModel)) throw new Error("Invalid businessModel");
   if (filter.sector && !VALID_SECTORS.includes(filter.sector)) throw new Error("Invalid sector");
@@ -52,7 +63,13 @@ function buildSegmentLabel(filter: SegmentFilter): string {
     const countryLabel = COUNTRIES.find((c) => c.code === filter.country)?.label;
     if (countryLabel) parts.push(countryLabel);
   }
-  parts.push(filter.role);
+  const levelLabel = ROLE_LEVEL_LABELS[filter.roleLevel as RoleLevel] || filter.roleLevel;
+  if (filter.roleFunction) {
+    const funcLabel = ROLE_FUNCTION_LABELS[filter.roleFunction as RoleFunction] || filter.roleFunction;
+    parts.push(`${levelLabel} / ${funcLabel}`);
+  } else {
+    parts.push(levelLabel);
+  }
   if (filter.stage) parts.push(filter.stage);
   if (filter.businessModel) parts.push(filter.businessModel);
   if (filter.sector) parts.push(filter.sector);
@@ -60,7 +77,13 @@ function buildSegmentLabel(filter: SegmentFilter): string {
 }
 
 function buildBaseWhere(filter: SegmentFilter): Prisma.Sql {
-  let where = Prisma.sql`s.role = ${filter.role} AND s.confirmed_by_user = true`;
+  let where = Prisma.sql`s.role_level = ${filter.roleLevel} AND s.confirmed_by_user = true`;
+  // CEO NULL handling: use IS NULL — never `= NULL`
+  if (filter.roleFunction != null) {
+    where = Prisma.sql`${where} AND s.role_function = ${filter.roleFunction}`;
+  } else {
+    where = Prisma.sql`${where} AND s.role_function IS NULL`;
+  }
   // Country filter: when undefined ("Todos os mercados"), no clause is added —
   // rows with country IS NULL are included. When a specific country is set,
   // WHERE s.country = 'BR' naturally excludes NULLs via SQL semantics.
@@ -89,7 +112,8 @@ async function getSubmissionCount(filter: SegmentFilter): Promise<number> {
 }
 
 function findBestSegment(
-  role: string,
+  roleLevel: string,
+  roleFunction: string | null,
   stage?: string,
   businessModel?: string,
   sector?: string,
@@ -98,15 +122,15 @@ function findBestSegment(
   // Country stays pinned at every cascade level — it never relaxes
   const levels: SegmentFilter[] = [];
   if (stage && businessModel && sector) {
-    levels.push({ role, stage, businessModel, sector, country });
+    levels.push({ roleLevel, roleFunction, stage, businessModel, sector, country });
   }
   if (stage && businessModel) {
-    levels.push({ role, stage, businessModel, country });
+    levels.push({ roleLevel, roleFunction, stage, businessModel, country });
   }
   if (stage) {
-    levels.push({ role, stage, country });
+    levels.push({ roleLevel, roleFunction, stage, country });
   }
-  levels.push({ role, country });
+  levels.push({ roleLevel, roleFunction, country });
   return levels;
 }
 
@@ -115,16 +139,21 @@ function findBestSegment(
 // ---------------------------------------------------------------------------
 
 function getStaticBenchmarks(
-  role: string,
+  roleLevel: string,
+  roleFunction: string | null,
   stage?: string,
 ): BenchmarkResult | null {
   if (!stage) return null;
 
-  const ref = getReferenceBenchmark(role, stage);
+  const ref = getReferenceBenchmark(roleLevel as RoleLevel, roleFunction as RoleFunction | null, stage);
   if (!ref) return null;
 
+  const levelLabel = ROLE_LEVEL_LABELS[roleLevel as RoleLevel] || roleLevel;
+  const funcLabel = roleFunction ? (ROLE_FUNCTION_LABELS[roleFunction as RoleFunction] || roleFunction) : null;
+  const roleDisplay = funcLabel ? `${levelLabel} / ${funcLabel}` : levelLabel;
+
   return {
-    segmentLabel: `${role} / ${stage}`,
+    segmentLabel: `${roleDisplay} / ${stage}`,
     sampleSize: 0,
     dataSource: "market-reference",
     ...ref,
@@ -136,14 +165,14 @@ function getStaticBenchmarks(
 // ---------------------------------------------------------------------------
 
 async function getUserCollectedBenchmarks(
-  role: string,
+  roleLevel: string,
+  roleFunction: string | null,
   stage?: string,
   businessModel?: string,
   sector?: string,
   country?: string,
 ): Promise<BenchmarkResult | null> {
-  // TODO: Add database index on `country` column when volume justifies it
-  const segments = findBestSegment(role, stage, businessModel, sector, country);
+  const segments = findBestSegment(roleLevel, roleFunction, stage, businessModel, sector, country);
 
   let bestFilter: SegmentFilter | null = null;
   let submissionCount = 0;
@@ -380,18 +409,19 @@ async function getUserCollectedBenchmarks(
 // ---------------------------------------------------------------------------
 
 export async function getBenchmarks(
-  role: string,
+  roleLevel: string,
+  roleFunction: string | null,
   stage?: string,
   businessModel?: string,
   sector?: string,
   country?: string
 ): Promise<BenchmarkResult | null> {
   // Try user-collected data first
-  const userResult = await getUserCollectedBenchmarks(role, stage, businessModel, sector, country);
+  const userResult = await getUserCollectedBenchmarks(roleLevel, roleFunction, stage, businessModel, sector, country);
   if (userResult) return userResult;
 
   // Fall back to static reference data (US market, requires stage)
-  return getStaticBenchmarks(role, stage);
+  return getStaticBenchmarks(roleLevel, roleFunction, stage);
 }
 
 // ---------------------------------------------------------------------------
@@ -411,11 +441,14 @@ export interface StageComparisonResult {
   stages: StageComparisonItem[];
 }
 
-export function getStageComparison(role: string): StageComparisonResult | null {
+export function getStageComparison(
+  roleLevel: string,
+  roleFunction: string | null
+): StageComparisonResult | null {
   const stages: StageComparisonItem[] = [];
 
   for (const stage of STAGES) {
-    const ref = getReferenceBenchmark(role, stage);
+    const ref = getReferenceBenchmark(roleLevel as RoleLevel, roleFunction as RoleFunction | null, stage);
     if (!ref || !ref.equityPercentiles || !ref.cashPercentiles) continue;
     stages.push({
       stage,
@@ -427,5 +460,9 @@ export function getStageComparison(role: string): StageComparisonResult | null {
 
   if (stages.length === 0) return null;
 
-  return { role, dataSource: "market-reference", stages };
+  const levelLabel = ROLE_LEVEL_LABELS[roleLevel as RoleLevel] || roleLevel;
+  const funcLabel = roleFunction ? (ROLE_FUNCTION_LABELS[roleFunction as RoleFunction] || roleFunction) : null;
+  const roleDisplay = funcLabel ? `${levelLabel} / ${funcLabel}` : levelLabel;
+
+  return { role: roleDisplay, dataSource: "market-reference", stages };
 }
