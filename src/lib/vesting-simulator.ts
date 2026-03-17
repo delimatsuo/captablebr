@@ -75,12 +75,12 @@ export function prepareGrants(grants: GrantData[]): PrepareResult {
     let startDate: Date | null = null;
     let startDateSource: SimGrant["startDateSource"] = "created";
 
-    if (g.vestingStartDate) {
-      startDate = utcToLocal(new Date(g.vestingStartDate));
-      startDateSource = "vesting";
-    } else if (g.grantDate) {
+    if (g.grantDate) {
       startDate = utcToLocal(new Date(g.grantDate));
       startDateSource = "grant";
+    } else if (g.vestingStartDate) {
+      startDate = utcToLocal(new Date(g.vestingStartDate));
+      startDateSource = "vesting";
     } else if (g.createdAt) {
       // createdAt is a full ISO timestamp with TZ info — no conversion needed
       startDate = new Date(g.createdAt);
