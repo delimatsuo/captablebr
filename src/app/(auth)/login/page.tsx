@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
 import { getFirebaseAuth, getGoogleProvider } from "@/lib/firebase-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const isDevMode = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === "true";
+
+  async function handleForgotPassword() {
+    if (!email.trim()) {
+      setError("Digite seu email primeiro.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(getFirebaseAuth(), email.trim());
+      setSuccess("Email de redefinição enviado. Verifique sua caixa de entrada.");
+    } catch {
+      setError("Erro ao enviar email. Verifique o endereço.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleDevLogin() {
     setLoading(true);
@@ -181,7 +199,16 @@ export default function LoginPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Senha</Label>
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+                      >
+                        Esqueceu a senha?
+                      </button>
+                    </div>
                     <Input
                       id="password"
                       type="password"
@@ -198,6 +225,12 @@ export default function LoginPage() {
                   </Button>
                 </form>
               </>
+            )}
+
+            {success && (
+              <div className="flex items-start gap-2 text-sm text-green-700 bg-green-50 dark:text-green-300 dark:bg-green-950/30 rounded-lg px-3 py-2.5">
+                {success}
+              </div>
             )}
 
             {error && (
