@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,9 +191,7 @@ function RequestAccessContent() {
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 items-center justify-center p-12">
         <div className="max-w-md text-primary-foreground">
           <Link href="/" className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <span className="font-bold text-lg">C</span>
-            </div>
+            <Image src="/logo-icon.svg" alt="" width={40} height={40} className="rounded-xl" />
             <span className="text-2xl font-bold">CaptableBR</span>
           </Link>
           <h2 className="text-3xl font-bold mb-4 leading-tight">
@@ -223,9 +222,7 @@ function RequestAccessContent() {
         <Card className="w-full max-w-md border-0 shadow-none sm:border sm:shadow-sm">
           <CardHeader className="space-y-1 pb-6">
             <Link href="/" className="lg:hidden flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">C</span>
-              </div>
+              <Image src="/logo-icon.svg" alt="" width={32} height={32} className="rounded-lg" />
               <span className="text-lg font-bold">CaptableBR</span>
             </Link>
 
