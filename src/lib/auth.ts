@@ -55,8 +55,6 @@ export async function verifyAndAuthorize(idToken: string): Promise<{ uid: string
   const decoded = await adminAuth.verifyIdToken(idToken);
   const email = decoded.email;
 
-  console.log("[AUTH] Firebase email:", email, "| UID:", decoded.uid);
-
   if (!email) {
     throw new Error("NO_EMAIL");
   }
@@ -65,7 +63,7 @@ export async function verifyAndAuthorize(idToken: string): Promise<{ uid: string
   const invitation = await prisma.invitation.findUnique({
     where: { email: email.toLowerCase() },
   });
-  console.log("[AUTH] Invitation found:", !!invitation, "for", email.toLowerCase());
+  console.log("[AUTH] UID:", decoded.uid, "| invited:", !!invitation);
 
   if (!invitation) {
     throw new Error("NOT_INVITED");
