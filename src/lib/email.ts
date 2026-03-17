@@ -17,7 +17,7 @@ function unwrapResend(result: { data: unknown; error: unknown }): void {
     throw new Error(`Resend error ${err.statusCode || ""}: ${err.message || JSON.stringify(result.error)}`);
   }
 }
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://staging.captablebr.com";
+const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
 
 /**
  * Shared branded email shell — blue header with CaptableBR logo, white card body, footer.

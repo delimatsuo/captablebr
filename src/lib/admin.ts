@@ -70,7 +70,7 @@ export async function createInvitation(email: string, name?: string) {
         });
       }
       // Send password reset email so user sets their own password
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
+      const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
       const resetLink = await adminAuth.generatePasswordResetLink(normalized, { url: `${appUrl}/login` });
       await sendPasswordSetupEmail(normalized, resetLink, name);
     } catch (err) {

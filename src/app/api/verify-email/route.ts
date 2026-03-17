@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   const token = generateEmailToken(email, ts);
 
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://staging.captablebr.com";
+    process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
   const verificationUrl = `${appUrl}/request-access?verify=1&email=${encodeURIComponent(email)}&ts=${ts}&token=${token}`;
 
   try {
