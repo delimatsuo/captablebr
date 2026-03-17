@@ -62,10 +62,10 @@ export async function GET() {
       strikeCurrency: g.strikeCurrency,
       currentSharePrice: g.currentSharePrice ? Number(g.currentSharePrice) : undefined,
       lastValuation: g.lastValuation ? Number(g.lastValuation) : undefined,
-      grantDate: g.grantDate,
+      grantDate: g.grantDate?.toISOString() ?? null,
       grantLabel: g.grantLabel,
-      vestingStartDate: g.vestingStartDate,
-      createdAt: g.createdAt,
+      vestingStartDate: g.vestingStartDate?.toISOString() ?? null,
+      createdAt: g.createdAt.toISOString(),
     })),
   });
 }
