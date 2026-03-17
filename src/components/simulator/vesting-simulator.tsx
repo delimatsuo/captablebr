@@ -199,6 +199,23 @@ export function VestingSimulator({ grants, currency = "USD", fxRateUsed }: Vesti
                     projectedPrice={projectedPriceDeferred}
                   />
 
+                  {/* Temporary debug: grant date sources */}
+                  <details className="text-xs text-muted-foreground border rounded p-3">
+                    <summary className="cursor-pointer font-medium">Debug: datas usadas na simulação</summary>
+                    <div className="mt-2 space-y-1 font-mono">
+                      {simulatable.map((g) => {
+                        const now = new Date();
+                        const mss = (now.getFullYear() - g.startDate.getFullYear()) * 12 + (now.getMonth() - g.startDate.getMonth());
+                        return (
+                          <div key={g.id}>
+                            {g.label}: início={g.startDate.toLocaleDateString("pt-BR")} (fonte: {g.startDateSource}), meses={mss}, cliff={g.cliffMonths}, vested={Math.round(g.numberOfShares * Math.min(1, Math.max(0, mss >= g.cliffMonths ? Math.floor(mss / 3) / Math.ceil(g.vestingTotalMonths / 3) : 0)))}
+                          </div>
+                        );
+                      })}
+                      <div className="mt-1">Raw grants grantDate: {grants.map(g => `${g.grantLabel}=${g.grantDate ?? "null"}`).join(", ")}</div>
+                    </div>
+                  </details>
+
                   <SimulatorChart
                     grants={simulatable}
                     timeline={timeline}
