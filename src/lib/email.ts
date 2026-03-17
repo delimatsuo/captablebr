@@ -35,8 +35,8 @@ function brandedEmail(body: string): string {
             <td style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 32px 40px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="width: 36px; height: 36px; background-color: rgba(255,255,255,0.2); border-radius: 10px; text-align: center; vertical-align: middle;">
-                    <span style="color: #ffffff; font-weight: 700; font-size: 16px; line-height: 36px;">C</span>
+                  <td style="width: 36px; height: 36px;">
+                    <img src="https://captablebr.com/logo-icon.svg" alt="C" width="36" height="36" style="display: block; border-radius: 10px;" />
                   </td>
                   <td style="padding-left: 12px;">
                     <span style="color: #ffffff; font-weight: 700; font-size: 20px; letter-spacing: -0.02em;">CaptableBR</span>
