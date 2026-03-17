@@ -9,6 +9,14 @@ const FROM_EMAIL = "CaptableBR <noreply@from.ellaexecutivesearch.com>";
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+
+/** Resend SDK returns { data, error } instead of throwing. Unwrap and throw on error. */
+function unwrapResend(result: { data: unknown; error: unknown }): void {
+  if (result.error) {
+    const err = result.error as { message?: string; statusCode?: number };
+    throw new Error(`Resend error ${err.statusCode || ""}: ${err.message || JSON.stringify(result.error)}`);
+  }
+}
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://staging.captablebr.com";
 
 /**
@@ -81,71 +89,88 @@ export async function sendInvitationEmail(email: string, name?: string) {
 
   const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
 
-  await resend.emails.send({
-    from: "Deli Matsuo — CaptableBR <noreply@from.ellaexecutivesearch.com>",
+  unwrapResend(await resend.emails.send({
+    from: "Deli Matsuo — Ella Executive Search <noreply@from.ellaexecutivesearch.com>",
     replyTo: "deli@ellaexecutivesearch.com",
     to: email,
-    subject: "Convite: benchmarks de compensação executiva — CaptableBR",
+    subject: "Dados de equity em startups brasileiras — contribua e acesse benchmarks grátis",
     html: brandedEmail(`
-      <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 700; color: #111827; line-height: 1.3;">
-        Você está convidado(a) para o CaptableBR
+      <h1 style="margin: 0 0 20px 0; font-size: 22px; font-weight: 700; color: #111827; line-height: 1.3;">
+        Ajude a construir a primeira base de dados de compensação executiva do Brasil
       </h1>
 
       <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6; color: #374151;">
         ${greeting}
       </p>
       <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        Sou Deli Matsuo, da <a href="https://ellaexecutivesearch.com" style="color: #2563eb; text-decoration: none;">Ella Executive Search</a>. Estamos construindo o <strong>CaptableBR</strong> — uma plataforma gratuita e 100% anônima de benchmarks de compensação para executivos C-level, VP e diretores de startups.
+        Sou Deli Matsuo, sócio da <a href="https://www.ellaexecutivesearch.com" style="color: #2563eb; text-decoration: none; font-weight: 600;">Ella Executive Search</a>, boutique de executive search especializada em startups de tecnologia entre Brasil e EUA.
       </p>
-
       <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        <strong>O problema:</strong> executivos de startups no Brasil negociam equity, salário e vesting sem dados comparáveis. Ferramentas como Carta Total Comp e Pave existem nos EUA, mas não cobrem o nosso mercado.
+        Nos últimos anos, assessorando executivos e fundadores em contratações C-level, percebemos um problema recorrente: <strong>não existem dados confiáveis sobre compensação executiva em startups brasileiras</strong>. Enquanto nos EUA ferramentas como Carta Total Comp e Pave já são padrão, aqui cada negociação de equity, salário e vesting acontece praticamente no escuro.
+      </p>
+      <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Por isso criamos o <strong>CaptableBR</strong> — uma plataforma <strong>gratuita</strong> de benchmarks de compensação para executivos C-level, VP e diretores de startups no Brasil.
       </p>
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f5ff; border-radius: 10px; margin: 0 0 20px 0;">
         <tr>
           <td style="padding: 20px 24px;">
-            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #1e40af;">Como funciona:</p>
-            <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #374151;">
-              1. Você contribui seus dados de compensação (~3 min)<br>
-              2. Os dados são anonimizados e agregados<br>
-              3. Você acessa benchmarks: percentis de equity, salário, vesting e cash, por cargo, estágio e setor<br>
-              4. Benchmarks só aparecem com 10+ executivos no segmento, garantindo anonimato
+            <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 600; color: #1e40af;">O que você ganha ao participar:</p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #374151;">
+              <strong>→</strong> Acesso imediato a benchmarks de equity (%), salário, vesting e remuneração total<br>
+              <strong>→</strong> Dados segmentados por cargo, estágio da empresa e setor<br>
+              <strong>→</strong> Simulador de vesting para projetar o valor dos seus grants<br>
+              <strong>→</strong> Informação concreta para suas próximas negociações
             </p>
           </td>
         </tr>
       </table>
 
-      <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        Já liberei seu acesso. Para começar, clique no botão abaixo e faça login com sua <strong>conta Google pessoal</strong> (Gmail) ou com <strong>email e senha</strong>.
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fffbeb; border-radius: 10px; margin: 0 0 20px 0;">
+        <tr>
+          <td style="padding: 20px 24px;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 600; color: #92400e;">O que precisamos de você:</p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #374151;">
+              <strong>→</strong> Preencha seus dados de compensação — leva cerca de 3 minutos<br>
+              <strong>→</strong> Todos os dados são 100% anonimizados e agregados<br>
+              <strong>→</strong> Benchmarks só aparecem com 10+ respostas por segmento<br>
+              <strong>→</strong> Seus dados são protegidos pela LGPD e podem ser excluídos a qualquer momento
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin: 0 0 8px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Seu acesso já está liberado. Clique abaixo para começar:
       </p>
 
-      ${ctaButton(`${APP_URL}/login`, "Acessar CaptableBR")}
+      ${ctaButton(`${APP_URL}/login`, "Participar e acessar benchmarks")}
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 10px; border: 1px solid #f3f4f6; margin: 0 0 20px 0;">
         <tr>
           <td style="padding: 16px 20px;">
             <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">
-              <strong style="color: #374151;">Importante:</strong> Use seu <strong>email pessoal</strong> para fazer login — não o email corporativo. Assim seus dados ficam completamente desvinculados da sua empresa. Qualquer provedor funciona (Gmail, Outlook, Yahoo, etc.).
+              <strong style="color: #374151;">Dica:</strong> Use seu <strong>email pessoal</strong> para login (Gmail, Outlook, etc.) — assim seus dados ficam completamente desvinculados da sua empresa.
             </p>
           </td>
         </tr>
       </table>
 
-      <p style="margin: 0 0 4px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        Seus dados são protegidos sob a LGPD e podem ser excluídos a qualquer momento.
+      <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Quanto mais executivos contribuírem, mais relevantes ficam os benchmarks para todos. Sua participação faz diferença.
       </p>
+
       <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        Tem dúvidas? Responda este email ou me chame no WhatsApp.
+        Qualquer dúvida, responda este email ou me chame no WhatsApp.
       </p>
 
       <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #374151;">
         Abraço,<br>
         <strong>Deli Matsuo</strong><br>
-        <span style="color: #6b7280;">Ella Executive Search</span>
+        <span style="color: #6b7280;">Sócio — <a href="https://www.ellaexecutivesearch.com" style="color: #6b7280; text-decoration: underline;">Ella Executive Search</a></span>
       </p>
     `),
-  });
+  }));
 }
 
 /**
@@ -158,7 +183,7 @@ export async function sendVerificationEmail(email: string, verificationUrl: stri
     return;
   }
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: "CaptableBR — Verifique seu email",
@@ -186,7 +211,7 @@ export async function sendVerificationEmail(email: string, verificationUrl: stri
         </tr>
       </table>
     `),
-  });
+  }));
 }
 
 /**
@@ -198,7 +223,7 @@ export async function sendApprovalEmail(email: string, name: string) {
     return;
   }
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: "Seu acesso ao CaptableBR foi aprovado!",
@@ -214,7 +239,7 @@ export async function sendApprovalEmail(email: string, name: string) {
       </p>
       ${ctaButton(`${APP_URL}/login`, "Acessar CaptableBR")}
     `),
-  });
+  }));
 }
 
 /**
@@ -229,7 +254,7 @@ export async function sendPasswordSetupEmail(email: string, resetLink: string, n
 
   const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
 
-  await resend.emails.send({
+  unwrapResend(await resend.emails.send({
     from: FROM_EMAIL,
     replyTo: "deli@ellaexecutivesearch.com",
     to: email,
@@ -255,5 +280,5 @@ export async function sendPasswordSetupEmail(email: string, resetLink: string, n
         Se você usa Gmail, ignore este email — basta fazer login com Google.
       </p>
     `),
-  });
+  }));
 }
