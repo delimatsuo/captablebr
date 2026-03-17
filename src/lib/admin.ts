@@ -69,10 +69,10 @@ export async function createInvitation(email: string, name?: string) {
           displayName: name || undefined,
         });
       }
-      // NOTE: Password setup email disabled — generatePasswordResetLink produces
-      // broken URLs because Firebase Hosting isn't deployed for this project.
-      // Non-Gmail users can use "Forgot password" on the login page instead.
-      // TODO: Fix by deploying Firebase Hosting or hosting a custom action handler.
+      // Send password reset email so user sets their own password
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
+      const resetLink = await adminAuth.generatePasswordResetLink(normalized, { url: `${appUrl}/login` });
+      await sendPasswordSetupEmail(normalized, resetLink, name);
     } catch (err) {
       console.error("[ADMIN] Firebase account setup failed (non-blocking):", err);
     }
