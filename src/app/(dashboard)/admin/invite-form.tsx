@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createInvitation } from "@/lib/admin";
+import { createInvitation, createInvitationsBatch } from "@/lib/admin";
+import type { BatchInviteResult } from "@/lib/admin";
 
 export function InviteForm() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export function InviteForm() {
   // Bulk invite state
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
-  const [bulkProgress, setBulkProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [bulkResult, setBulkResult] = useState<BatchInviteResult | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,35 +71,30 @@ export function InviteForm() {
     }
 
     setLoading(true);
-    setBulkProgress({ sent: 0, failed: 0, total: entries.length });
-    let sent = 0;
-    let failed = 0;
-    const errors: string[] = [];
+    setBulkResult(null);
 
-    for (const entry of entries) {
-      try {
-        await createInvitation(entry.email, entry.name);
-        sent++;
-      } catch (err) {
-        failed++;
-        const msg = err instanceof Error ? err.message : "Erro";
-        errors.push(`${entry.email}: ${msg}`);
+    try {
+      const result = await createInvitationsBatch(entries);
+      setBulkResult(result);
+
+      if (result.created > 0 && result.emailsFailed === 0) {
+        toast.success(`${result.created} convite(s) criado(s)`);
+        setBulkText("");
+      } else if (result.created > 0) {
+        toast.success(`${result.created} criado(s), ${result.emailsFailed} email(s) falharam`);
+        setBulkText("");
+      } else {
+        toast.info(`Nenhum novo convite — ${result.skipped} já existiam`);
       }
-      setBulkProgress({ sent, failed, total: entries.length });
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar convites");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-    if (failed === 0) {
-      toast.success(`${sent} convite(s) enviado(s)`);
-      setBulkText("");
-      setBulkProgress(null);
-    } else {
-      toast.error(`${sent} enviados, ${failed} falharam`);
-      // Keep only the failed emails in the textarea
-      setBulkText(errors.map((e) => `# ${e}`).join("\n"));
-    }
-    router.refresh();
   }
+
+  const parsedCount = bulkMode ? parseBulkInput(bulkText).length : 0;
 
   return (
     <div className="space-y-4">
@@ -121,7 +117,7 @@ export function InviteForm() {
       {/* Bulk toggle */}
       <button
         type="button"
-        onClick={() => setBulkMode(!bulkMode)}
+        onClick={() => { setBulkMode(!bulkMode); setBulkResult(null); }}
         className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
       >
         {bulkMode ? "Fechar envio em lote" : "Enviar convites em lote"}
@@ -146,29 +142,28 @@ export function InviteForm() {
             className="font-mono text-sm"
             disabled={loading}
           />
-          {bulkProgress && (
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${((bulkProgress.sent + bulkProgress.failed) / bulkProgress.total) * 100}%` }}
-                />
-              </div>
-              <span className="text-muted-foreground tabular-nums">
-                {bulkProgress.sent + bulkProgress.failed}/{bulkProgress.total}
-              </span>
+          {bulkResult && (
+            <div className="rounded-md bg-muted px-4 py-3 text-sm space-y-1">
+              <p><span className="font-medium">{bulkResult.created}</span> convite(s) criado(s)</p>
+              {bulkResult.skipped > 0 && (
+                <p className="text-muted-foreground">{bulkResult.skipped} já existiam (ignorados)</p>
+              )}
+              <p className="text-muted-foreground">
+                {bulkResult.emailsSent} email(s) enviado(s)
+                {bulkResult.emailsFailed > 0 && `, ${bulkResult.emailsFailed} falharam`}
+              </p>
             </div>
           )}
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              {parseBulkInput(bulkText).length} email(s) detectado(s)
+              {parsedCount} email(s) detectado(s)
             </p>
             <Button
               onClick={handleBulkSubmit}
-              disabled={loading || parseBulkInput(bulkText).length === 0}
+              disabled={loading || parsedCount === 0}
               size="sm"
             >
-              {loading ? `Enviando...` : `Enviar ${parseBulkInput(bulkText).length} convite(s)`}
+              {loading ? "Processando..." : `Enviar ${parsedCount} convite(s)`}
             </Button>
           </div>
         </div>

@@ -116,7 +116,7 @@ function refineRoleLevelFunction<T extends z.ZodType<any, any, any>>(schema: T) 
 
 export const submissionWithGrantsSchema = refineRoleLevelFunction(
   submissionBaseSchema.extend({
-    grants: z.array(grantSchema).min(1, "Adicione pelo menos um grant"),
+    grants: z.array(grantSchema).min(1, "Adicione pelo menos um grant").max(20, "Máximo de 20 grants"),
   })
 );
 
