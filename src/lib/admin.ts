@@ -138,50 +138,39 @@ export async function createInvitationsBatch(
   // Only process Firebase/email for newly created invitations
   const newlyInserted = unique.filter((u) => !existing.has(u.email));
 
-  // Process Firebase accounts + emails with concurrency control
+  // Process Firebase accounts + emails sequentially (Resend rate limit: 5 req/s)
   if (!DEV_MODE) {
-    const CONCURRENCY = 5;
-    const toProcess = newlyInserted;
-    for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
-      const chunk = toProcess.slice(i, i + CONCURRENCY);
-      const settled = await Promise.allSettled(
-        chunk.map(async ({ email, name }) => {
-          // Firebase account setup
-          try {
-            const adminAuth = await getFirebaseAdmin();
-            try {
-              await adminAuth.getUserByEmail(email);
-            } catch (err: unknown) {
-              const code = (err as { code?: string }).code;
-              if (code !== "auth/user-not-found") throw err;
-              const { randomBytes } = await import("crypto");
-              const tempPassword = randomBytes(32).toString("base64url");
-              await adminAuth.createUser({
-                email,
-                password: tempPassword,
-                displayName: name || undefined,
-              });
-            }
-            const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
-            const resetLink = await adminAuth.generatePasswordResetLink(email, { url: `${appUrl}/login` });
-            await sendPasswordSetupEmail(email, resetLink, name ?? undefined);
-          } catch (err) {
-            console.error(`[ADMIN] Firebase setup failed for ${email}:`, err);
-          }
-
-          // Invitation email
-          await sendInvitationEmail(email, name ?? undefined);
-        })
-      );
-
-      for (const s of settled) {
-        if (s.status === "fulfilled") {
-          result.emailsSent++;
-        } else {
-          result.emailsFailed++;
-          result.errors.push(String(s.reason));
+    const adminAuth = await getFirebaseAdmin();
+    const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
+    for (const { email, name } of newlyInserted) {
+      try {
+        // Firebase account setup
+        try {
+          await adminAuth.getUserByEmail(email);
+        } catch (err: unknown) {
+          const code = (err as { code?: string }).code;
+          if (code !== "auth/user-not-found") throw err;
+          const { randomBytes } = await import("crypto");
+          const tempPassword = randomBytes(32).toString("base64url");
+          await adminAuth.createUser({
+            email,
+            password: tempPassword,
+            displayName: name || undefined,
+          });
         }
+        const resetLink = await adminAuth.generatePasswordResetLink(email, { url: `${appUrl}/login` });
+        await sendPasswordSetupEmail(email, resetLink, name ?? undefined);
+
+        // Invitation email
+        await sendInvitationEmail(email, name ?? undefined);
+        result.emailsSent++;
+      } catch (err) {
+        console.error(`[ADMIN] Batch invite failed for ${email}:`, err);
+        result.emailsFailed++;
+        result.errors.push(`${email}: ${err instanceof Error ? err.message : String(err)}`);
       }
+      // Respect Resend rate limit (5 req/s → ~1s between users with 2 emails each)
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
