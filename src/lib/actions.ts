@@ -166,6 +166,8 @@ export async function upsertSubmissionWithGrants(
     throw new Error("Dados inválidos");
   }
 
+  if (data.grants.length > 20) throw new Error("Máximo de 20 grants");
+
   // Server-side recomputation per grant
   for (const grant of data.grants) {
     const computed = computeEquityPercentage(grant);
@@ -480,6 +482,9 @@ export async function addGrant(grantData: unknown) {
   const { id: _grantId, ...grantFields } = data;
 
   return prisma.$transaction(async (tx) => {
+    const grantCount = await tx.grant.count({ where: { submissionId: submission.id } });
+    if (grantCount >= 20) throw new Error("Máximo de 20 grants por submission");
+
     const grant = await tx.grant.create({
       data: { submissionId: submission.id, ...grantFields },
     });

@@ -88,6 +88,106 @@ export async function createInvitation(email: string, name?: string) {
   return invitation;
 }
 
+export type BatchInviteResult = {
+  created: number;
+  skipped: number;
+  emailsSent: number;
+  emailsFailed: number;
+  errors: string[];
+};
+
+export async function createInvitationsBatch(
+  entries: Array<{ email: string; name?: string }>
+): Promise<BatchInviteResult> {
+  await requireAdmin();
+
+  const result: BatchInviteResult = {
+    created: 0,
+    skipped: 0,
+    emailsSent: 0,
+    emailsFailed: 0,
+    errors: [],
+  };
+
+  // Normalize and deduplicate input
+  const seen = new Set<string>();
+  const unique: Array<{ email: string; name: string | null }> = [];
+  for (const entry of entries) {
+    const email = entry.email.toLowerCase().trim();
+    if (!email.includes("@") || seen.has(email)) continue;
+    seen.add(email);
+    unique.push({ email, name: entry.name?.trim() || null });
+  }
+
+  // Find already-invited emails so we only email new ones
+  const existing = new Set(
+    (await prisma.invitation.findMany({
+      where: { email: { in: unique.map((u) => u.email) } },
+      select: { email: true },
+    })).map((i) => i.email)
+  );
+
+  // Bulk insert — skip duplicates (emails that already exist in the DB)
+  const { count } = await prisma.invitation.createMany({
+    data: unique,
+    skipDuplicates: true,
+  });
+  result.created = count;
+  result.skipped = unique.length - count;
+
+  // Only process Firebase/email for newly created invitations
+  const newlyInserted = unique.filter((u) => !existing.has(u.email));
+
+  // Process Firebase accounts + emails with concurrency control
+  if (!DEV_MODE) {
+    const CONCURRENCY = 5;
+    const toProcess = newlyInserted;
+    for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
+      const chunk = toProcess.slice(i, i + CONCURRENCY);
+      const settled = await Promise.allSettled(
+        chunk.map(async ({ email, name }) => {
+          // Firebase account setup
+          try {
+            const adminAuth = await getFirebaseAdmin();
+            try {
+              await adminAuth.getUserByEmail(email);
+            } catch (err: unknown) {
+              const code = (err as { code?: string }).code;
+              if (code !== "auth/user-not-found") throw err;
+              const { randomBytes } = await import("crypto");
+              const tempPassword = randomBytes(32).toString("base64url");
+              await adminAuth.createUser({
+                email,
+                password: tempPassword,
+                displayName: name || undefined,
+              });
+            }
+            const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://captablebr.com";
+            const resetLink = await adminAuth.generatePasswordResetLink(email, { url: `${appUrl}/login` });
+            await sendPasswordSetupEmail(email, resetLink, name ?? undefined);
+          } catch (err) {
+            console.error(`[ADMIN] Firebase setup failed for ${email}:`, err);
+          }
+
+          // Invitation email
+          await sendInvitationEmail(email, name ?? undefined);
+        })
+      );
+
+      for (const s of settled) {
+        if (s.status === "fulfilled") {
+          result.emailsSent++;
+        } else {
+          result.emailsFailed++;
+          result.errors.push(String(s.reason));
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export async function deleteInvitation(id: string) {
   await requireAdmin();
   return prisma.invitation.delete({ where: { id } });
@@ -146,6 +246,17 @@ export async function revokeAccess(email: string) {
   await prisma.invitation.delete({
     where: { email: normalized },
   });
+
+  // Revoke Firebase session so user can't continue using the app
+  if (!DEV_MODE) {
+    try {
+      const adminAuth = await getFirebaseAdmin();
+      const user = await adminAuth.getUserByEmail(normalized);
+      await adminAuth.revokeRefreshTokens(user.uid);
+    } catch (err) {
+      console.error("[ADMIN] revokeAccess: Firebase revocation failed:", err);
+    }
+  }
 }
 
 // --- Admin Stats & User Management ---
