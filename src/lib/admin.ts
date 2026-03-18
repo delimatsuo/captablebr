@@ -119,6 +119,14 @@ export async function createInvitationsBatch(
     unique.push({ email, name: entry.name?.trim() || null });
   }
 
+  // Find already-invited emails so we only email new ones
+  const existing = new Set(
+    (await prisma.invitation.findMany({
+      where: { email: { in: unique.map((u) => u.email) } },
+      select: { email: true },
+    })).map((i) => i.email)
+  );
+
   // Bulk insert — skip duplicates (emails that already exist in the DB)
   const { count } = await prisma.invitation.createMany({
     data: unique,
@@ -127,17 +135,13 @@ export async function createInvitationsBatch(
   result.created = count;
   result.skipped = unique.length - count;
 
-  // Find which emails were actually inserted (need their records for Firebase/email)
-  const inserted = await prisma.invitation.findMany({
-    where: { email: { in: unique.map((u) => u.email) } },
-    select: { email: true, name: true },
-  });
-  const insertedMap = new Map(inserted.map((i) => [i.email, i.name]));
+  // Only process Firebase/email for newly created invitations
+  const newlyInserted = unique.filter((u) => !existing.has(u.email));
 
   // Process Firebase accounts + emails with concurrency control
   if (!DEV_MODE) {
     const CONCURRENCY = 5;
-    const toProcess = unique.filter((u) => insertedMap.has(u.email));
+    const toProcess = newlyInserted;
     for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
       const chunk = toProcess.slice(i, i + CONCURRENCY);
       const settled = await Promise.allSettled(
