@@ -22,9 +22,7 @@ function isRateLimited(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   // Rate limit check
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const ips = forwardedFor?.split(",").map(s => s.trim()) || [];
-  const ip = ips[ips.length - 1] || "unknown";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { error: "Muitas tentativas. Tente novamente em 1 hora." },
