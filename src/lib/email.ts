@@ -7,7 +7,7 @@ const resend = process.env.RESEND_API_KEY
 const FROM_EMAIL = "CaptableBR <noreply@from.ellaexecutivesearch.com>";
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 /** Resend SDK returns { data, error } instead of throwing. Unwrap and throw on error. */

@@ -146,6 +146,17 @@ export async function revokeAccess(email: string) {
   await prisma.invitation.delete({
     where: { email: normalized },
   });
+
+  // Revoke Firebase session so user can't continue using the app
+  if (!DEV_MODE) {
+    try {
+      const adminAuth = await getFirebaseAdmin();
+      const user = await adminAuth.getUserByEmail(normalized);
+      await adminAuth.revokeRefreshTokens(user.uid);
+    } catch (err) {
+      console.error("[ADMIN] revokeAccess: Firebase revocation failed:", err);
+    }
+  }
 }
 
 // --- Admin Stats & User Management ---

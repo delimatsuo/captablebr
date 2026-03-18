@@ -16,7 +16,9 @@ function isPollLimited(ip: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const ips = forwardedFor?.split(",").map(s => s.trim()) || [];
+  const ip = ips[ips.length - 1] || "unknown";
   if (isPollLimited(ip)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
