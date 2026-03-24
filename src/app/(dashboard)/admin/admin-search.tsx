@@ -13,6 +13,7 @@ type Invitation = {
   email: string;
   status: string;
   createdAt: Date;
+  reminderSentAt: Date | null;
 };
 
 type AccessRequest = {
@@ -181,6 +182,11 @@ export function AdminSearch({ invitations, pendingRequests, processedRequests, u
                     <p className="text-sm font-medium">{inv.email}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(inv.createdAt).toLocaleDateString("pt-BR")}
+                      {inv.reminderSentAt && (
+                        <span className="ml-2 text-amber-600">
+                          · Lembrete {new Date(inv.reminderSentAt).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

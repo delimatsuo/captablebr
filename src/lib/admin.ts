@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { verifySession, getFirebaseAdmin } from "./auth";
 import { DEV_MODE, DEV_USER_UID } from "./dev-mode";
 import { redirect } from "next/navigation";
-import { sendInvitationEmail, sendApprovalEmail, sendPasswordSetupEmail } from "./email";
+import { sendInvitationEmail, sendApprovalEmail, sendPasswordSetupEmail, sendReminderEmail } from "./email";
 
 // Your Firebase UID — only this user can access admin features.
 function getAdminUid(): string | undefined {
@@ -172,6 +172,53 @@ export async function createInvitationsBatch(
       // Respect Resend rate limit (5 req/s → ~1s between users with 2 emails each)
       await new Promise((r) => setTimeout(r, 500));
     }
+  }
+
+  return result;
+}
+
+export type SendRemindersResult = {
+  sent: number;
+  failed: number;
+  errors: string[];
+};
+
+/**
+ * Send reminder emails to all pending invitations that haven't accepted yet.
+ * Skips invitations that already received a reminder.
+ */
+export async function sendReminders(): Promise<SendRemindersResult> {
+  await requireAdmin();
+
+  const result: SendRemindersResult = { sent: 0, failed: 0, errors: [] };
+
+  // Get pending invitations that haven't received a reminder yet
+  const pending = await prisma.invitation.findMany({
+    where: {
+      status: "pending",
+      reminderSentAt: null,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (pending.length === 0) return result;
+
+  // Send reminders sequentially to respect Resend rate limit (5 req/s)
+  for (const inv of pending) {
+    try {
+      await sendReminderEmail(inv.email, inv.name ?? undefined);
+      await prisma.invitation.update({
+        where: { id: inv.id },
+        data: { reminderSentAt: new Date() },
+      });
+      result.sent++;
+    } catch (err) {
+      console.error(`[ADMIN] Reminder failed for ${inv.email}:`, err);
+      result.failed++;
+      result.errors.push(`${inv.email}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    // Respect Resend rate limit (5 req/s → 200ms per email, using 500ms for safety)
+    await new Promise((r) => setTimeout(r, 500));
   }
 
   return result;
