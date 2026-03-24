@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { InviteForm } from "./invite-form";
 import { AdminSearch } from "./admin-search";
+import { SendRemindersButton } from "./send-reminders-button";
 
 export default async function AdminPage() {
   const admin = await isAdmin();
@@ -90,6 +91,13 @@ export default async function AdminPage() {
           <InviteForm />
         </CardContent>
       </Card>
+
+      {/* Reminder for pending invitations */}
+      <SendRemindersButton
+        pendingWithoutReminder={
+          invitations.filter((i) => i.status === "pending" && !i.reminderSentAt).length
+        }
+      />
 
       {/* Search + filtered lists (client component) */}
       <AdminSearch
