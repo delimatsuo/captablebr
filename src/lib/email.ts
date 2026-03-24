@@ -243,6 +243,74 @@ export async function sendApprovalEmail(email: string, name: string) {
 }
 
 /**
+ * Send reminder email to invited users who haven't signed up yet.
+ * Shorter and warmer than the original invitation — focuses on urgency and value.
+ */
+export async function sendReminderEmail(email: string, name?: string) {
+  if (!resend) {
+    console.warn("[EMAIL] Resend not configured, skipping reminder email to:", email);
+    return;
+  }
+
+  const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
+
+  unwrapResend(await resend.emails.send({
+    from: "Deli Matsuo — Ella Executive Search <noreply@from.ellaexecutivesearch.com>",
+    replyTo: "deli@ellaexecutivesearch.com",
+    to: email,
+    subject: "Lembrete: seus dados fazem falta no CaptableBR",
+    html: brandedEmail(`
+      <h1 style="margin: 0 0 20px 0; font-size: 22px; font-weight: 700; color: #111827; line-height: 1.3;">
+        Ainda estamos construindo a base — e seus dados fazem falta
+      </h1>
+
+      <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        ${greeting}
+      </p>
+      <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Há algumas semanas enviei um convite para o <strong>CaptableBR</strong>, a primeira plataforma de benchmarks de compensação executiva para startups no Brasil. Percebi que você ainda não acessou a ferramenta.
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Entendo que a agenda é corrida, mas queria reforçar: <strong>quanto mais executivos participarem, mais relevantes ficam os benchmarks para todos</strong>. Hoje não existe nenhuma base confiável de dados sobre equity, salário e vesting em startups brasileiras — e estamos construindo isso juntos.
+      </p>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f5ff; border-radius: 10px; margin: 0 0 20px 0;">
+        <tr>
+          <td style="padding: 20px 24px;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 600; color: #1e40af;">Leva 3 minutos e você ganha:</p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #374151;">
+              <strong>→</strong> Benchmarks de equity (%), salário e remuneração total por cargo e estágio<br>
+              <strong>→</strong> Simulador de vesting para projetar o valor dos seus grants<br>
+              <strong>→</strong> Dados concretos para negociações — sem achismo
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin: 0 0 8px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Seu acesso continua liberado. É só clicar abaixo:
+      </p>
+
+      ${ctaButton(`${APP_URL}/login`, "Acessar CaptableBR agora")}
+
+      <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Todos os dados são 100% anonimizados e protegidos pela LGPD. Pode usar seu email pessoal para total privacidade.
+      </p>
+
+      <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #374151;">
+        Qualquer dúvida, responda este email.
+      </p>
+
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #374151;">
+        Abraço,<br>
+        <strong>Deli Matsuo</strong><br>
+        <span style="color: #6b7280;">Sócio — <a href="https://www.ellaexecutivesearch.com" style="color: #6b7280; text-decoration: underline;">Ella Executive Search</a></span>
+      </p>
+    `),
+  }));
+}
+
+/**
  * Send password setup email for pre-registered users (non-Gmail).
  * This is sent alongside the invitation email so they can set their password.
  */
