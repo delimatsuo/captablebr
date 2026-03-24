@@ -261,17 +261,17 @@ export async function sendReminderEmail(email: string, name?: string) {
     subject: "Lembrete: seus dados fazem falta no CaptableBR",
     html: brandedEmail(`
       <h1 style="margin: 0 0 20px 0; font-size: 22px; font-weight: 700; color: #111827; line-height: 1.3;">
-        Ainda estamos construindo a base — e seus dados fazem falta
+        Ainda estamos construindo a base, e seus dados fazem falta
       </h1>
 
       <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6; color: #374151;">
         ${greeting}
       </p>
       <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        Há algumas semanas enviei um convite para o <strong>CaptableBR</strong>, a primeira plataforma de benchmarks de compensação executiva para startups no Brasil. Percebi que você ainda não acessou a ferramenta.
+        Há alguns dias enviei um convite para o <strong>CaptableBR</strong>, a primeira plataforma de benchmarks de compensação executiva para startups no Brasil. Percebi que você ainda não acessou a ferramenta.
       </p>
       <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #374151;">
-        Entendo que a agenda é corrida, mas queria reforçar: <strong>quanto mais executivos participarem, mais relevantes ficam os benchmarks para todos</strong>. Hoje não existe nenhuma base confiável de dados sobre equity, salário e vesting em startups brasileiras — e estamos construindo isso juntos.
+        Entendo que a agenda é corrida, mas queria reforçar: <strong>quanto mais executivos participarem, mais relevantes ficam os benchmarks para todos</strong>. Hoje não existe nenhuma base confiável de dados sobre equity, salário e vesting em startups brasileiras, e estamos construindo isso juntos.
       </p>
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f5ff; border-radius: 10px; margin: 0 0 20px 0;">
@@ -281,7 +281,7 @@ export async function sendReminderEmail(email: string, name?: string) {
             <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #374151;">
               <strong>→</strong> Benchmarks de equity (%), salário e remuneração total por cargo e estágio<br>
               <strong>→</strong> Simulador de vesting para projetar o valor dos seus grants<br>
-              <strong>→</strong> Dados concretos para negociações — sem achismo
+              <strong>→</strong> Dados concretos para suas negociações
             </p>
           </td>
         </tr>

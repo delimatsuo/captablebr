@@ -224,6 +224,15 @@ export async function sendReminders(): Promise<SendRemindersResult> {
   return result;
 }
 
+/**
+ * Send a single test reminder email to the given address (admin only).
+ * Does NOT update any invitation record.
+ */
+export async function sendTestReminder(email: string): Promise<void> {
+  await requireAdmin();
+  await sendReminderEmail(email);
+}
+
 export async function deleteInvitation(id: string) {
   await requireAdmin();
   return prisma.invitation.delete({ where: { id } });
