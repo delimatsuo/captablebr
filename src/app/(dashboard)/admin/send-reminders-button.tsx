@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { sendReminders } from "@/lib/admin";
+import { Input } from "@/components/ui/input";
+import { sendReminders, sendTestReminder } from "@/lib/admin";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -11,12 +12,27 @@ interface Props {
 
 export function SendRemindersButton({ pendingWithoutReminder }: Props) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [testLoading, setTestLoading] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [result, setResult] = useState<string | null>(null);
   const router = useRouter();
 
-  if (pendingWithoutReminder === 0 && !result) return null;
+  async function handleTest() {
+    const email = testEmail.trim();
+    if (!email) return;
+    setTestLoading(true);
+    setResult(null);
+    try {
+      await sendTestReminder(email);
+      setResult(`Teste enviado para ${email}`);
+    } catch (err) {
+      setResult(`Erro: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setTestLoading(false);
+    }
+  }
 
-  async function handleClick() {
+  async function handleSendAll() {
     if (!confirm(
       `Enviar email de lembrete para ${pendingWithoutReminder} convite(s) pendente(s) que ainda não receberam lembrete?`
     )) return;
@@ -25,29 +41,49 @@ export function SendRemindersButton({ pendingWithoutReminder }: Props) {
     setResult(null);
     try {
       const res = await sendReminders();
-      setResult({ sent: res.sent, failed: res.failed });
+      setResult(`${res.sent} enviado(s)${res.failed > 0 ? `, ${res.failed} falha(s)` : ""}`);
       router.refresh();
     } catch (err) {
-      alert(`Erro: ${err instanceof Error ? err.message : String(err)}`);
+      setResult(`Erro: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        onClick={handleClick}
-        disabled={loading || pendingWithoutReminder === 0}
-        variant="outline"
-        size="sm"
-      >
-        {loading ? "Enviando lembretes..." : `Enviar lembrete (${pendingWithoutReminder})`}
-      </Button>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Input
+          type="email"
+          placeholder="Enviar teste para..."
+          value={testEmail}
+          onChange={(e) => setTestEmail(e.target.value)}
+          className="max-w-xs"
+          onKeyDown={(e) => e.key === "Enter" && handleTest()}
+        />
+        <Button
+          onClick={handleTest}
+          disabled={testLoading || !testEmail.trim()}
+          variant="outline"
+          size="sm"
+        >
+          {testLoading ? "Enviando..." : "Enviar teste"}
+        </Button>
+      </div>
+      {pendingWithoutReminder > 0 && (
+        <div>
+          <Button
+            onClick={handleSendAll}
+            disabled={loading}
+            variant="default"
+            size="sm"
+          >
+            {loading ? "Enviando lembretes..." : `Enviar lembrete para todos (${pendingWithoutReminder})`}
+          </Button>
+        </div>
+      )}
       {result && (
-        <p className="text-sm text-muted-foreground">
-          {result.sent} enviado(s){result.failed > 0 ? `, ${result.failed} falha(s)` : ""}
-        </p>
+        <p className="text-sm text-muted-foreground">{result}</p>
       )}
     </div>
   );
