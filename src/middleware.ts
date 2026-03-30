@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Allow access request and signup APIs
-  if (pathname === "/api/access-request" || pathname.startsWith("/api/signup")) {
+  if (pathname === "/api/access-request" || pathname.startsWith("/api/signup") || pathname === "/api/verify-email") {
     return NextResponse.next();
   }
 
