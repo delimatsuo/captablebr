@@ -92,14 +92,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate LinkedIn URL format
-  if (!validateLinkedInUrl(linkedinUrl)) {
+  // Normalize and validate LinkedIn URL format
+  const normalizedLinkedInUrl = normalizeLinkedInUrl(linkedinUrl);
+  if (!validateLinkedInUrl(normalizedLinkedInUrl)) {
     return NextResponse.json(
       { error: "URL do LinkedIn inválida. Use o formato: linkedin.com/in/seu-perfil" },
       { status: 400 }
     );
   }
-  const normalizedLinkedInUrl = normalizeLinkedInUrl(linkedinUrl);
 
   // Check for existing invitation or pending access request, and create atomically
   let accessRequest;
