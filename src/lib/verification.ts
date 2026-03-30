@@ -21,12 +21,22 @@ export interface VerificationOutput {
 }
 
 /**
+ * Normalize a LinkedIn URL by prepending https:// if no protocol is present.
+ */
+export function normalizeLinkedInUrl(url: string): string {
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+/**
  * Validate that a URL is a valid LinkedIn profile URL.
  * Uses URL parsing (not regex-only) to prevent SSRF/normalization attacks.
+ * Accepts inputs with or without protocol (e.g. "linkedin.com/in/foo").
  */
 export function validateLinkedInUrl(url: string): boolean {
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(normalizeLinkedInUrl(url));
     const hostname = parsed.hostname.toLowerCase();
     if (!["linkedin.com", "www.linkedin.com"].includes(hostname)) return false;
     if (!parsed.pathname.startsWith("/in/")) return false;

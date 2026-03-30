@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { signupSchema } from "@/lib/validations";
-import { validateLinkedInUrl, runVerification } from "@/lib/verification";
+import { validateLinkedInUrl, normalizeLinkedInUrl, runVerification } from "@/lib/verification";
 import { getFirebaseAdmin } from "@/lib/auth";
 import { verifyEmailToken } from "@/lib/email-verification";
 import { computeLegacyRole, type RoleLevel, type RoleFunction } from "@/lib/types";
@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+  const normalizedLinkedInUrl = normalizeLinkedInUrl(linkedinUrl);
 
   // Check for existing invitation or pending access request, and create atomically
   let accessRequest;
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
         data: {
           email: normalizedEmail,
           name,
-          linkedinUrl,
+          linkedinUrl: normalizedLinkedInUrl,
           role,
           lgpdConsent,
           tosConsent,
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
 
   // Run verification synchronously (up to ~60s)
   const declaredRole = computeLegacyRole(roleLevel as RoleLevel, (roleFunction || null) as RoleFunction | null);
-  const verification = await runVerification(linkedinUrl, name, declaredRole);
+  const verification = await runVerification(normalizedLinkedInUrl, name, declaredRole);
 
   // Helper to delete the temporary Firebase email-link user
   async function cleanupTempFirebaseUser() {
