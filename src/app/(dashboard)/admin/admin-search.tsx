@@ -11,9 +11,11 @@ import { DeleteUserButton } from "./delete-user-button";
 type Invitation = {
   id: string;
   email: string;
+  name: string | null;
   status: string;
   createdAt: Date;
   reminderSentAt: Date | null;
+  invitedEmail: string | null;
 };
 
 type AccessRequest = {

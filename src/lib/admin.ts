@@ -32,6 +32,16 @@ export async function getInvitations() {
   await requireAdmin();
   return prisma.invitation.findMany({
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      status: true,
+      createdAt: true,
+      reminderSentAt: true,
+      invitedEmail: true,
+      // inviteToken intentionally excluded
+    },
   });
 }
 

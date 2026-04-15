@@ -44,6 +44,7 @@ export async function verifySession(): Promise<{ uid: string } | null> {
 
 /**
  * Verify the ID token AND check that the user's email is in the invitations table.
+ * Falls back to invite token cookie if email does not match any invitation.
  * Returns { uid, email } if authorized, throws if not invited.
  */
 export async function verifyAndAuthorize(idToken: string): Promise<{ uid: string; email: string }> {
@@ -59,29 +60,60 @@ export async function verifyAndAuthorize(idToken: string): Promise<{ uid: string
     throw new Error("NO_EMAIL");
   }
 
-  // Check invitation
-  const invitation = await prisma.invitation.findUnique({
-    where: { email: email.toLowerCase() },
-  });
-  console.log("[AUTH] UID:", decoded.uid, "| invited:", !!invitation);
+  const normalizedEmail = email.toLowerCase();
 
-  if (!invitation) {
+  // --- Primary check: email match ---
+  const invitation = await prisma.invitation.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (invitation) {
+    console.log("[AUTH] UID:", decoded.uid, "| invited by email:", normalizedEmail);
+    const displayName = decoded.name as string | undefined;
+    if (invitation.status === "pending" || (!invitation.name && displayName)) {
+      await prisma.invitation.update({
+        where: { email: normalizedEmail },
+        data: {
+          status: "accepted",
+          ...(displayName && !invitation.name ? { name: displayName } : {}),
+        },
+      });
+    }
+    return { uid: decoded.uid, email: normalizedEmail };
+  }
+
+  // --- Fallback: invite token cookie ---
+  const cookieStore = await cookies();
+  const inviteToken = cookieStore.get("invite_token")?.value;
+
+  if (!inviteToken) {
     throw new Error("NOT_INVITED");
   }
 
-  // Mark as accepted + capture name from Firebase on first login
-  const displayName = decoded.name as string | undefined;
-  if (invitation.status === "pending" || (!invitation.name && displayName)) {
-    await prisma.invitation.update({
-      where: { email: email.toLowerCase() },
-      data: {
-        status: "accepted",
-        ...(displayName && !invitation.name ? { name: displayName } : {}),
-      },
-    });
+  const tokenInvitation = await prisma.invitation.findUnique({
+    where: { inviteToken },
+  });
+
+  if (!tokenInvitation) {
+    console.log("[AUTH] UID:", decoded.uid, "| invite token not found or already consumed");
+    throw new Error("NOT_INVITED");
   }
 
-  return { uid: decoded.uid, email };
+  // Claim the invitation: update email to the actual login email, preserve original, consume token
+  const displayName = decoded.name as string | undefined;
+  await prisma.invitation.update({
+    where: { id: tokenInvitation.id },
+    data: {
+      email: normalizedEmail,
+      invitedEmail: tokenInvitation.email,
+      inviteToken: null, // consume token — prevents anyone else from claiming this invitation
+      status: "accepted",
+      ...(displayName && !tokenInvitation.name ? { name: displayName } : {}),
+    },
+  });
+
+  console.log("[AUTH] UID:", decoded.uid, "| invited by token:", tokenInvitation.email, "-> login email:", normalizedEmail);
+  return { uid: decoded.uid, email: normalizedEmail };
 }
 
 export async function createSessionCookie(idToken: string): Promise<string> {
