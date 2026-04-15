@@ -192,11 +192,10 @@ export async function sendReminders(): Promise<SendRemindersResult> {
 
   const result: SendRemindersResult = { sent: 0, failed: 0, errors: [] };
 
-  // Get pending invitations that haven't received a reminder yet
+  // Get all pending invitations (re-send allowed — reminderSentAt tracks last send date)
   const pending = await prisma.invitation.findMany({
     where: {
       status: "pending",
-      reminderSentAt: null,
     },
     orderBy: { createdAt: "asc" },
   });
