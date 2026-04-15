@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
 import { getFirebaseAuth, getGoogleProvider } from "@/lib/firebase-client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasInvite = searchParams.get("convite") === "1";
+  const invalidInvite = searchParams.get("convite") === "invalido";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -161,6 +164,17 @@ export default function LoginPage() {
 
             {!isDevMode && (
               <>
+                {hasInvite && (
+                  <div className="flex items-start gap-2 text-sm text-green-700 bg-green-50 dark:text-green-300 dark:bg-green-950/30 rounded-lg px-3 py-2.5 mb-2">
+                    Convite confirmado. Entre com Google abaixo para acessar.
+                  </div>
+                )}
+                {invalidInvite && (
+                  <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2.5 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                    Link de convite invalido ou ja utilizado. Verifique seu email.
+                  </div>
+                )}
                 <Button
                   variant="outline"
                   className="w-full h-11"
@@ -238,9 +252,9 @@ export default function LoginPage() {
             )}
 
             <p className="text-center text-sm text-muted-foreground pt-2">
-              Não tem conta?{" "}
+              Nao tem convite?{" "}
               <Link href="/request-access" className="text-primary font-medium hover:underline">
-                Cadastre-se grátis
+                Saiba como participar
               </Link>
             </p>
             <p className="text-center text-sm text-muted-foreground">
@@ -252,5 +266,13 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }
