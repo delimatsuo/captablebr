@@ -66,13 +66,12 @@ export async function scrapeLinkedInProfile(
     const timeout = setTimeout(() => controller.abort(), 60_000);
 
     const response = await fetch(
-      `https://api.apify.com/v2/acts/anchor~linkedin-profile-scraper/run-sync-get-dataset-items?token=${APIFY_API_TOKEN}`,
+      `https://api.apify.com/v2/acts/dev_fusion~Linkedin-Profile-Scraper/run-sync-get-dataset-items?token=${APIFY_API_TOKEN}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          startUrls: [{ url }],
-          proxyConfiguration: { useApifyProxy: true },
+          profileUrls: [url],
         }),
         signal: controller.signal,
       }
@@ -93,14 +92,20 @@ export async function scrapeLinkedInProfile(
 
     const profile = results[0];
 
+    // Actor returns an error field when the profile is not found
+    if (profile.error) {
+      console.error("[verification] Apify profile not found:", profile.error);
+      return null;
+    }
+
     // Sanitize: extract only needed fields
     return {
-      name: String(profile.fullName || profile.name || ""),
+      name: String(profile.fullName || ""),
       headline: profile.headline ? String(profile.headline) : null,
-      currentTitle: profile.currentTitle || profile.title || null,
-      currentCompany: profile.currentCompany?.name || profile.companyName || null,
-      experienceCount: Array.isArray(profile.experiences)
-        ? profile.experiences.length
+      currentTitle: profile.jobTitle || null,
+      currentCompany: profile.companyName || null,
+      experienceCount: typeof profile.experiencesCount === "number"
+        ? profile.experiencesCount
         : 0,
     };
   } catch (err) {
