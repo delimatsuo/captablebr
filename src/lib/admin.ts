@@ -32,6 +32,16 @@ export async function getInvitations() {
   await requireAdmin();
   return prisma.invitation.findMany({
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      status: true,
+      createdAt: true,
+      reminderSentAt: true,
+      invitedEmail: true,
+      // inviteToken intentionally excluded
+    },
   });
 }
 
@@ -80,7 +90,7 @@ export async function createInvitation(email: string, name?: string) {
 
   // Send invitation email (best-effort, don't fail if email fails)
   try {
-    await sendInvitationEmail(normalized, name);
+    await sendInvitationEmail(normalized, name, invitation.inviteToken ?? undefined);
   } catch (err) {
     console.error("[ADMIN] Failed to send invitation email:", err);
   }
@@ -138,6 +148,16 @@ export async function createInvitationsBatch(
   // Only process Firebase/email for newly created invitations
   const newlyInserted = unique.filter((u) => !existing.has(u.email));
 
+  // Fetch invite tokens for newly created invitations
+  const newEmails = newlyInserted.map((u) => u.email);
+  const createdInvitations = newEmails.length > 0
+    ? await prisma.invitation.findMany({
+        where: { email: { in: newEmails } },
+        select: { email: true, inviteToken: true },
+      })
+    : [];
+  const inviteTokenByEmail = new Map(createdInvitations.map((i) => [i.email, i.inviteToken]));
+
   // Process Firebase accounts + emails sequentially (Resend rate limit: 5 req/s)
   if (!DEV_MODE) {
     const adminAuth = await getFirebaseAdmin();
@@ -162,7 +182,8 @@ export async function createInvitationsBatch(
         await sendPasswordSetupEmail(email, resetLink, name ?? undefined);
 
         // Invitation email
-        await sendInvitationEmail(email, name ?? undefined);
+        const inviteToken = inviteTokenByEmail.get(email);
+        await sendInvitationEmail(email, name ?? undefined, inviteToken ?? undefined);
         result.emailsSent++;
       } catch (err) {
         console.error(`[ADMIN] Batch invite failed for ${email}:`, err);
@@ -205,7 +226,7 @@ export async function sendReminders(): Promise<SendRemindersResult> {
   // Send reminders sequentially to respect Resend rate limit (5 req/s)
   for (const inv of pending) {
     try {
-      await sendReminderEmail(inv.email, inv.name ?? undefined);
+      await sendReminderEmail(inv.email, inv.name ?? undefined, inv.inviteToken ?? undefined);
       await prisma.invitation.update({
         where: { id: inv.id },
         data: { reminderSentAt: new Date() },

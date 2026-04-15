@@ -81,13 +81,14 @@ function ctaButton(href: string, label: string): string {
 /**
  * Send invitation email to a new user.
  */
-export async function sendInvitationEmail(email: string, name?: string) {
+export async function sendInvitationEmail(email: string, name?: string, inviteToken?: string) {
   if (!resend) {
     console.warn("[EMAIL] Resend not configured, skipping invitation email to:", email);
     return;
   }
 
   const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
+  const ctaUrl = inviteToken ? `${APP_URL}/convite/${inviteToken}` : `${APP_URL}/login`;
 
   unwrapResend(await resend.emails.send({
     from: "Deli Matsuo — Ella Executive Search <noreply@from.ellaexecutivesearch.com>",
@@ -144,7 +145,7 @@ export async function sendInvitationEmail(email: string, name?: string) {
         Seu acesso já está liberado. Clique abaixo para começar:
       </p>
 
-      ${ctaButton(`${APP_URL}/login`, "Participar e acessar benchmarks")}
+      ${ctaButton(ctaUrl, "Participar e acessar benchmarks")}
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 10px; border: 1px solid #f3f4f6; margin: 0 0 20px 0;">
         <tr>
@@ -246,13 +247,14 @@ export async function sendApprovalEmail(email: string, name: string) {
  * Send reminder email to invited users who haven't signed up yet.
  * Shorter and warmer than the original invitation — focuses on urgency and value.
  */
-export async function sendReminderEmail(email: string, name?: string) {
+export async function sendReminderEmail(email: string, name?: string, inviteToken?: string) {
   if (!resend) {
     console.warn("[EMAIL] Resend not configured, skipping reminder email to:", email);
     return;
   }
 
   const greeting = name ? `Olá ${escapeHtml(name)},` : "Olá,";
+  const ctaUrl = inviteToken ? `${APP_URL}/convite/${inviteToken}` : `${APP_URL}/login`;
 
   unwrapResend(await resend.emails.send({
     from: "Deli Matsuo — Ella Executive Search <noreply@from.ellaexecutivesearch.com>",
@@ -291,7 +293,7 @@ export async function sendReminderEmail(email: string, name?: string) {
         Seu acesso continua liberado. É só clicar abaixo:
       </p>
 
-      ${ctaButton(`${APP_URL}/login`, "Acessar CaptableBR agora")}
+      ${ctaButton(ctaUrl, "Acessar CaptableBR agora")}
 
       <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #374151;">
         Todos os dados são 100% anonimizados e protegidos pela LGPD. Pode usar seu email pessoal para total privacidade.
