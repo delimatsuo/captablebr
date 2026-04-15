@@ -95,7 +95,7 @@ export default async function AdminPage() {
       {/* Reminder for pending invitations */}
       <SendRemindersButton
         pendingWithoutReminder={
-          invitations.filter((i) => i.status === "pending" && !i.reminderSentAt).length
+          invitations.filter((i) => i.status === "pending").length
         }
       />
 
