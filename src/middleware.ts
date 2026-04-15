@@ -6,7 +6,10 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths
-  if (publicPaths.some((p) => pathname === p || pathname.startsWith("/api/auth"))) {
+  if (
+    publicPaths.some((p) => pathname === p || pathname.startsWith("/api/auth")) ||
+    pathname.startsWith("/convite/")
+  ) {
     return NextResponse.next();
   }
 
