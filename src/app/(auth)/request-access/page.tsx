@@ -14,10 +14,10 @@ export default function RequestAccessPage() {
             <span className="text-2xl font-bold">CaptableBR</span>
           </Link>
           <h2 className="text-3xl font-bold mb-4 leading-tight">
-            Benchmarks de compensacao para executivos de startups
+            Benchmarks de compensação para executivos de startups
           </h2>
           <p className="text-primary-foreground/80 text-lg leading-relaxed">
-            Compare seu equity, salario e vesting com outros executivos C-level de startups brasileiras. Dados 100% anonimizados.
+            Compare seu equity, salário e vesting com outros executivos C-level de startups brasileiras. Dados 100% anonimizados.
           </p>
         </div>
       </div>
@@ -35,12 +35,12 @@ export default function RequestAccessPage() {
             </div>
             <CardTitle className="text-2xl">Acesso por convite</CardTitle>
             <CardDescription>
-              O CaptableBR e uma plataforma fechada. O acesso e liberado apenas por convite direto da Ella Executive Search.
+              O CaptableBR é uma plataforma fechada. O acesso é liberado apenas por convite direto da Ella Executive Search.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Se voce e um executivo C-level de uma startup e gostaria de participar, entre em contato conosco pelo site da Ella Executive Search.
+              Se você é um executivo C-level de uma startup e gostaria de participar, entre em contato conosco pelo site da Ella Executive Search.
             </p>
             <a href="https://www.ellaexecutivesearch.com" target="_blank" rel="noopener noreferrer">
               <Button className="w-full h-11">
@@ -49,7 +49,7 @@ export default function RequestAccessPage() {
             </a>
             <Link href="/login">
               <Button variant="outline" className="w-full h-11">
-                Ja tenho convite — fazer login
+                Já tenho convite — fazer login
               </Button>
             </Link>
           </CardContent>
